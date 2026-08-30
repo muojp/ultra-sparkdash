@@ -2,6 +2,16 @@
 
 [English](#english) · [日本語](#日本語)
 
+[sparkdash-tree]: https://github.com/muojp/sparkDash/tree/f5b3a9c7ddfda4011a728988f5aab4f7671a37e3
+[sparkdash-readme]: https://github.com/muojp/sparkDash/blob/f5b3a9c7ddfda4011a728988f5aab4f7671a37e3/README.md
+[sparkdash-compose]: https://github.com/muojp/sparkDash/blob/f5b3a9c7ddfda4011a728988f5aab4f7671a37e3/docker-compose.yml
+[sparkdash-tokentrace]: https://github.com/muojp/sparkDash/blob/f5b3a9c7ddfda4011a728988f5aab4f7671a37e3/docs/TOKENTRACE.md
+[sparkdash-observability]: https://github.com/muojp/sparkDash/blob/f5b3a9c7ddfda4011a728988f5aab4f7671a37e3/docs/OBSERVABILITY.md
+[sparkdash-retention]: https://github.com/muojp/sparkDash/blob/f5b3a9c7ddfda4011a728988f5aab4f7671a37e3/docs/OBSERVABILITY.md#retention-and-long-term-dashboards
+[sparkdash-prometheus]: https://github.com/muojp/sparkDash/blob/f5b3a9c7ddfda4011a728988f5aab4f7671a37e3/observability/prometheus/prometheus.yml
+[deepseek-tree]: https://github.com/muojp/DeepSeek-v4-Flash-DSpark-2x-DGX-Spark/tree/058bc5f27a675fa9199d1b6accdd97cb0e823158
+[deepseek-readme]: https://github.com/muojp/DeepSeek-v4-Flash-DSpark-2x-DGX-Spark/blob/058bc5f27a675fa9199d1b6accdd97cb0e823158/README.md
+
 ## English
 
 `ultra-sparkdash` turns a **2× NVIDIA DGX Spark** deployment running
@@ -12,8 +22,8 @@ submodules.
 
 | Submodule | Role |
 |---|---|
-| [`sparkDash`](./sparkDash) | TokenTrace Live UI, read-only tailer, DGX metrics, and optional Prometheus/InfluxDB exporters |
-| [`DeepSeek-V4-Flash-DSpark-2x-DGX-Spark`](./DeepSeek-v4-Flash-DSpark-2x-DGX-Spark) | vLLM V2 expert-routing recorder and subscriber-aware short-interval flushing |
+| [`sparkDash`][sparkdash-tree] | TokenTrace Live UI, read-only tailer, DGX metrics, and optional Prometheus/InfluxDB exporters |
+| [`DeepSeek-V4-Flash-DSpark-2x-DGX-Spark`][deepseek-tree] | vLLM V2 expert-routing recorder and subscriber-aware short-interval flushing |
 
 Regular sparkDash features remain available. TokenTrace Live adds a view
 specialized for DeepSeek-V4-Flash, TP=2 over RoCE, and MTP-5.
@@ -87,7 +97,7 @@ subscriber disconnects.
 - A sparkDash unit configured as **Local / Head**, with the Worker linked to it
 
 See the
-[`DeepSeek fork README`](./DeepSeek-v4-Flash-DSpark-2x-DGX-Spark/README.md) for
+[`DeepSeek fork README`][deepseek-readme] for
 model, NCCL, and container setup.
 
 ### Start sparkDash
@@ -111,7 +121,7 @@ directly to the public Internet.
 
 SSH runs inside the sparkDash container and does not automatically use host
 keys. Enable the SSH key volume in
-[`sparkDash/docker-compose.yml`](./sparkDash/docker-compose.yml), then mount a
+[`sparkDash/docker-compose.yml`][sparkdash-compose], then mount a
 default key name or set its container path:
 
 ```dotenv
@@ -169,10 +179,10 @@ docker compose up -d
 
 The services bind to `127.0.0.1` by default. Prometheus scrapes
 `host.docker.internal:5555` on the same Docker host; edit
-[`prometheus.yml`](./sparkDash/observability/prometheus/prometheus.yml) for a
+[`prometheus.yml`][sparkdash-prometheus] for a
 different target. Never reuse development Grafana/InfluxDB credentials on an
 exposed network. See
-[`docs/OBSERVABILITY.md`](./sparkDash/docs/OBSERVABILITY.md).
+[`docs/OBSERVABILITY.md`][sparkdash-observability].
 
 [![Grafana sparkDash fleet overview with RDMA throughput, SM clock, token rates, and KV cache history](./docs/images/grafana-fleet-overview.png)](./docs/images/grafana-fleet-overview.png)
 
@@ -191,7 +201,7 @@ volumes.
 Prometheus applies retention after restart. `DOCKER_INFLUXDB_INIT_RETENTION`
 only applies when an InfluxDB bucket is created, so update existing buckets via
 the API. See
-[`Retention`](./sparkDash/docs/OBSERVABILITY.md#retention-and-long-term-dashboards)
+[`Retention`][sparkdash-retention]
 for procedures, sizing, and verification. Back up the volumes and keep Grafana
 provisioning under `observability/grafana/provisioning/` in Git.
 
@@ -301,10 +311,10 @@ docker compose -f observability/docker-compose.yml config --quiet
 
 ### Documentation and license
 
-- [TokenTrace Live](./sparkDash/docs/TOKENTRACE.md)
-- [Observability exporters](./sparkDash/docs/OBSERVABILITY.md)
-- [sparkDash README](./sparkDash/README.md)
-- [DeepSeek fork README](./DeepSeek-v4-Flash-DSpark-2x-DGX-Spark/README.md)
+- [TokenTrace Live][sparkdash-tokentrace]
+- [Observability exporters][sparkdash-observability]
+- [sparkDash README][sparkdash-readme]
+- [DeepSeek fork README][deepseek-readme]
 
 The root repository is distributed under the [MIT License](./LICENSE).
 Submodules, model weights, container images, CUDA/NCCL, and other runtime
@@ -322,8 +332,8 @@ Git submoduleとして固定する配布用メタリポジトリです。
 
 | Submodule | 役割 |
 |---|---|
-| [`sparkDash`](./sparkDash) | TokenTrace Live UI、read-only tailer、DGXメトリクス、optionalなPrometheus/InfluxDB exporter |
-| [`DeepSeek-V4-Flash-DSpark-2x-DGX-Spark`](./DeepSeek-v4-Flash-DSpark-2x-DGX-Spark) | vLLM V2 expert-routing recorderとsubscriber接続時の短周期flush |
+| [`sparkDash`][sparkdash-tree] | TokenTrace Live UI、read-only tailer、DGXメトリクス、optionalなPrometheus/InfluxDB exporter |
+| [`DeepSeek-V4-Flash-DSpark-2x-DGX-Spark`][deepseek-tree] | vLLM V2 expert-routing recorderとsubscriber接続時の短周期flush |
 
 通常のsparkDash機能はそのまま利用できます。TokenTrace Liveは
 DeepSeek-V4-Flash、TP=2 over RoCE、MTP-5構成向けのアドオンです。
@@ -391,7 +401,7 @@ shared lockを検出するとDeepSeek recorderはflushを通常の2秒から50 m
 - **Local / Head**のsparkDash unitと、そこへlinkedしたWorker
 
 model、NCCL、containerの準備は
-[`DeepSeek fork README`](./DeepSeek-v4-Flash-DSpark-2x-DGX-Spark/README.md)を参照して
+[`DeepSeek fork README`][deepseek-readme]を参照して
 ください。
 
 ### sparkDashの起動
@@ -413,7 +423,7 @@ sparkDashのSSH・power APIには認証がないため、公開Internetへ直接
 #### Worker SSH key
 
 SSHはcontainer内で実行され、host keyを自動参照しません。
-[`sparkDash/docker-compose.yml`](./sparkDash/docker-compose.yml)のSSH key volumeを
+[`sparkDash/docker-compose.yml`][sparkdash-compose]のSSH key volumeを
 有効化し、default名でmountするかpathを設定します。
 
 ```dotenv
@@ -465,9 +475,9 @@ docker compose up -d
 
 既定では`127.0.0.1`だけへbindし、Prometheusは同じDocker hostの
 `host.docker.internal:5555`をscrapeします。別targetは
-[`prometheus.yml`](./sparkDash/observability/prometheus/prometheus.yml)で変更します。
+[`prometheus.yml`][sparkdash-prometheus]で変更します。
 development credentialsを公開networkに流用しないでください。詳細は
-[`docs/OBSERVABILITY.md`](./sparkDash/docs/OBSERVABILITY.md)にあります。
+[`docs/OBSERVABILITY.md`][sparkdash-observability]にあります。
 
 [![RDMA throughput、SM clock、token rate、KV cache履歴を表示するGrafana sparkDash Fleet overview](./docs/images/grafana-fleet-overview.png)](./docs/images/grafana-fleet-overview.png)
 
@@ -484,7 +494,7 @@ volumeへ保存します。
 `docker compose down`では残り、`docker compose down -v`では削除されます。
 Prometheus設定は再起動後に反映されます。`DOCKER_INFLUXDB_INIT_RETENTION`はbucket
 初回作成時だけ有効なので既存bucketはAPIで変更します。手順と容量目安は
-[`Retention`](./sparkDash/docs/OBSERVABILITY.md#retention-and-long-term-dashboards)を
+[`Retention`][sparkdash-retention]を
 参照し、長期保存時はvolumeをbackupしてください。
 
 ### GPU clock cap（thermal throttle回避）
@@ -583,10 +593,10 @@ docker compose -f observability/docker-compose.yml config --quiet
 
 ### 詳細資料とLicense
 
-- [TokenTrace Live](./sparkDash/docs/TOKENTRACE.md)
-- [Observability exporters](./sparkDash/docs/OBSERVABILITY.md)
-- [sparkDash README](./sparkDash/README.md)
-- [DeepSeek fork README](./DeepSeek-v4-Flash-DSpark-2x-DGX-Spark/README.md)
+- [TokenTrace Live][sparkdash-tokentrace]
+- [Observability exporters][sparkdash-observability]
+- [sparkDash README][sparkdash-readme]
+- [DeepSeek fork README][deepseek-readme]
 
 root repositoryは[MIT License](./LICENSE)です。submodule、model weight、container
 image、CUDA/NCCL、その他runtime artifactには個別の条件が適用されます。詳細は

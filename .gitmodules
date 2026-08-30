@@ -1,0 +1,6 @@
+[submodule "sparkDash"]
+	path = sparkDash
+	url = https://github.com/muojp/sparkDash.git
+[submodule "deepseek-v4-flash"]
+	path = DeepSeek-v4-Flash-DSpark-2x-DGX-Spark
+	url = https://github.com/muojp/DeepSeek-v4-Flash-DSpark-2x-DGX-Spark.git

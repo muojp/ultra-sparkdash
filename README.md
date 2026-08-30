@@ -108,6 +108,11 @@ cp .env.example .env
 docker compose up -d --build sparkdash
 ```
 
+Open sparkDash in a browser, then select **TokenTrace** in the upper-right
+corner to launch the live trace view.
+
+[![Launch TokenTrace from the upper-right button in sparkDash](./docs/images/tokentrace-launch-from-sparkdash.png)](./docs/images/tokentrace-launch-from-sparkdash.png)
+
 The default Compose setup uses host networking, the host PID namespace, `/proc`,
 `/sys`, and a read-only host-root mount. An LLM bound to host `127.0.0.1` is
 therefore reachable from sparkDash inside the container.
@@ -411,6 +416,11 @@ cd sparkDash
 cp .env.example .env
 docker compose up -d --build sparkdash
 ```
+
+sparkDashをbrowserで開き、右上の**TokenTrace**を選ぶとlive trace viewを起動
+できます。
+
+[![sparkDash右上のボタンからTokenTraceを起動](./docs/images/tokentrace-launch-from-sparkdash.png)](./docs/images/tokentrace-launch-from-sparkdash.png)
 
 標準Composeはhost network、host PID namespace、`/proc`、`/sys`、host rootの
 read-only mountを使います。hostの`127.0.0.1`にbindしたLLMへcontainer内から到達

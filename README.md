@@ -12,6 +12,22 @@ expert情報を、sparkDash上でリアルタイム表示するための配布�
 通常のsparkDash機能はそのまま利用できます。TokenTrace Liveは
 DeepSeek-V4-Flash、TP=2 over RoCE、MTP-5構成向けの追加機能です。
 
+ブラウザの通常表示では、43層 × 256 routed expertsの利用状況とaccepted / rejected
+workを中心に、engine step time、tok/s、実token出力、routing continuity、2台の
+DGX SparkのGPU・RoCE・paging・NVMe状態を同じ時系列で追えます。
+
+[![TokenTrace Live dashboard showing routed experts, token throughput, two DGX Spark nodes, token output, and routing continuity](./docs/images/tokentrace-live-dashboard.png)](./docs/images/tokentrace-live-dashboard.png)
+
+*TokenTrace Liveの通常表示。最新tokenと、そのtokenを生成した推論step・expert routing・machine stateを対応付けて表示します。*
+
+fullscreenでは、同じlive streamを元の動画generatorに近いFHD canvasへ再構成します。
+壁面表示や画面収録では、expert map、nodeごとのpaging、step class、生成text、
+routing continuityを一画面で確認できます。
+
+[![FHD fullscreen TokenTrace canvas derived from the original video generator](./docs/images/tokentrace-fhd-fullscreen.png)](./docs/images/tokentrace-fhd-fullscreen.png)
+
+*動画generator由来のFHD fullscreen表示。Prometheusなしでもlocal SSDのread-only tailだけで主要なTokenTrace表示が動作します。*
+
 ## Clone
 
 ```bash

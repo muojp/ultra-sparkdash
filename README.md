@@ -1,34 +1,42 @@
 # ultra-sparkdash
 
-`ultra-sparkdash` は、DeepSeek-V4-Flash の推論中に記録される routed
-expert情報を、sparkDash上でリアルタイム表示するための配布用メタリポジトリです。
-実装を混ぜず、次の2つのforkをsubmoduleとして同時に固定します。
+[English](#english) · [日本語](#日本語)
 
-| Submodule | 役割 |
+## English
+
+`ultra-sparkdash` turns a **2× NVIDIA DGX Spark** deployment running
+DeepSeek-V4-Flash with TP=2 over RoCE into a real-time view of what happens
+behind every generated token. It combines the recorded routed-expert activity
+with sparkDash machine telemetry and pins the two implementation forks as Git
+submodules.
+
+| Submodule | Role |
 |---|---|
-| [`sparkDash`](./sparkDash) | TokenTrace Live UI、read-only tailer、DGXメトリクス、optionalなPrometheus/InfluxDB exporter |
-| [`DeepSeek-v4-Flash-DSpark-2x-DGX-Spark`](./DeepSeek-v4-Flash-DSpark-2x-DGX-Spark) | vLLM V2 runner側のexpert-routing recorderと、subscriber接続時の短周期flush |
+| [`sparkDash`](./sparkDash) | TokenTrace Live UI, read-only tailer, DGX metrics, and optional Prometheus/InfluxDB exporters |
+| [`DeepSeek-V4-Flash-DSpark-2x-DGX-Spark`](./DeepSeek-v4-Flash-DSpark-2x-DGX-Spark) | vLLM V2 expert-routing recorder and subscriber-aware short-interval flushing |
 
-通常のsparkDash機能はそのまま利用できます。TokenTrace Liveは
-DeepSeek-V4-Flash、TP=2 over RoCE、MTP-5構成向けの追加機能です。
+Regular sparkDash features remain available. TokenTrace Live adds a view
+specialized for DeepSeek-V4-Flash, TP=2 over RoCE, and MTP-5.
 
-ブラウザの通常表示では、43層 × 256 routed expertsの利用状況とaccepted / rejected
-workを中心に、engine step time、tok/s、実token出力、routing continuity、2台の
-DGX SparkのGPU・RoCE・paging・NVMe状態を同じ時系列で追えます。
+The browser aligns a 43-layer × 256-expert routing map and accepted versus
+rejected work with engine-step latency, tok/s, actual token output, routing
+continuity, and GPU, RoCE, paging, and NVMe state from both DGX Spark nodes.
 
 [![TokenTrace Live dashboard showing routed experts, token throughput, two DGX Spark nodes, token output, and routing continuity](./docs/images/tokentrace-live-dashboard.png)](./docs/images/tokentrace-live-dashboard.png)
 
-*TokenTrace Liveの通常表示。最新tokenと、そのtokenを生成した推論step・expert routing・machine stateを対応付けて表示します。*
+*The regular view connects each latest token with the inference step, expert
+routing, and machine state that produced it.*
 
-fullscreenでは、同じlive streamを元の動画generatorに近いFHD canvasへ再構成します。
-壁面表示や画面収録では、expert map、nodeごとのpaging、step class、生成text、
-routing continuityを一画面で確認できます。
+Fullscreen mode renders the same live stream as an FHD canvas derived from the
+original video generator. It keeps the expert map, per-node paging, step class,
+generated text, and routing continuity visible on one screen.
 
 [![FHD fullscreen TokenTrace canvas derived from the original video generator](./docs/images/tokentrace-fhd-fullscreen.png)](./docs/images/tokentrace-fhd-fullscreen.png)
 
-*動画generator由来のFHD fullscreen表示。Prometheusなしでもlocal SSDのread-only tailだけで主要なTokenTrace表示が動作します。*
+*The main TokenTrace display works from a read-only local SSD tail without
+Prometheus.*
 
-## Clone
+### Clone
 
 ```bash
 git clone --recurse-submodules https://github.com/muojp/ultra-sparkdash.git
@@ -36,19 +44,18 @@ cd ultra-sparkdash
 git submodule status
 ```
 
-submoduleを付けずにcloneした場合は次を実行します。
+If cloned without submodules:
 
 ```bash
 git submodule update --init --recursive
 ```
 
-このリポジトリは各submoduleのcommitを固定します。`git pull`後は必ず
-`git submodule update --init --recursive`を実行してください。
+Exact submodule commits are pinned. Run the same update after every `git pull`.
 
-## 構成とデータ経路
+### Architecture and data path
 
 ```text
-DeepSeek / vLLM V2 runner (Head DGX)
+DeepSeek / vLLM V2 runner (Head DGX Spark)
   └─ ~/.cache/huggingface/tokentrace/
        ├─ experts-*.idx.jsonl
        └─ experts-*.u8
@@ -60,30 +67,30 @@ same-host sparkDash :5555
   └─ Worker metrics                      persistent SSH session
 ```
 
-expert-routingファイルはHeadのローカルSSDから読みます。この経路にSSH、
-Grafana、Prometheus、InfluxDBは不要です。一方、Worker側のGPU/RoCE/NVMe/
-pagingメトリクスを表示するには、通常のsparkDashと同様にHeadからWorkerへの
-SSH接続が必要です。
+Expert-routing files are read from the Head's local SSD. This path requires no
+SSH, Grafana, Prometheus, or InfluxDB. Worker GPU, RoCE, NVMe, and paging metrics
+still require SSH from the Head, as in regular sparkDash.
 
-ブラウザがTokenTraceへsubscribeしている間だけtailerがファイルを開きます。
-read-only descriptorにshared lockを付けると、DeepSeek recorderはflush間隔を
-通常の2秒から50 msへ短縮します。最後のsubscriberが切断すると通常間隔へ
-戻ります。
+The tailer opens files only while a browser subscribes. A shared lock on its
+read-only descriptor tells the DeepSeek recorder to shorten flushing from the
+normal 2 seconds to 50 ms. It returns to the normal interval after the last
+subscriber disconnects.
 
-## 前提環境
+### Requirements
 
-- HeadとWorkerの2台構成。Head上でDeepSeekとsparkDashを動かす
-- Head/Worker間のRoCEとTP=2推論環境が構築済み
-- HeadからWorkerへ非対話SSHできること。key auth推奨
-- HeadにDocker Engine + Compose plugin、またはNode.js 22
-- 実ファイルtailにはLinuxの`flock`（util-linux）が必要
-- sparkDashのHead unitを **Local / Head**、WorkerをそのHeadへlinked設定
+- Two NVIDIA DGX Spark nodes configured as Head and Worker
+- DeepSeek and sparkDash running on the Head
+- Working RoCE and TP=2 inference between the nodes
+- Non-interactive Head-to-Worker SSH; key authentication is recommended
+- Docker Engine with Compose, or Node.js 22, on the Head
+- Linux `flock` from util-linux for real trace files
+- A sparkDash unit configured as **Local / Head**, with the Worker linked to it
 
-モデル・NCCL・コンテナの準備は
-[`DeepSeek-v4-Flash-DSpark-2x-DGX-Spark/README.md`](./DeepSeek-v4-Flash-DSpark-2x-DGX-Spark/README.md)
-を参照してください。
+See the
+[`DeepSeek fork README`](./DeepSeek-v4-Flash-DSpark-2x-DGX-Spark/README.md) for
+model, NCCL, and container setup.
 
-## sparkDashの起動
+### Start sparkDash
 
 ```bash
 cd sparkDash
@@ -91,63 +98,54 @@ cp .env.example .env
 docker compose up -d --build sparkdash
 ```
 
-標準Composeはhost network、host PID namespace、`/proc`、`/sys`、ホストrootの
-read-only mountを使用します。ホストのLLMが`127.0.0.1` bindでも、コンテナ内の
-sparkDashから到達できます。
+The default Compose setup uses host networking, the host PID namespace, `/proc`,
+`/sys`, and a read-only host-root mount. An LLM bound to host `127.0.0.1` is
+therefore reachable from sparkDash inside the container.
 
-別端末からUIへ接続する場合は`.env`で`BIND_HOST`をHeadのLAN IPまたは
-`0.0.0.0`にします。sparkDashは認証なしでSSH・電源操作APIを持つため、公開
-インターネットへbindせず、信頼できるLANまたは認証付きreverse proxy内に
-限定してください。
+For access from another machine, set `BIND_HOST` to the Head LAN IP or
+`0.0.0.0`. sparkDash exposes unauthenticated SSH and power-control APIs. Keep it
+on a trusted LAN or behind an authenticated reverse proxy; never bind it
+directly to the public Internet.
 
-### Worker SSH key
+#### Worker SSH key
 
-SSHはsparkDashコンテナ内で実行されます。ホストの鍵を自動では参照しません。
-必要に応じて[`sparkDash/docker-compose.yml`](./sparkDash/docker-compose.yml)の
-SSH key volumeを有効化し、デフォルト名でmountするか`.env`にコンテナ内パスを
-指定します。
+SSH runs inside the sparkDash container and does not automatically use host
+keys. Enable the SSH key volume in
+[`sparkDash/docker-compose.yml`](./sparkDash/docker-compose.yml), then mount a
+default key name or set its container path:
 
 ```dotenv
 SSH_IDENTITY_FILE=/root/.ssh/id_ed25519
 ```
 
-Head/WorkerをUIへ登録後、Headは`Local`かつ`Head`、Workerは`Worker`かつ
-`workerHeadId`がそのHeadを指す状態にしてください。複数clusterがある場合は
-次で対象を固定できます。
+Configure the Head as `Local` and `Head`, and the Worker as `Worker` with
+`workerHeadId` pointing to that Head. Select one cluster explicitly when needed:
 
 ```dotenv
 TOKENTRACE_HEAD_ID=<sparkDash Head id>
 ```
 
-## DeepSeek recorder
+### DeepSeek recorder and token output
 
-DeepSeek側でexpert-routing recorderを有効化して推論サーバーを起動します。
+Enable expert routing before starting inference:
 
 ```dotenv
 DSPARK_TOKENTRACE_EXPERTS=1
 ```
 
-標準の出力先はHeadユーザーの
-`~/.cache/huggingface/tokentrace`です。sparkDash Composeはホストrootを
-`/host/root:ro`へmountし、Head unitのSSH userから
-`/host/root/home/<user>/.cache/huggingface/tokentrace`を推定します。rootや
-非標準home、別SSDを使う場合は、コンテナから見えるread-onlyパスを明示します。
+Output defaults to `~/.cache/huggingface/tokentrace` for the Head user. Compose
+mounts the host root at `/host/root:ro` and infers the path from the Head unit's
+SSH user. For root, a non-standard home, or another SSD, set the read-only path
+visible inside the container:
 
 ```dotenv
 TOKENTRACE_DIR=/host/root/path/to/tokentrace
 ```
 
-表示URLは次です。
+Open `http://<Head LAN IP>:5555/tokentrace`.
 
-```text
-http://<Head LAN IP>:5555/tokentrace
-```
-
-## Token output
-
-既定の`metadata` modeはtoken IDを文字列化せず、routing metadataだけを表示
-します。実tokenを表示する場合は、同じHeadのOpenAI-compatible serverが
-`/detokenize`を提供していることを確認し、`.env`へ設定します。
+The default `metadata` mode does not convert token IDs to text. To show actual
+tokens, provide `/detokenize` from an OpenAI-compatible server on the same Head:
 
 ```dotenv
 TOKENTRACE_TOKEN_OUTPUT=detokenize
@@ -155,59 +153,61 @@ TOKENTRACE_MODEL=deepseek-v4-flash-0731
 TOKENTRACE_DETOKENIZE_URL=http://127.0.0.1:8888/detokenize
 ```
 
-Composeは`.env`を単なる置換ファイルとして読むため、`sparkDash` forkのCompose
-では`TOKENTRACE_*`、exporter、polling関連の変数を明示的にコンテナへ転送して
-います。
+The sparkDash Compose file explicitly forwards `TOKENTRACE_*`, exporter, and
+polling variables because Compose otherwise treats `.env` primarily as an
+interpolation file.
 
-## Grafana / Prometheus / InfluxDB
+### Optional Grafana / Prometheus / InfluxDB
 
-すべてoptionalで、TokenTrace Liveにも通常dashboardにも必須ではありません。
-試験用mini-stackは次で起動できます。
+None of these services is required by TokenTrace Live or the regular dashboard.
+Start the development mini-stack with:
 
 ```bash
 cd sparkDash/observability
 docker compose up -d
 ```
 
-既定ではGrafana、Prometheus、InfluxDBのportを`127.0.0.1`だけへbindし、
-Prometheusは同一Docker hostの`host.docker.internal:5555`をscrapeします。
-別ホストをscrapeする場合は
-[`prometheus.yml`](./sparkDash/observability/prometheus/prometheus.yml)を編集して
-ください。development用のGrafana/InfluxDB credentialsをネットワーク公開に
-流用しないでください。詳細は
-[`docs/OBSERVABILITY.md`](./sparkDash/docs/OBSERVABILITY.md)にあります。
+The services bind to `127.0.0.1` by default. Prometheus scrapes
+`host.docker.internal:5555` on the same Docker host; edit
+[`prometheus.yml`](./sparkDash/observability/prometheus/prometheus.yml) for a
+different target. Never reuse development Grafana/InfluxDB credentials on an
+exposed network. See
+[`docs/OBSERVABILITY.md`](./sparkDash/docs/OBSERVABILITY.md).
 
 [![Grafana sparkDash fleet overview with RDMA throughput, SM clock, token rates, and KV cache history](./docs/images/grafana-fleet-overview.png)](./docs/images/grafana-fleet-overview.png)
 
-*GrafanaのFleet overview。RDMA / RoCE throughput、SM clock、decode・prefill・output token rate、KV cache / requestsなどを、TokenTrace Liveより長い時間軸で比較できます。*
+*The Fleet overview compares RDMA/RoCE throughput, SM clock, token rates, KV
+cache, and requests over a longer time range than TokenTrace Live.*
 
-### 長期dashboard保持
+#### Long-term retention
 
-sparkDash本体は時系列履歴を保持しません。ブラウザを閉じた後も過去のGPU、
-RoCE、NVMe、paging、LLMメトリクスをGrafanaで参照するには、optional stackを
-常時運用します。mini-stackはPrometheus、InfluxDBともに180日保持を既定とし、
-履歴とGrafanaの状態はそれぞれDocker named volumeの`prom-data`、`influx-data`、
-`grafana-data`へ保存します。`docker compose down`では残りますが、
-`docker compose down -v`は履歴を削除するため実行しないでください。
+sparkDash itself does not retain time-series history. Keep the optional stack
+running to inspect past GPU, RoCE, NVMe, paging, and LLM metrics in Grafana. The
+mini-stack defaults to 180-day Prometheus and InfluxDB retention. Data and
+Grafana state live in the `prom-data`, `influx-data`, and `grafana-data` named
+volumes.
 
-Prometheusの180日設定は再起動時に反映されます。InfluxDBの
-`DOCKER_INFLUXDB_INIT_RETENTION`はbucket初回作成時だけ有効なので、既存環境は
-APIでbucket retentionを変更する必要があります。手順、容量目安、確認方法は
+`docker compose down` preserves them; `docker compose down -v` deletes history.
+Prometheus applies retention after restart. `DOCKER_INFLUXDB_INIT_RETENTION`
+only applies when an InfluxDB bucket is created, so update existing buckets via
+the API. See
 [`Retention`](./sparkDash/docs/OBSERVABILITY.md#retention-and-long-term-dashboards)
-を参照してください。長期保存が必要ならnamed volumeも通常のbackup対象に含め、
-dashboard定義は`observability/grafana/provisioning/`をgitで管理してください。
+for procedures, sizing, and verification. Back up the volumes and keep Grafana
+provisioning under `observability/grafana/provisioning/` in Git.
 
-## GPU clock cap（thermal throttle回避）
+### GPU clock cap for thermal-throttle avoidance
 
-GPU clock capの**適用**と**定期監視/export**は分かれています。各DGX上の
-`gb10-clock-cap.service`が実際のclockを変更し、sparkDashのunit画面には以前の
-runtime on/off切替を収録しています。切替APIはboot enablementを変更せず、
-`systemctl start` / `stop`だけを実行します。offは次回bootまでで、enabledのunitは
-boot時に再びcapを適用します。
+Clock-cap application and monitoring/export are separate. Each DGX runs
+`gb10-clock-cap.service`; sparkDash provides its runtime on/off toggle. The API
+only calls `systemctl start` or `stop` and does not change boot enablement, so an
+enabled unit applies the cap again after reboot.
 
-このリポジトリには、dgx01で使用している2200 MHz上限のunitを
-[`systemd/gb10-clock-cap.service`](./systemd/gb10-clock-cap.service)として収録しています。
-対象機のthermal/power特性に合わせて上限を確認してから、各DGXへ導入します。
+The included [`systemd/gb10-clock-cap.service`](./systemd/gb10-clock-cap.service)
+is derived from [`agjs/gb10-clock-cap`](https://github.com/agjs/gb10-clock-cap)
+under the MIT License, with attribution preserved in
+[`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md). It carries the 2200 MHz
+limit used on dgx01. Confirm an appropriate limit for each machine before
+installation:
 
 ```bash
 sudo install -m 0644 systemd/gb10-clock-cap.service /etc/systemd/system/
@@ -217,71 +217,60 @@ systemctl status gb10-clock-cap.service --no-pager
 nvidia-smi --query-gpu=clocks.current.sm,clocks.max.sm --format=csv
 ```
 
-unitは`nvidia-smi -lgc 0,2200`をboot時に一度適用し、stop時に`-rgc`で解除します。
-ファイルを更新しただけではsystemdの読み込み済み定義は変わりません。ただしGB10
-では推論コンテナ稼働中の`daemon-reload`後にNVML accessが失われ、コンテナ再起動が
-必要になった事例があります。初回導入は推論開始前に行い、既存unitの更新は推論を
-停止したmaintenance windowで`daemon-reload`、service restart、推論コンテナ再起動、
-`nvidia-smi`確認までを一組として実施してください。
+The unit applies `nvidia-smi -lgc 0,2200` and resets clocks with `-rgc` when
+stopped. On GB10, `daemon-reload` while inference was active has caused lost
+NVML access and required a container restart. Install before inference; update
+an existing unit only in a maintenance window, then verify with `nvidia-smi`.
 
-UI切替にはsparkDashのSSH userが次の2コマンドだけをpasswordなしで実行できる
-sudoers設定が必要です。`sparkdash-user`を各unitの`ssh.user`へ置き換え、
-`visudo -f /etc/sudoers.d/gb10-clock-cap`で設定してください。
+The sparkDash SSH user needs passwordless sudo for exactly these commands:
 
 ```sudoers
 sparkdash-user ALL=(root) NOPASSWD: /usr/bin/systemctl start gb10-clock-cap.service, /usr/bin/systemctl stop gb10-clock-cap.service
 ```
 
-`enable`、`disable`、`restart`、`daemon-reload`をsudoersへ追加しないでください。
-切替APIはこの2つの固定コマンド以外を生成しません。sparkDash API自体には認証が
-ないため、UI/port 5555を信頼できないnetworkへ公開しないでください。
+Install with `visudo -f /etc/sudoers.d/gb10-clock-cap`. Do not add `enable`,
+`disable`, `restart`, or `daemon-reload`. Do not expose unauthenticated port
+5555 to an untrusted network.
 
 ```dotenv
 CLOCK_CAP_MONITORING=true
 POLL_INTERVAL_CLOCK_CAP=60000
 ```
 
-UI切替と監視には、sparkDashコンテナからLocal Head自身を含む全unitへ非対話SSH
-できることが必要です。Local unitでもコンテナ内の`systemctl`はホストのsystemdを
-参照しないため、SSH経由で操作・確認します。`CLOCK_CAP_MONITORING`はUI切替には
-不要で、定期snapshot/exporterだけを有効化します。Grafana/Prometheusを併用すると
-`gpu_clock_cap_installed`、`gpu_clock_cap_enabled`、`gpu_clock_cap_active`、
-`gpu_clock_cap_sm_clock_mhz`を長期監視できますが、cap適用自体には不要です。
+Control and monitoring use non-interactive SSH even for the Local Head because
+container `systemctl` does not access host systemd. `CLOCK_CAP_MONITORING` only
+enables periodic snapshots/exporters; it is not required for the UI toggle or
+cap application. Optional Grafana/Prometheus can retain the
+`gpu_clock_cap_installed`, `gpu_clock_cap_enabled`, `gpu_clock_cap_active`, and
+`gpu_clock_cap_sm_clock_mhz` metrics.
 
-## Demo
+### Demo and intentional specialization
 
-ハードウェアなしのUI確認では、machine metricsとTokenTraceを別々に有効化
-します。
+Enable machine and TokenTrace simulation independently:
 
 ```dotenv
 SPARKDASH_DEMO=1
 TOKENTRACE_DEMO=1
 ```
 
-`observability/demo/sparks.json`内のIP・SSH userはfixtureです。demo collectorは
-それらへ接続しません。
+Addresses and SSH users in `observability/demo/sparks.json` are fixtures; the
+demo collector never connects to them.
 
-## 意図的な専用部分
+The following values intentionally define this artifact:
 
-次は環境依存の取り残しではなく、この配布物の対象を明確にするため意図的に
-固定しています。
+- Display: `DeepSeek-V4-Flash · TP=2 over RoCE · MTP-5`
+- Routed experts: 256; layers, top-k, and rows come from stream metadata
+- FHD canvas: 1920 × 1080
+- Recorder format: `experts-*.idx.jsonl` + `.u8`
 
-- 表示名: `DeepSeek-V4-Flash · TP=2 over RoCE · MTP-5`
-- routed expert数: 256（layer数、top-k、row数はstream metadataを使用）
-- FHD presentation canvas: 1920 × 1080
-- 現行recorder形式: `experts-*.idx.jsonl` + `.u8`
+Generalizing another model requires coordinated producer, regular-view, and
+fullscreen changes.
 
-異なるモデルやexpert数へ一般化する場合は、producer formatと通常/fullscreenの
-双方を同時に変更してください。
+### Release preflight
 
-## 配布前チェック
-
-submoduleのgitlinkがclone先から取得できるよう、親を公開する前に両forkの対象
-commitを各remoteへpushします。
-
-各submoduleの`origin`とrootの`.gitmodules`は、対象commitを公開できる同じforkを
-指す必要があります。upstreamがread-onlyなら、自分のforkを用意して両方のURLを
-切り替えてから次の確認を行ってください。
+Push both fork commits before the parent repository. Each submodule's `origin`
+and the root `.gitmodules` URL must point to the same public fork containing the
+pinned commit.
 
 ```bash
 git -C sparkDash branch -r --contains HEAD
@@ -291,18 +280,14 @@ git -C sparkDash status --short
 git -C DeepSeek-v4-Flash-DSpark-2x-DGX-Spark status --short
 ```
 
-最初の2コマンドが空なら、そのgitlinkはまだremoteから取得できません。両方が
-remote branchを返してから`ultra-sparkdash`本体をpushしてください。
-
-このcheckoutで使用している公開用branch名は次です。remoteへ未pushの場合は、
-先に両submoduleを公開します。
+The publication branches are:
 
 ```bash
 git -C sparkDash push -u origin feat/grafana-export
 git -C DeepSeek-v4-Flash-DSpark-2x-DGX-Spark push -u origin feat/tokentrace-sparkdash
 ```
 
-sparkDash側の検証:
+Validate sparkDash before publishing:
 
 ```bash
 cd sparkDash
@@ -314,17 +299,295 @@ docker compose config --quiet
 docker compose -f observability/docker-compose.yml config --quiet
 ```
 
-## 詳細資料
+### Documentation and license
 
 - [TokenTrace Live](./sparkDash/docs/TOKENTRACE.md)
 - [Observability exporters](./sparkDash/docs/OBSERVABILITY.md)
 - [sparkDash README](./sparkDash/README.md)
 - [DeepSeek fork README](./DeepSeek-v4-Flash-DSpark-2x-DGX-Spark/README.md)
 
-## License
+The root repository is distributed under the [MIT License](./LICENSE).
+Submodules, model weights, container images, CUDA/NCCL, and other runtime
+artifacts retain their own terms. See
+[`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md).
 
-`ultra-sparkdash`本体は[MIT License](./LICENSE)です。submodule、モデルweight、
-container base image、CUDA/NCCLなどのruntime artifactにはそれぞれのlicenseと
-利用条件が適用され、root licenseで置き換えられません。第三者著作物と
-`gb10-clock-cap.service`の帰属は
-[THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)を参照してください。
+---
+
+## 日本語
+
+`ultra-sparkdash`は、**NVIDIA DGX Spark 2台**でDeepSeek-V4-FlashをTP=2 over
+RoCE実行する構成を、生成tokenの裏側までリアルタイム可視化します。記録した
+routed expert情報とsparkDashのmachine telemetryを組み合わせ、2つの実装forkを
+Git submoduleとして固定する配布用メタリポジトリです。
+
+| Submodule | 役割 |
+|---|---|
+| [`sparkDash`](./sparkDash) | TokenTrace Live UI、read-only tailer、DGXメトリクス、optionalなPrometheus/InfluxDB exporter |
+| [`DeepSeek-V4-Flash-DSpark-2x-DGX-Spark`](./DeepSeek-v4-Flash-DSpark-2x-DGX-Spark) | vLLM V2 expert-routing recorderとsubscriber接続時の短周期flush |
+
+通常のsparkDash機能はそのまま利用できます。TokenTrace Liveは
+DeepSeek-V4-Flash、TP=2 over RoCE、MTP-5構成向けのアドオンです。
+
+通常表示では43層 × 256 expertsのroutingとaccepted / rejected workを、engine step
+time、tok/s、実token、routing continuity、2台のGPU・RoCE・paging・NVMe状態と
+同じ時系列で追えます。
+
+[![routed experts、token throughput、2台のDGX Spark、token output、routing continuityを表示するTokenTrace Live dashboard](./docs/images/tokentrace-live-dashboard.png)](./docs/images/tokentrace-live-dashboard.png)
+
+*最新tokenと、そのtokenを生成した推論step・expert routing・machine stateを
+対応付けます。*
+
+fullscreenは同じlive streamを、元の動画generator由来のFHD canvasへ再構成します。
+
+[![元の動画generatorを継承したFHD fullscreen TokenTrace canvas](./docs/images/tokentrace-fhd-fullscreen.png)](./docs/images/tokentrace-fhd-fullscreen.png)
+
+*主要なTokenTrace表示はPrometheusなしでlocal SSDのread-only tailだけでも動きます。*
+
+### Clone
+
+```bash
+git clone --recurse-submodules https://github.com/muojp/ultra-sparkdash.git
+cd ultra-sparkdash
+git submodule status
+```
+
+submoduleなしでcloneした場合と`git pull`後は実行してください。
+
+```bash
+git submodule update --init --recursive
+```
+
+### 構成とデータ経路
+
+```text
+DeepSeek / vLLM V2 runner (Head DGX Spark)
+  └─ ~/.cache/huggingface/tokentrace/
+       ├─ experts-*.idx.jsonl
+       └─ experts-*.u8
+              │ read-only tail + shared flock
+              ▼
+same-host sparkDash :5555
+  ├─ /tokentrace                         browser UI
+  ├─ local Head metrics                  /proc, /sys, nvidia-smi
+  └─ Worker metrics                      persistent SSH session
+```
+
+expert-routing fileはHeadのlocal SSDから読みます。この経路にSSH、Grafana、
+Prometheus、InfluxDBは不要です。WorkerのGPU、RoCE、NVMe、pagingメトリクスには
+HeadからWorkerへのSSHが必要です。
+
+browser subscriberがいる間だけtailerがfileを開きます。read-only descriptorの
+shared lockを検出するとDeepSeek recorderはflushを通常の2秒から50 msへ短縮し、
+最後のsubscriber切断後に通常間隔へ戻します。
+
+### 前提環境
+
+- Head / Workerとして構成したNVIDIA DGX Spark 2台
+- Head上で動くDeepSeekとsparkDash
+- node間のRoCEとTP=2推論環境
+- HeadからWorkerへの非対話SSH。key auth推奨
+- Head上のDocker Engine + Compose、またはNode.js 22
+- 実trace tail用のLinux `flock`（util-linux）
+- **Local / Head**のsparkDash unitと、そこへlinkedしたWorker
+
+model、NCCL、containerの準備は
+[`DeepSeek fork README`](./DeepSeek-v4-Flash-DSpark-2x-DGX-Spark/README.md)を参照して
+ください。
+
+### sparkDashの起動
+
+```bash
+cd sparkDash
+cp .env.example .env
+docker compose up -d --build sparkdash
+```
+
+標準Composeはhost network、host PID namespace、`/proc`、`/sys`、host rootの
+read-only mountを使います。hostの`127.0.0.1`にbindしたLLMへcontainer内から到達
+できます。
+
+別端末から接続する場合は`BIND_HOST`をHead LAN IPまたは`0.0.0.0`にします。
+sparkDashのSSH・power APIには認証がないため、公開Internetへ直接bindせず、信頼
+できるLANまたは認証付きreverse proxy内に限定してください。
+
+#### Worker SSH key
+
+SSHはcontainer内で実行され、host keyを自動参照しません。
+[`sparkDash/docker-compose.yml`](./sparkDash/docker-compose.yml)のSSH key volumeを
+有効化し、default名でmountするかpathを設定します。
+
+```dotenv
+SSH_IDENTITY_FILE=/root/.ssh/id_ed25519
+TOKENTRACE_HEAD_ID=<sparkDash Head id>
+```
+
+Headは`Local`かつ`Head`、Workerは`Worker`かつ`workerHeadId`がHeadを指すように
+設定してください。`TOKENTRACE_HEAD_ID`は複数cluster時の対象固定に使います。
+
+### DeepSeek recorderとtoken output
+
+推論開始前にrecorderを有効化します。
+
+```dotenv
+DSPARK_TOKENTRACE_EXPERTS=1
+```
+
+標準出力先はHead userの`~/.cache/huggingface/tokentrace`です。Composeはhost rootを
+`/host/root:ro`へmountし、Head unitのSSH userからpathを推定します。root、非標準
+home、別SSDの場合はcontainerから見えるread-only pathを指定します。
+
+```dotenv
+TOKENTRACE_DIR=/host/root/path/to/tokentrace
+```
+
+`http://<Head LAN IP>:5555/tokentrace`を開いてください。
+
+既定の`metadata` modeはtoken IDを文字列化しません。実token表示には、同じHeadの
+OpenAI-compatible serverが提供する`/detokenize`を設定します。
+
+```dotenv
+TOKENTRACE_TOKEN_OUTPUT=detokenize
+TOKENTRACE_MODEL=deepseek-v4-flash-0731
+TOKENTRACE_DETOKENIZE_URL=http://127.0.0.1:8888/detokenize
+```
+
+Composeが`.env`を主に置換fileとして扱うため、sparkDash forkは`TOKENTRACE_*`、
+exporter、polling変数を明示的にcontainerへ渡します。
+
+### OptionalなGrafana / Prometheus / InfluxDB
+
+TokenTrace Liveにも通常dashboardにも必須ではありません。development mini-stack:
+
+```bash
+cd sparkDash/observability
+docker compose up -d
+```
+
+既定では`127.0.0.1`だけへbindし、Prometheusは同じDocker hostの
+`host.docker.internal:5555`をscrapeします。別targetは
+[`prometheus.yml`](./sparkDash/observability/prometheus/prometheus.yml)で変更します。
+development credentialsを公開networkに流用しないでください。詳細は
+[`docs/OBSERVABILITY.md`](./sparkDash/docs/OBSERVABILITY.md)にあります。
+
+[![RDMA throughput、SM clock、token rate、KV cache履歴を表示するGrafana sparkDash Fleet overview](./docs/images/grafana-fleet-overview.png)](./docs/images/grafana-fleet-overview.png)
+
+*Fleet overviewではRDMA/RoCE、SM clock、token rate、KV cache、requestsを
+TokenTrace Liveより長い時間軸で比較できます。*
+
+#### 長期保持
+
+sparkDash本体は時系列を保持しません。過去のGPU、RoCE、NVMe、paging、LLMを
+Grafanaで見るにはoptional stackを常時運用します。PrometheusとInfluxDBは180日保持
+が既定で、dataとGrafana状態は`prom-data`、`influx-data`、`grafana-data` named
+volumeへ保存します。
+
+`docker compose down`では残り、`docker compose down -v`では削除されます。
+Prometheus設定は再起動後に反映されます。`DOCKER_INFLUXDB_INIT_RETENTION`はbucket
+初回作成時だけ有効なので既存bucketはAPIで変更します。手順と容量目安は
+[`Retention`](./sparkDash/docs/OBSERVABILITY.md#retention-and-long-term-dashboards)を
+参照し、長期保存時はvolumeをbackupしてください。
+
+### GPU clock cap（thermal throttle回避）
+
+cap適用と監視/exportは別機能です。各DGXの`gb10-clock-cap.service`がclockを変更し、
+sparkDashがruntime on/offを提供します。APIは`systemctl start` / `stop`だけを呼び、
+boot enablementは変えません。
+
+収録した[`gb10-clock-cap.service`](./systemd/gb10-clock-cap.service)は、MIT Licenseの
+[`agjs/gb10-clock-cap`](https://github.com/agjs/gb10-clock-cap)を基にしており、
+[`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md)に帰属を保持しています。dgx01で
+使う2200 MHz上限を含むため、各machineに適切か確認してから導入してください。
+
+```bash
+sudo install -m 0644 systemd/gb10-clock-cap.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now gb10-clock-cap.service
+systemctl status gb10-clock-cap.service --no-pager
+nvidia-smi --query-gpu=clocks.current.sm,clocks.max.sm --format=csv
+```
+
+unitは`nvidia-smi -lgc 0,2200`を適用し、stop時に`-rgc`で解除します。GB10では推論中
+の`daemon-reload`後にNVML accessを失い、container再起動が必要になった事例が
+あります。初回導入は推論前、更新はmaintenance windowで行い、最後に
+`nvidia-smi`で確認してください。
+
+sparkDash SSH userには次の2コマンドだけをpasswordなしで許可します。
+
+```sudoers
+sparkdash-user ALL=(root) NOPASSWD: /usr/bin/systemctl start gb10-clock-cap.service, /usr/bin/systemctl stop gb10-clock-cap.service
+```
+
+`visudo -f /etc/sudoers.d/gb10-clock-cap`で導入し、`enable`、`disable`、`restart`、
+`daemon-reload`は追加しないでください。port 5555を信頼できないnetworkへ公開しない
+でください。
+
+```dotenv
+CLOCK_CAP_MONITORING=true
+POLL_INTERVAL_CLOCK_CAP=60000
+```
+
+Local Headを含む全unitの制御・監視にcontainerからの非対話SSHを使います。
+`CLOCK_CAP_MONITORING`は定期snapshot/exporter用で、UI切替やcap適用には不要です。
+Grafana/Prometheusは`gpu_clock_cap_installed`、`gpu_clock_cap_enabled`、
+`gpu_clock_cap_active`、`gpu_clock_cap_sm_clock_mhz`を長期保持できます。
+
+### Demoと意図的な専用部分
+
+```dotenv
+SPARKDASH_DEMO=1
+TOKENTRACE_DEMO=1
+```
+
+`observability/demo/sparks.json`のaddressとSSH userはfixtureで接続されません。
+
+次は配布対象を表す意図的な固定値です。
+
+- 表示: `DeepSeek-V4-Flash · TP=2 over RoCE · MTP-5`
+- routed experts: 256。layer、top-k、rowはstream metadataを使用
+- FHD canvas: 1920 × 1080
+- recorder: `experts-*.idx.jsonl` + `.u8`
+
+別modelへ一般化する場合はproducerと通常/fullscreen表示を一緒に変更してください。
+
+### 配布前チェック
+
+親repoより先に両forkをpushします。submoduleの`origin`とroot `.gitmodules`は、固定
+commitを含む同じ公開forkを指す必要があります。
+
+```bash
+git -C sparkDash branch -r --contains HEAD
+git -C DeepSeek-v4-Flash-DSpark-2x-DGX-Spark branch -r --contains HEAD
+git submodule status
+git -C sparkDash status --short
+git -C DeepSeek-v4-Flash-DSpark-2x-DGX-Spark status --short
+```
+
+公開branch:
+
+```bash
+git -C sparkDash push -u origin feat/grafana-export
+git -C DeepSeek-v4-Flash-DSpark-2x-DGX-Spark push -u origin feat/tokentrace-sparkdash
+```
+
+sparkDashの検証:
+
+```bash
+cd sparkDash
+npm ci
+npm run typecheck
+npm run build
+npm test
+docker compose config --quiet
+docker compose -f observability/docker-compose.yml config --quiet
+```
+
+### 詳細資料とLicense
+
+- [TokenTrace Live](./sparkDash/docs/TOKENTRACE.md)
+- [Observability exporters](./sparkDash/docs/OBSERVABILITY.md)
+- [sparkDash README](./sparkDash/README.md)
+- [DeepSeek fork README](./DeepSeek-v4-Flash-DSpark-2x-DGX-Spark/README.md)
+
+root repositoryは[MIT License](./LICENSE)です。submodule、model weight、container
+image、CUDA/NCCL、その他runtime artifactには個別の条件が適用されます。詳細は
+[`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md)を参照してください。

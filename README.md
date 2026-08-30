@@ -177,6 +177,10 @@ Prometheusは同一Docker hostの`host.docker.internal:5555`をscrapeします�
 流用しないでください。詳細は
 [`docs/OBSERVABILITY.md`](./sparkDash/docs/OBSERVABILITY.md)にあります。
 
+[![Grafana sparkDash fleet overview with RDMA throughput, SM clock, token rates, and KV cache history](./docs/images/grafana-fleet-overview.png)](./docs/images/grafana-fleet-overview.png)
+
+*GrafanaのFleet overview。RDMA / RoCE throughput、SM clock、decode・prefill・output token rate、KV cache / requestsなどを、TokenTrace Liveより長い時間軸で比較できます。*
+
 ### 長期dashboard保持
 
 sparkDash本体は時系列履歴を保持しません。ブラウザを閉じた後も過去のGPU、

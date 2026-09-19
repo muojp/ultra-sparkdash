@@ -24,7 +24,14 @@ worker = ["glm53-exl3-worker"]
 [host]
 recipe_dir = "/home/muo/GLM-5.3-Flash-EXL3-2x-DGX-Sparks"
 worker = "dgx02"
-start = [["./start.sh"]]                     # start-tp3.sh / start-tp4.sh are for 3- and 4-node kits
+# SKIP_BUILD=1 keeps the published GHCR image. The recipe rebuilds an overlay whenever its stamp
+# drifts from the image's, and that rebuild produced a container without sentencepiece/tiktoken —
+# the server then died converting the tokenizer. The published image is the one its numbers were
+# taken on, so use it until a rebuild is actually needed.
+# "restart" rather than "start": a failed boot leaves the head container holding the rendezvous
+# port, and the next start refuses with "port 29521 is held by glm53-exl3-head". restart clears it
+# first, which is what the recipe's own message recommends.
+start = [["env", "SKIP_BUILD=1", "./start.sh", "restart"]]  # start-tp3/tp4.sh are for 3- and 4-node kits
 stop = [["./stop.sh"]]
 
 [lane]
@@ -48,4 +55,7 @@ notes = [
 ]
 
 [prerequisites.traps]
+asymmetric_nic_defaults = """The recipe defaults the head to port 1 (HEAD_CX7_IF=enp1s0f1np1, HEAD_CX7_IB=rocep1s0f1) and the worker to port 0 — the author's wiring. This kit has both nodes on port 0, and the two settings are independent: fixing only the IB one moves the failure from "set NCCL_IB_GID_INDEX" to a gloo transport error that says nothing about NICs. Set both HEAD_CX7_IF and HEAD_CX7_IB."""
+worker_needs_the_resolved_blobs = """The recipe rsyncs the model directory to the worker, but huggingface_hub keeps blobs in a store shared across repos, so the worker receives symlinks and no data. It fails as "You need to have sentencepiece or tiktoken installed" — a tokenizer it cannot read, blamed on a missing package. Copy the resolved blobs (see AGENTS.md) and verify with stat -L."""
+tokenizer_needs_extra_packages = """Even with the weights in place, the published image cannot build a fast tokenizer for this checkpoint. This deployment runs glm53-flash-exl3-tok:local — the published image plus sentencepiece and tiktoken — because the recipe's own overlay rebuild produced a worse container."""
 dflash_is_the_default = """SPEC_METHOD=dflash in .env.example. Leaving it pulls incoai/GLM-5.3-Flash-DFlash2 and runs an engine whose licence we cannot accept. Set SPEC_METHOD=mtp before the first start, and check the launch line in the log rather than trusting the file."""

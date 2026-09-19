@@ -44,6 +44,16 @@ price_input = 0.0
 price_output = 0.0
 price_cache_read = 0.0
 
+[measured]
+# 2026-09-19, SPEC_METHOD=mtp (DFlash2 is licence-blocked here, so none of the recipe's published
+# numbers apply). Peak aggregate tok/s at the best concurrency: chat 42.7, code 51.0, essay 41.2,
+# review 40.3, structured 33.6 — and single-stream review 22.2, which is 1.8x the NVFP4 sibling
+# glm-5.3-flash-himorishige (12.6) on the same model.
+long_context = """153k-token prompt: 1317 tok/s prefill, memory floor 5.66 GiB head / 7.21 GiB worker.
+But **two of four concurrent long prompts died with "Remote end closed connection without response"**
+while memory stayed at 5.49 GiB — so it is not OOM. A review lane that sends four long requests at
+once gets two answers. Find the real concurrency limit before relying on this deployment."""
+
 [prerequisites]
 notes = [
   "clone the mirror on the head at host.recipe_dir, on the branch this submodule pins",

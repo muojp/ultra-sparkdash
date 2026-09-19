@@ -30,38 +30,99 @@ CANDIDATES = [
     ("reasoning_effort", {"reasoning_effort": "none"}),
 ]
 
-# Short, and the kind of question that makes a reasoning model think: a documented intent that the
-# code contradicts. A prompt with nothing to reason about proves nothing about the switch.
-PROMPT = ("Review this C# and say what is wrong, in two sentences:\n"
-          "public bool IsStillValid() => Items.Any(i => i.ExpiresAtUtc > DateTime.Now);\n"
-          "// doc: true when EVERY reservation is still valid")
+# The probe has to use the workload the answer is for. A short puzzle gets answered directly by
+# models that think hard about a real review, which made one deployment report "nothing to switch
+# off" while its review answers were 6,000 characters of trace behind an empty body. So this is one
+# of the review cases, asked exactly as llm-quickbench asks it — and, like there, nothing but the
+# language and the code may reach the model.
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+CASES_PATH = ROOT / "bench/review_cases/cases.json"
+ANSWER_KEYS = ("id", "defect", "expected")
+
+
+def review_prompt(case_id=None):
+    """One review case, or a plain fallback if the case file is not beside this script."""
+    try:
+        cases = json.loads(CASES_PATH.read_text())["cases"]
+    except (OSError, ValueError, KeyError):
+        return FALLBACK_PROMPT, None
+    case = next((c for c in cases if c["id"] == case_id), cases[0])
+    prompt = ("Review this %s file as you would in a pull request.\n\n"
+              "If something is wrong, say what it is and why it matters, in two or three sentences, "
+              "then give the corrected code. If nothing is wrong, say so.\n\n```\n%s```\n"
+              % (case["language"], case["code"]))
+    low = prompt.lower()
+    for key in ANSWER_KEYS:
+        value = str(case.get(key, ""))
+        if key != "id" and value and value.lower() in low:
+            raise SystemExit(f"probe prompt leaks the answer key ({key})")
+    return prompt, case["id"]
+
+
+FALLBACK_PROMPT = ("Review this C# and say what is wrong, in two sentences:\n"
+                   "public bool IsStillValid() => Items.Any(i => i.ExpiresAtUtc > DateTime.Now);\n"
+                   "// doc: true when EVERY reservation is still valid")
+PROMPT, PROMPT_CASE = review_prompt()
 
 
 def ask(api, model, extra, max_tokens, timeout):
-    """One non-streamed request. Returns what came back, or how it failed."""
+    """One streamed request, because that is how a lane asks.
+
+    Streaming is not a detail here. glm-5.3-flash-himorishige returns a 6,000-character reasoning
+    trace and an empty body when streamed, and a plain answer with no trace at all when not — so a
+    probe that asks the easy way measures a deployment nobody runs, and reports "nothing to switch
+    off" about the deployment whose whole problem is where its findings go. The reconstruction
+    below is the one llm-quickbench does, so the two agree about what came back.
+    """
     body = {"model": model, "messages": [{"role": "user", "content": PROMPT}],
-            "max_tokens": max_tokens, "temperature": 0}
+            "max_tokens": max_tokens, "temperature": 0,
+            "stream": True, "stream_options": {"include_usage": True}}
     body.update(extra or {})
     req = urllib.request.Request(api.rstrip("/") + "/chat/completions",
                                  data=json.dumps(body).encode(),
                                  headers={"Content-Type": "application/json"})
+    text, trace, finish, reasoning_tokens = [], [], None, None
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
-            payload = json.load(r)
+            for raw in r:
+                line = raw.decode("utf-8", "replace").strip()
+                if not line.startswith("data:"):
+                    continue
+                chunk = line[5:].strip()
+                if chunk == "[DONE]":
+                    break
+                try:
+                    event = json.loads(chunk)
+                except ValueError:
+                    continue
+                for choice in event.get("choices") or []:
+                    delta = choice.get("delta") or {}
+                    if delta.get("content"):
+                        text.append(delta["content"])
+                    # vLLM streams the trace as `reasoning`, SGLang as `reasoning_content`.
+                    # Reading one of them makes a thinking model look silent: himorishige spent a
+                    # whole 1,600-token budget in `reasoning` and the probe saw an empty answer
+                    # with nothing to suppress.
+                    think = delta.get("reasoning") or delta.get("reasoning_content")
+                    if think:
+                        trace.append(think)
+                    if choice.get("finish_reason"):
+                        finish = choice["finish_reason"]
+                usage = event.get("usage") or {}
+                details = usage.get("completion_tokens_details") or {}
+                if details.get("reasoning_tokens") is not None:
+                    reasoning_tokens = details["reasoning_tokens"]
     except urllib.error.HTTPError as e:
         return {"http_status": e.code,
                 "detail": e.read()[:200].decode("utf-8", "replace").strip()}
     except (urllib.error.URLError, OSError, ValueError) as e:
         return {"error": str(e)[:200]}
-    choice = payload["choices"][0]
-    message = choice.get("message") or {}
-    usage = payload.get("usage") or {}
-    details = usage.get("completion_tokens_details") or {}
-    return {"body_chars": len((message.get("content") or "").strip()),
-            "reasoning_chars": len((message.get("reasoning_content") or "").strip()),
-            "reasoning_tokens": details.get("reasoning_tokens"),
-            "finish": choice.get("finish_reason"),
-            "sample": (message.get("content") or "").strip()[:160]}
+    answer = "".join(text).strip()
+    return {"body_chars": len(answer),
+            "reasoning_chars": len("".join(trace).strip()),
+            "reasoning_tokens": reasoning_tokens,
+            "finish": finish,
+            "sample": answer[:160]}
 
 
 def reasoning_amount(result):
@@ -102,7 +163,7 @@ def toml_extra(winner):
 CANDIDATES_BY_NAME = {name: extra for name, extra in CANDIDATES}
 
 
-def probe(api, model, max_tokens=400, timeout=300, log=print):
+def probe(api, model, max_tokens=1600, timeout=300, log=print):
     baseline = ask(api, model, None, max_tokens, timeout)
     log(f"{'no kwarg (server default)':28s} -> {json.dumps(baseline)}")
     results, honoured = {}, []
@@ -117,7 +178,8 @@ def probe(api, model, max_tokens=400, timeout=300, log=print):
     # the narrowest thing that works, and a server that takes both singly takes the pair anyway.
     winner = next((n for n in ("thinking", "enable_thinking", "both", "reasoning_effort")
                    if n in honoured), None)
-    return {"api": api, "model": model, "prompt": PROMPT, "baseline": baseline,
+    return {"api": api, "model": model, "prompt": PROMPT, "prompt_case": PROMPT_CASE,
+            "baseline": baseline,
             "candidates": results, "honoured": honoured, "recommended": winner,
             "lane_extra_toml": toml_extra(winner)}
 
@@ -127,7 +189,9 @@ def main(argv=None):
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--api", required=True, help="OpenAI-compatible base URL ending in /v1")
     ap.add_argument("--model", required=True)
-    ap.add_argument("--max-tokens", type=int, default=400)
+    ap.add_argument("--max-tokens", type=int, default=1600,
+                help="the review scenario's budget: a smaller one truncates the trace"
+                     " and hides where the answer would have gone")
     ap.add_argument("--timeout", type=float, default=300)
     ap.add_argument("--json", type=pathlib.Path, help="write the full result here")
     ap.add_argument("--note", default="", help="recorded with the run, as in the other probes")

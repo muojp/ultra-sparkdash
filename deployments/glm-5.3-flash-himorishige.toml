@@ -29,12 +29,13 @@ sessions = 2
 price_input = 0.15
 price_output = 0.50
 price_cache_read = 0.03
-# NOT PROBED YET — left empty on purpose rather than guessed. Every stored row for this deployment
-# predates the reasoning sweep, so the kwarg has never been sent to it. What is measured: all ten
-# review answers came back with an empty message body and the findings in the reasoning trace, 5/5
-# cases including the boundary case no other deployment's body mentions. Whether asking for
-# thinking off moves those findings into the body is exactly the open question; probe it on the
-# next switch and set this then (results/review-scoring.md).
+# Empty because NOTHING WORKS, probed rather than assumed (`dgx-model thinking`, recorded run:
+# state/thinking/20260919T095358+0000). All four candidates — `thinking`, `enable_thinking`, both,
+# and reasoning_effort "none" — are accepted and ignored: on the review case at the 1,600-token
+# budget every one of them returns an empty body and 3.9–5.3k characters of trace. This deployment
+# finds all five planted defects and says none of them where a lane reading message content can
+# see it, so using it means reading the trace (vLLM streams it as `reasoning`, not
+# `reasoning_content`) or giving it a much larger budget (results/review-scoring.md).
 extra = {}
 
 [review]

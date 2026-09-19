@@ -70,12 +70,24 @@ class StubHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream")
             self.end_headers()
+            # A reasoning model streams its trace as reasoning_content deltas and its answer as
+            # content deltas; `honours` decides whether the trace happens at all this time.
+            thinking = self.server.reasons and not self._switched_off(body)
+            reasoning_tokens = 0
             for i in range(n):
-                key = "reasoning_content" if self.server.reasoning_key else "content"
-                self._sse({"choices": [{"delta": {key: "x"}}]})
+                if self.server.reasoning_key or thinking:
+                    if self.server.reasoning_in_usage_only:
+                        reasoning_tokens += 1
+                        self._sse({"choices": [{"delta": {"content": "x"}}]})
+                    else:
+                        key = "reasoning" if self.server.reasoning_delta_key == "reasoning" \
+                            else "reasoning_content"
+                        self._sse({"choices": [{"delta": {key: "x"}}]})
+                else:
+                    self._sse({"choices": [{"delta": {"content": "x"}}]})
             self._sse({"choices": [{"delta": {}, "finish_reason": "length"}],
                        "usage": {"completion_tokens": n, "prompt_tokens": prompt_tokens,
-                                 "completion_tokens_details": {"reasoning_tokens": 0},
+                                 "completion_tokens_details": {"reasoning_tokens": reasoning_tokens},
                                  "prompt_tokens_details": {"cached_tokens": 0}}})
             self.wfile.write(b"data: [DONE]\n\n")
         else:
@@ -122,7 +134,8 @@ class StubHandler(BaseHTTPRequestHandler):
 
 
 def make_server(model_id="stub-model", reject_thinking=False, reasoning_key=False,
-                reasons=False, honours=None, reasoning_in_usage_only=False):
+                reasons=False, honours=None, reasoning_in_usage_only=False,
+                reasoning_delta_key="reasoning_content"):
     """`reasons` makes the stub emit a reasoning trace; `honours` is the one spelling that stops it.
 
     `reasoning_in_usage_only` reports that trace as usage tokens with an empty reasoning_content,
@@ -135,6 +148,7 @@ def make_server(model_id="stub-model", reject_thinking=False, reasoning_key=Fals
     srv.reasons = reasons
     srv.honours = honours
     srv.reasoning_in_usage_only = reasoning_in_usage_only
+    srv.reasoning_delta_key = reasoning_delta_key
     srv.requests = []
     t = threading.Thread(target=srv.serve_forever, daemon=True)
     t.start()

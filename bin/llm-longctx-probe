@@ -16,6 +16,8 @@ the number that matters is `prompt_tokens` in the reply, not the request.
 """
 import argparse
 import json
+import subprocess
+import threading
 import statistics
 import sys
 import threading
@@ -25,6 +27,9 @@ import urllib.parse
 import urllib.request
 
 DEFAULT_API = "http://192.168.0.100:8888/v1"
+# Prompts must differ between runs as well as between requests: repeating a run against the same
+# server is answered from the prefix cache, and a 140k-token prefill then "takes" three seconds.
+RUN_SEED = int(time.time()) % 1_000_000
 DEFAULT_PROM = "http://localhost:9090"
 # Starting guess only; calibrate() replaces it per model. Tokenizers disagree by a lot on this
 # filler — the same request produced 116683 tokens on one model and 324625 on another — so a fixed
@@ -86,6 +91,59 @@ def ask(api, model, tokens, seed, thinking, timeout, out, idx, chars_per_token=N
         out[idx] = (0, time.time() - t0, str(e)[:160])
 
 
+class DirectFloor:
+    """Sample MemAvailable on the nodes themselves.
+
+    Prometheus lives where the operator is, and on this pair it binds to loopback there — a probe
+    running on the head cannot reach it and would report an empty floor. Reading /proc/meminfo on
+    each node needs nothing but ssh, and the floor is the number that says whether a setting is safe.
+    """
+
+    def __init__(self, hosts):
+        self.hosts = hosts
+        self.floor = {h: 10**9 for h in hosts}
+        self._stop = threading.Event()
+        self._t = None
+
+    @staticmethod
+    def _mem_available_gib(host):
+        try:
+            if host in ("local", "localhost", ""):
+                with open("/proc/meminfo") as f:
+                    text = f.read()
+            else:
+                text = subprocess.run(
+                    ["ssh", "-n", "-o", "BatchMode=yes", "-o", "ConnectTimeout=5", host,
+                     "cat /proc/meminfo"],
+                    capture_output=True, text=True, timeout=15).stdout
+            for line in text.splitlines():
+                if line.startswith("MemAvailable"):
+                    return int(line.split()[1]) / 1048576
+        except Exception:  # noqa: BLE001 - a missed sample must not end the probe
+            return None
+        return None
+
+    def _loop(self):
+        while not self._stop.is_set():
+            for h in self.hosts:
+                v = self._mem_available_gib(h)
+                if v is not None:
+                    self.floor[h] = min(self.floor[h], v)
+            self._stop.wait(2)
+
+    def __enter__(self):
+        self._t = threading.Thread(target=self._loop, daemon=True)
+        self._t.start()
+        return self
+
+    def __exit__(self, *a):
+        self._stop.set()
+
+    def result(self):
+        return {("dgx01" if h in ("local", "localhost", "") else h): round(v, 2)
+                for h, v in self.floor.items() if v < 10**9}
+
+
 def mem_floor(prom, t0, t1):
     """Lowest MemAvailable each node reached during the window, from Prometheus."""
     span = max(15, int(t1 - t0) + 15)
@@ -100,9 +158,12 @@ def mem_floor(prom, t0, t1):
 
 def leg(label, apis, model, tokens, n, args, chars_per_token=None):
     outs = [None] * n
+    sampler = DirectFloor(args.mem_hosts.split(",")) if args.mem_hosts else None
+    if sampler:
+        sampler.__enter__()
     t0 = time.time()
     # Round-robin, so a single-node recipe run as one server per node is measured as the pool it is.
-    ts = [threading.Thread(target=ask, args=(apis[i % len(apis)], model, tokens, 100 + i,
+    ts = [threading.Thread(target=ask, args=(apis[i % len(apis)], model, tokens, RUN_SEED + i,
                                             args.thinking, args.timeout, outs, i, chars_per_token))
           for i in range(n)]
     for t in ts:
@@ -110,10 +171,14 @@ def leg(label, apis, model, tokens, n, args, chars_per_token=None):
     for t in ts:
         t.join()
     wall = time.time() - t0
+    if sampler:
+        sampler.__exit__()
     ok = [o for o in outs if o and not o[2]]
     errs = [o[2] for o in outs if o and o[2]]
     total = sum(o[0] for o in ok)
     floor = mem_floor(args.prometheus, t0, time.time())
+    if (not floor or "error" in floor) and sampler:
+        floor = sampler.result()
     print("%s: streams=%d prompt_tokens=%s wall=%.1fs prefill_aggregate=%.0f tok/s" % (
         label, n, ok[0][0] if ok else 0, wall, (total / wall) if wall else 0))
     if len(ok) > 1:
@@ -140,6 +205,9 @@ def main():
     ap.add_argument("--no-thinking", dest="thinking", action="store_false")
     ap.add_argument("--timeout", type=int, default=2400)
     ap.add_argument("--json", dest="json_out")
+    ap.add_argument("--mem-hosts", default="local,dgx02",
+                    help="nodes to sample /proc/meminfo on when Prometheus is unreachable "
+                         "(comma-separated ssh targets; 'local' means this machine)")
     ap.add_argument("--note", default="",
                     help="condition to record with the run, shown in the report")
     args = ap.parse_args()

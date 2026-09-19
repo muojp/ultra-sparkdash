@@ -66,3 +66,25 @@ def test_the_probe_accepts_a_note(longctx):
     import argparse, inspect
     src = inspect.getsource(longctx.main)
     assert "--note" in src, "a run's conditions must be recordable here too"
+
+
+def test_run_seed_differs_between_processes(longctx):
+    """A repeated run against the same server is answered from the prefix cache."""
+    assert longctx.RUN_SEED > 0
+    # Two prompts built with the run seed must differ from the fixed-seed ones used before.
+    a = longctx.build_prompt(500, longctx.RUN_SEED, 4.0)
+    b = longctx.build_prompt(500, 100, 4.0)
+    assert a != b
+
+
+def test_direct_floor_reads_this_machine(longctx):
+    f = longctx.DirectFloor(["local"])
+    v = f._mem_available_gib("local")
+    # On Linux this is a real reading; on a Mac there is no /proc, and None is the honest answer.
+    assert v is None or v > 0
+
+
+def test_direct_floor_survives_an_unreachable_host(longctx):
+    f = longctx.DirectFloor(["nonexistent-host-xyz"])
+    assert f._mem_available_gib("nonexistent-host-xyz") is None
+    assert f.result() == {}

@@ -387,8 +387,13 @@ def probe(deps: dict[str, dict], name: str | None, extra: list[str], tool: str, 
         if remote_dir.startswith("~"):
             prefix, remote_dir = "$HOME", remote_dir[1:].lstrip("/")
             remote_dir = f"$HOME/{remote_dir}"
+        # Prometheus runs where the operator is, not on the head: a probe that reads the memory
+        # floor from localhost there finds nothing and reports an empty floor without failing.
+        remote_extra = list(extra)
+        if tool == "llm-longctx-probe" and not any(a == "--prometheus" for a in extra):
+            remote_extra += ["--prometheus", os.environ.get("DGX_MODEL_PROM", "http://192.168.0.107:9090")]
         cmd = shlex.join([f"{remote_dir}/bin/{tool}", "--api", api, "--model", d["served_model"],
-                          "--json", remote_out, *extra]).replace("'$HOME/", "$HOME/'")
+                          "--json", remote_out, *remote_extra]).replace("'$HOME/", "$HOME/'")
         print(f"# {target} via {api} (client on {host})  ->  {out}")
         # -tt forces a pty, so killing this process closes the channel and the remote sweep dies
         # with it. Without that the remote python outlives a local Ctrl-C or kill, and the next run

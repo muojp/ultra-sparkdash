@@ -173,3 +173,21 @@ def test_remote_command_expands_the_home_tilde(dgx_model, monkeypatch, tmp_path)
     assert "'~/" not in cmd, cmd
     assert "$HOME/" in cmd, cmd
     assert "http://a/v1,http://b/v1" in cmd
+
+
+def test_a_remote_longctx_probe_is_told_where_prometheus_is(dgx_model, monkeypatch, tmp_path):
+    """Prometheus runs where the operator is; on the head, localhost:9090 is nothing."""
+    sent = {}
+    monkeypatch.setattr(dgx_model.subprocess, "call", lambda argv: sent.update(argv=argv) or 0)
+    monkeypatch.setattr(dgx_model.subprocess, "run", lambda *a, **k: None)
+    monkeypatch.setattr(dgx_model, "status", lambda deps: {"active": "d", "api": {}})
+    monkeypatch.setattr(dgx_model, "served_models", lambda url, **k: ["m"])
+    monkeypatch.setattr(dgx_model, "STATE_DIR", tmp_path)
+    deps = {"d": {"name": "d", "served_model": "m", "api_url": "http://x",
+                  "bench_from": "head", "host": {}}}
+    dgx_model.probe(deps, None, [], "llm-longctx-probe", "longctx")
+    assert "--prometheus" in sent["argv"][-1]
+
+    sent.clear()
+    dgx_model.probe(deps, None, ["--prometheus", "http://given:9090"], "llm-longctx-probe", "longctx")
+    assert sent["argv"][-1].count("--prometheus") == 1, "an explicit value must not be doubled"

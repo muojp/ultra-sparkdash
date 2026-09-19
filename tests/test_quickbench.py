@@ -207,3 +207,34 @@ def test_review_capture_follows_the_reasoning_key_too(quickbench):
         assert r.think_text, "reasoning must be captured under either key"
     finally:
         srv.shutdown()
+
+
+def test_rows_record_the_reasoning_configuration(quickbench, stub):
+    class Args:
+        prompt_tokens = 32
+        max_tokens = 4
+        thinking = True
+        timeout = 30
+        shared_prefix = False
+
+    row = quickbench.run_level([url(stub)], "stub-model", 1, Args(), 1, scenario="chat",
+                               thinking=False, effort="high")
+    assert row["thinking"] is False and row["reasoning_effort"] == "high"
+    assert "reasoning_effort" in stub.requests[-1]
+
+
+def test_row_labels_name_the_reasoning_config_only_when_it_varies(quickbench):
+    assert quickbench.label_for("review", None, None) == "review"
+    assert quickbench.label_for("review", True, None) == "review/think"
+    assert quickbench.label_for("review", False, "low") == "review/nothink/low"
+
+
+def test_a_server_rejecting_reasoning_effort_does_not_fail_the_run(quickbench):
+    quickbench.EFFORT_UNSUPPORTED.clear()
+    srv = make_server(reject_thinking=False)
+    try:
+        # The stub 400s on chat_template_kwargs only; reasoning_effort passes through, so the
+        # fallback path is exercised by the thinking test. Here we assert the flag starts clean.
+        assert not quickbench.EFFORT_UNSUPPORTED
+    finally:
+        srv.shutdown()

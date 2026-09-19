@@ -172,3 +172,26 @@ def test_a_pool_run_and_a_single_node_run_stay_separate(report, tmp_path):
     assert labels == {"qwen", "qwen (pool of 2)"}
     page = report.render(runs, [], tmp_path / "r.html").read_text()
     assert "20.0" in page and "38.0" in page
+
+
+def test_reasoning_config_splits_the_rows(report, tmp_path):
+    """The same model with thinking on and off is two systems for a review lane."""
+    state = tmp_path / "state"
+    on = bench_payload("m", [dict(row("review", 4, 90.0), thinking=True)])
+    off = bench_payload("m", [dict(row("review", 4, 160.0), thinking=False)])
+    write_run(state, "bench", "20260101T000000+0000", "alpha", on)
+    write_run(state, "bench", "20260101T010000+0000", "alpha", off)
+    runs = report.load_runs(state, "bench")
+    latest = report.latest_matrix(runs)
+    labels = {k[1] for k in latest}
+    assert labels == {"review/think", "review/nothink"}, labels
+    page = report.render(runs, [], tmp_path / "r.html").read_text()
+    assert "90.0" in page and "160.0" in page
+
+
+def test_effort_is_part_of_the_label(report, tmp_path):
+    state = tmp_path / "state"
+    payload = bench_payload("m", [dict(row("code", 1, 10.0), thinking=True, reasoning_effort="high")])
+    write_run(state, "bench", "20260101T000000+0000", "alpha", payload)
+    latest = report.latest_matrix(report.load_runs(state, "bench"))
+    assert ("alpha", "code/think/high", 1) in latest

@@ -146,6 +146,11 @@ What the numbers mean, and what quietly breaks them:
   after a long-context leg, against 18.9 on a fresh one, that gap is the result — its prefix cache
   was holding 32% of the KV pool and the sparse indexer scans the prefix. Record the sequence a
   run followed, not a restart that hides it.
+- **Reasoning is a dimension, not a footnote.** The same model with thinking on and off is two
+  systems for a review lane: `--thinking-modes on,off` (and `--reasoning-effort` where the server
+  takes it) produces separate rows labelled `review/think` and `review/nothink`, and the report
+  keys on them so neither replaces the other. Comparing two deployments means holding this equal —
+  GLM-5.3 found every planted defect with thinking on and returned an empty message body doing it.
 - **Note the conditions.** `--note` is recorded with the run and shown in the report, so a number
   taken during a weight download stays readable as one instead of being compared as if it matched.
 

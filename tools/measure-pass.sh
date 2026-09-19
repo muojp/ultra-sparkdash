@@ -20,6 +20,12 @@ for dep in "$@"; do
   ./bin/dgx-model bench -- --scenario all -c 1,2,4,8 --no-thinking \
       --note "measurement pass" > "$LOG_DIR/$dep.bench.log" 2>&1 \
     || echo "$(stamp) $dep: bench failed"
+  # Reasoning changes review quality as much as the model does, so the review scenario is run both
+  # ways. Separate rows, not an average: a lane that reads only message content sees one of them.
+  echo "=== $(stamp) $dep: bench (review, thinking on and off) ==="
+  ./bin/dgx-model bench -- --scenario review -c 1,4 --thinking-modes on,off \
+      --note "reasoning sweep" > "$LOG_DIR/$dep.review-modes.log" 2>&1 \
+    || echo "$(stamp) $dep: review-mode sweep failed"
   echo "=== $(stamp) $dep: longctx ==="
   ./bin/dgx-model longctx -- --tokens 115000 -c 4 --no-thinking \
       --note "measurement pass" > "$LOG_DIR/$dep.longctx.log" 2>&1 \

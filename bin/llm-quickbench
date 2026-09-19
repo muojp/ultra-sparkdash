@@ -214,8 +214,11 @@ class Result:
 THINKING_UNSUPPORTED = []  # one-element flag: set once a model rejects the kwarg
 
 
+EFFORT_UNSUPPORTED = []  # set once a server rejects reasoning_effort
+
+
 def one_request(api, model, prompt, max_tokens, thinking, timeout, response_format=None,
-                keep_text=False):
+                keep_text=False, effort=None):
     """Streamed, so time-to-first-token and decode time are separable.
 
     `thinking=False` is sent as chat_template_kwargs, which a template that does not define the
@@ -235,6 +238,8 @@ def one_request(api, model, prompt, max_tokens, thinking, timeout, response_form
     }
     if response_format:
         payload["response_format"] = response_format
+    if effort and not EFFORT_UNSUPPORTED:
+        payload["reasoning_effort"] = effort
     if thinking is False:
         payload["chat_template_kwargs"] = {"thinking": False}
     req = urllib.request.Request(api.rstrip("/") + "/chat/completions",
@@ -284,11 +289,16 @@ def one_request(api, model, prompt, max_tokens, thinking, timeout, response_form
         res.wall = time.time() - t0
         res.ok = True
     except urllib.error.HTTPError as e:
+        if e.code == 400 and effort and not EFFORT_UNSUPPORTED:
+            EFFORT_UNSUPPORTED.append(True)
+            print("# this server rejects reasoning_effort; continuing without it")
+            return one_request(api, model, prompt, max_tokens, thinking, timeout, response_format,
+                               keep_text, None)
         if e.code == 400 and thinking is False and not THINKING_UNSUPPORTED:
             THINKING_UNSUPPORTED.append(True)
             print("# this model rejects chat_template_kwargs={'thinking': false}; continuing without it")
             return one_request(api, model, prompt, max_tokens, None, timeout, response_format,
-                               keep_text)
+                               keep_text, effort)
         res.wall = time.time() - t0
         res.err = "HTTP %s %s" % (e.code, str(e)[:160])
     except (urllib.error.URLError, OSError, ValueError) as e:
@@ -297,7 +307,17 @@ def one_request(api, model, prompt, max_tokens, thinking, timeout, response_form
     return res
 
 
-def run_level(apis, model, level, args, seed_base, scenario="chat"):
+def label_for(scenario, thinking, effort):
+    """What the row is called when reasoning is being varied — otherwise just the scenario."""
+    bits = [scenario]
+    if thinking is not None:
+        bits.append("think" if thinking else "nothink")
+    if effort:
+        bits.append(effort)
+    return "/".join(bits) if len(bits) > 1 else scenario
+
+
+def run_level(apis, model, level, args, seed_base, scenario="chat", thinking=None, effort=None):
     results = [None] * level
     endpoints = [None] * level
     answers = [None] * level
@@ -305,6 +325,7 @@ def run_level(apis, model, level, args, seed_base, scenario="chat"):
 
     spec = SCENARIOS.get(scenario, SCENARIOS["chat"])
     max_tokens = args.max_tokens or spec["max_tokens"]
+    think = args.thinking if thinking is None else thinking
 
     def work(i):
         prompt = build_prompt(args.prompt_tokens,
@@ -312,8 +333,9 @@ def run_level(apis, model, level, args, seed_base, scenario="chat"):
         api = apis[i % len(apis)]          # round-robin: with one endpoint this is the old behaviour
         endpoints[i] = api
         results[i] = one_request(api, model, prompt, max_tokens,
-                                 None if args.thinking else False, args.timeout,
-                                 spec.get("response_format"), keep_text=(scenario == "review"))
+                                 None if think else False, args.timeout,
+                                 spec.get("response_format"), keep_text=(scenario == "review"),
+                                 effort=effort)
         if scenario == "review" and results[i].ok:
             cases = review_cases()
             answers[i] = {"case": cases[(seed_base + i) % len(cases)]["id"],
@@ -354,6 +376,10 @@ def run_level(apis, model, level, args, seed_base, scenario="chat"):
             per_endpoint[endpoints[i]] = per_endpoint.get(endpoints[i], 0) + r.completion
     return {
         "scenario": scenario,
+        # The reasoning configuration is part of what was measured, not a footnote: the same model
+        # with thinking on and off is two different systems for a review lane.
+        "thinking": think,
+        "reasoning_effort": effort,
         "answers": [a for a in answers if a],
         "concurrency": level,
         "endpoints": per_endpoint,
@@ -387,6 +413,12 @@ def main():
     ap.add_argument("--repeat", type=int, default=1, help="passes per level, results averaged by rerun")
     ap.add_argument("--no-thinking", dest="thinking", action="store_false",
                     help="send chat_template_kwargs={'thinking': false} (comparable across models)")
+    ap.add_argument("--thinking-modes", default="",
+                    help="sweep reasoning on AND off: 'on,off'. Each mode is a separate row, because "
+                         "reasoning changes review quality as much as the model does")
+    ap.add_argument("--reasoning-effort", default="",
+                    help="comma-separated efforts to sweep (e.g. low,high). Sent as reasoning_effort; "
+                         "dropped with a note if the server rejects it")
     ap.add_argument("--shared-prefix", action="store_true",
                     help="send every request the same prompt (measures the prefix-cache path)")
     ap.add_argument("--warmup", type=int, default=1, help="throwaway requests before measuring")
@@ -422,17 +454,27 @@ def main():
     print("%-11s %4s %5s %8s %8s %10s %11s %9s %9s %8s %11s" % header)
     rows = []
     seed = int(time.time()) % 10000
+    # Reasoning is swept like any other dimension, so two configurations produce two rows instead
+    # of one quietly replacing the other.
+    modes = ([m.strip() == "on" for m in args.thinking_modes.split(",") if m.strip()]
+             if args.thinking_modes else [args.thinking])
+    efforts = ([e.strip() for e in args.reasoning_effort.split(",") if e.strip()]
+               if args.reasoning_effort else [None])
+
     for scen in scenarios:
+      for think in modes:
+       for effort in efforts:
         for lvl in levels:
             for rep in range(args.repeat):
-                row = run_level(apis, model, lvl, args, seed_base=seed, scenario=scen)
+                row = run_level(apis, model, lvl, args, seed_base=seed, scenario=scen,
+                                thinking=think, effort=effort)
                 seed += lvl
                 rows.append(row)
                 if row.get("error"):
-                    print("%-11s %4d  FAILED: %s" % (scen, lvl, row["error"]))
+                    print("%-11s %4d  FAILED: %s" % (label_for(scen, think, effort), lvl, row["error"]))
                     continue
                 print("%-11s %4d %5d %8.2f %8d %10s %11s %9s %9s %8s %11s" % (
-                    scen, row["concurrency"], row["requests"], row["wall_s"], row["output_tokens"],
+                    label_for(scen, think, effort), row["concurrency"], row["requests"], row["wall_s"], row["output_tokens"],
                     row["aggregate_tok_s"], row["per_stream_tok_s"], row["ttft_p50_s"],
                     row["ttft_p95_s"], row["latency_p50_s"], row["reasoning_tokens_p50"]))
                 if row["failed"]:
@@ -458,6 +500,8 @@ def main():
             json.dump({"api": args.api, "endpoints": apis, "model": model, "note": args.note,
                        "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                        "params": {"max_tokens": args.max_tokens, "scenarios": scenarios,
+                                  "thinking_modes": args.thinking_modes or None,
+                                  "reasoning_efforts": args.reasoning_effort or None,
                                   "prompt_tokens": args.prompt_tokens,
                                   "thinking": args.thinking,
                                   "shared_prefix": args.shared_prefix},

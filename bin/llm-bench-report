@@ -79,11 +79,23 @@ def latest_matrix(bench_runs):
         for row in run.get("rows", []):
             if not row.get("aggregate_tok_s"):
                 continue
-            key = (run["_deployment"], row.get("scenario", "chat"), row["concurrency"])
+            # Reasoning configuration is part of the identity of a measurement: the same model
+            # with thinking on and off answers a review differently, so the rows must not merge.
+            scen = row.get("scenario", "chat")
+            think = row.get("thinking")
+            effort = row.get("reasoning_effort")
+            if think is not None or effort:
+                bits = [scen]
+                if think is not None:
+                    bits.append("think" if think else "nothink")
+                if effort:
+                    bits.append(str(effort))
+                scen = "/".join(bits)
+            key = (run["_deployment"], scen, row["concurrency"])
             prev = latest.get(key)
             if prev is None or run["_stamp"] > prev["_stamp"]:
                 latest[key] = {**row, "_stamp": run["_stamp"], "_note": run.get("note", ""),
-                               "_model": run.get("model", "")}
+                               "_model": run.get("model", ""), "_scenario_label": scen}
     return latest
 
 

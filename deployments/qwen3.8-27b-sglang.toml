@@ -65,6 +65,11 @@ sessions = 20                                 # MAX_CONCURRENT_REQUESTS=10 per n
 price_input = 0.0
 price_output = 0.0
 price_cache_read = 0.0
+# NOT PROBED YET — every stored row predates the reasoning sweep, so the kwarg has never been sent
+# here. What is measured: 30 of its review answers carried reasoning content and 20 of them had an
+# empty message body at the 1600-token budget, 23 of 30 ending on `length`. Probe the kwarg on the
+# next switch (the long-context re-run needs one anyway) and set this then.
+extra = {}
 
 [observability]
 # What is automatic (deployments/README.md §6) and what this recipe does not give us.

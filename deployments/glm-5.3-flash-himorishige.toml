@@ -29,6 +29,13 @@ sessions = 2
 price_input = 0.15
 price_output = 0.50
 price_cache_read = 0.03
+# NOT PROBED YET — left empty on purpose rather than guessed. Every stored row for this deployment
+# predates the reasoning sweep, so the kwarg has never been sent to it. What is measured: all ten
+# review answers came back with an empty message body and the findings in the reasoning trace, 5/5
+# cases including the boundary case no other deployment's body mentions. Whether asking for
+# thinking off moves those findings into the body is exactly the open question; probe it on the
+# next switch and set this then (results/review-scoring.md).
+extra = {}
 
 [review]
 # Measured 2026-09-19 with bench/review_cases (five files, one planted defect each).

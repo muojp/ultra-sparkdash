@@ -53,6 +53,9 @@ sessions = 2                                    # the recipe's MAX_NUM_SEQS=2, c
 price_input = 0.44
 price_output = 1.32
 price_cache_read = 0.014
+# Reasoning setting for the review lane. Nothing to suppress: 20 measured rows, no reasoning
+# content in any answer, every finding in the message body (results/review-scoring.md).
+extra = {}
 
 # A second, measured operating point. Not the default and not wired into dgx-model: recorded here
 # so the choice is made from numbers rather than re-derived. Run it by hand on the head with

@@ -218,6 +218,30 @@ is the one that decides what the review lane runs, and no throughput table shows
 
 ---
 
+### What the review lane should send
+
+`[lane].extra` in each deployment file is the request body the lane merges in — in practice the
+reasoning setting, e.g. `extra = { chat_template_kwargs = { thinking = false } }`. The key is
+always present, `{}` when nothing should be sent, because an absent key and an empty one read the
+same downstream and only one of them means "measured". `make check` enforces that.
+
+Do not infer the value from the model family: of the three GLM-5.3 deployments here, one honours
+the kwarg, one has never been asked, and the fastest deployment in the fleet ignores it while
+reporting 16,376 reasoning tokens in runs that asked for thinking off. Probe the deployment that is
+serving, in one request, and read `reasoning_content` rather than trusting the flag:
+
+```sh
+curl -s http://192.168.0.100:8888/v1/chat/completions -H 'content-type: application/json' -d '{
+  "model": "<served_model>", "max_tokens": 200, "temperature": 0,
+  "messages": [{"role": "user", "content": "Reply with the single word: ready."}],
+  "chat_template_kwargs": {"thinking": false}}' |
+  python3 -c 'import json,sys; m=json.load(sys.stdin)["choices"][0]["message"]; print("body:", len(m.get("content") or ""), "reasoning:", len(m.get("reasoning_content") or ""))'
+```
+
+A 400 means the template does not define the variable (send nothing); reasoning with a non-empty
+length means it was accepted and ignored. `results/review-scoring.md` records what each deployment
+did and, more usefully, whether its findings land in the body at all.
+
 ## 5. The gate
 
 ```sh

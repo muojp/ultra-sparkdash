@@ -20,3 +20,7 @@ sessions = 4
 price_input = 0.44
 price_output = 1.32
 price_cache_read = 0.014
+# Reasoning setting for the review lane. Nothing to suppress: across 24 measured rows this
+# deployment returned no reasoning content at all, and every finding it made was in the message
+# body (results/review-scoring.md). Sending a thinking kwarg would only risk a 400.
+extra = {}

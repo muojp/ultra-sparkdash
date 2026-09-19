@@ -43,6 +43,11 @@ sessions = 2
 price_input = 0.0
 price_output = 0.0
 price_cache_read = 0.0
+# Reasoning off, and it is honoured: 22 rows sent chat_template_kwargs {"thinking": false} and not
+# one answer came back with reasoning content, while the two rows that asked for thinking produced
+# it on all five cases. This is also the only deployment that puts all five findings in the message
+# body, which is what makes it the lane's default (results/review-scoring.md).
+extra = { chat_template_kwargs = { thinking = false } }
 
 [measured]
 # 2026-09-19, SPEC_METHOD=mtp (DFlash2 is licence-blocked here, so none of the recipe's published

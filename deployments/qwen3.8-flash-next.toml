@@ -33,6 +33,12 @@ sessions = 2
 price_input = 0.0
 price_output = 0.0
 price_cache_read = 0.0
+# Deliberately empty: this server IGNORES chat_template_kwargs {"thinking": false}. It was sent on
+# 22 rows and 20 answers still came back with reasoning content, 16,376 reasoning tokens by the
+# server's own usage counter, and 12 of 20 review answers had an EMPTY message body at the 1600
+# token budget. A lane that reads only message content gets nothing from the fastest deployment
+# here; it must read reasoning_content too, or raise the budget (results/review-scoring.md).
+extra = {}
 
 [prerequisites]
 notes = [

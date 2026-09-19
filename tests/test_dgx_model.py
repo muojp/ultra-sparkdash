@@ -39,6 +39,20 @@ def test_deployment_names_are_unique_per_model_family(dgx_model):
         assert n != "glm-5.3-flash", "bare model name is ambiguous; qualify it with whose recipe it is"
 
 
+def test_every_lane_states_its_reasoning_setting(dgx_model):
+    """`[lane].extra` is what the review lane merges into the request body.
+
+    An absent key and an empty table read the same downstream, so the file has to carry the key
+    even when the answer is "send nothing": that is the difference between a deployment whose
+    reasoning behaviour was measured and one nobody has probed yet. The measured ones are in
+    results/review-scoring.md; two servers here ignore the kwarg entirely and one honours it.
+    """
+    for name, d in dgx_model.load_deployments().items():
+        lane = d.get("lane") or {}
+        assert "extra" in lane, f"{name}: [lane].extra must be stated, {{}} if nothing is sent"
+        assert isinstance(lane["extra"], dict), f"{name}: [lane].extra must be a table"
+
+
 def test_pool_deployments_declare_where_the_client_runs(dgx_model):
     """api_urls without bench_from would be measured from wherever the operator happens to be."""
     for name, d in dgx_model.load_deployments().items():

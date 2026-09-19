@@ -50,6 +50,9 @@ sessions = 2
 price_input = 0.0
 price_output = 0.0
 price_cache_read = 0.0
+# Being measured right now: this deployment's first pass runs the review scenario with thinking on
+# and off, so the answer comes from its own rows rather than from the sibling GLM kits.
+extra = {}
 
 [prerequisites]
 notes = [

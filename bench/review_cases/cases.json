@@ -8,7 +8,7 @@
       "expected": "The tiered discount uses >= on the lower bound of the next tier, so an order of exactly 10000 gets the 5% tier instead of 10%; the boundary case is off by one tier. Also returns a float where money should stay integer minor units.",
       "code": "<?php\n\nnamespace App\\Services;\n\nclass DiscountService\n{\n    /** Order totals are in yen (integer). Returns the discounted total. */\n    public function apply(int $totalYen, bool $isMember): float\n    {\n        $rate = 0.0;\n\n        if ($totalYen > 10000) {\n            $rate = 0.10;\n        } elseif ($totalYen >= 5000) {\n            $rate = 0.05;\n        }\n\n        if ($isMember) {\n            $rate += 0.05;\n        }\n\n        return $totalYen - ($totalYen * $rate);\n    }\n}\n",
       "signals": [
-        "\\b10000\\b.*\\b(5|five)\\s*%|boundary|off.by|>=|greater than or equal",
+        "exactly\\s*(¥|\\$)?\\s*10,?000|10,?000\\s*(yen)?\\s*(gets|falls|would|is treated|receives|lands)|off.by.one|\\bboundary\\b|mixed\\s*`?>`?\\s*(and|vs\\.?)\\s*`?>=|inconsistent\\s+(comparison|operator|boundar)",
         "\\btier\\b|\\bthreshold\\b"
       ]
     },

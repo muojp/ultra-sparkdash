@@ -21,13 +21,14 @@
       letter-spacing: 0.04em; }
  td.dep { font-weight: 600; }
  td.when, td.model, td.note { color: var(--muted); font-size: 13px; white-space: normal; }
+ span.mode { color: var(--muted); font-size: 11px; font-weight: 400; text-transform: none; letter-spacing: 0; }
  td.best { color: var(--best); background: var(--bestbg); font-weight: 600; }
  td.na { color: var(--muted); }
  code { font: 13px ui-monospace, SFMono-Regular, Menlo, monospace; background: rgba(127,127,127,.12);
         padding: 1px 5px; border-radius: 4px; }
 </style></head><body>
 <h1>dgx pair — measured deployments</h1>
-<p class="sub">Generated 2026-09-19 06:41 UTC from 18 decode run(s) and 8 long-context run(s). Regenerate with <code>bin/llm-bench-report</code>; runs accumulate, the layout does not change.</p>
+<p class="sub">Generated 2026-09-19 07:30 UTC from 20 decode run(s) and 8 long-context run(s). Regenerate with <code>bin/llm-bench-report</code>; runs accumulate, the layout does not change.</p>
 <h2>Decode throughput — latest run per cell</h2>
 <p class="sub">Aggregate tok/s across all streams. Each cell is the most recent run for that deployment, scenario and concurrency; the history below keeps the rest.</p>
 <h3 class="scen">chat</h3>
@@ -85,6 +86,14 @@
 <th>×4</th>
 <th>×8</th>
 <th>per-stream ×1 → max</th><th>ttft p50 ×1</th><th>taken</th></tr></thead><tbody>
+<tr><td class='dep'>glm-5.3-flash-bizuayeu</td>
+<td class='best' title='2026-09-19 06:43 — measurement pass'>22.3 *</td>
+<td class='' title='2026-09-19 06:43 — measurement pass'>19.2 *</td>
+<td class='' title='2026-09-19 06:43 — measurement pass'>20.1 *</td>
+<td class='' title='2026-09-19 06:43 — measurement pass'>20.0 *</td>
+<td>25.5 → 22.5</td>
+<td>1.42 s</td>
+<td class='when'>2026-09-19 06:43</td></tr>
 <tr><td class='dep'>glm-5.3-flash-miaai</td>
 <td class='' title='2026-09-19 04:36 — measurement pass'>20.6 *</td>
 <td class='' title='2026-09-19 04:36 — measurement pass'>20.0 *</td>
@@ -157,6 +166,14 @@
 <th>×4</th>
 <th>×8</th>
 <th>per-stream ×1 → max</th><th>ttft p50 ×1</th><th>taken</th></tr></thead><tbody>
+<tr><td class='dep'>glm-5.3-flash-bizuayeu</td>
+<td class='' title='2026-09-19 06:43 — measurement pass'>25.6 *</td>
+<td class='best' title='2026-09-19 06:43 — measurement pass'>25.8 *</td>
+<td class='' title='2026-09-19 06:43 — measurement pass'>25.2 *</td>
+<td class='' title='2026-09-19 06:43 — measurement pass'>24.5 *</td>
+<td>27.6 → 26.1</td>
+<td>1.43 s</td>
+<td class='when'>2026-09-19 06:43</td></tr>
 <tr><td class='dep'>glm-5.3-flash-miaai</td>
 <td class='' title='2026-09-19 04:36 — measurement pass'>21.4 *</td>
 <td class='' title='2026-09-19 04:36 — measurement pass'>37.7 *</td>
@@ -229,6 +246,14 @@
 <th>×4</th>
 <th>×8</th>
 <th>per-stream ×1 → max</th><th>ttft p50 ×1</th><th>taken</th></tr></thead><tbody>
+<tr><td class='dep'>glm-5.3-flash-bizuayeu</td>
+<td class='' title='2026-09-19 06:43 — measurement pass'>19.9 *</td>
+<td class='best' title='2026-09-19 06:43 — measurement pass'>21.7 *</td>
+<td class='' title='2026-09-19 06:43 — measurement pass'>21.3 *</td>
+<td class='' title='2026-09-19 06:43 — measurement pass'>21.3 *</td>
+<td>20.6 → 22.2</td>
+<td>1.41 s</td>
+<td class='when'>2026-09-19 06:43</td></tr>
 <tr><td class='dep'>glm-5.3-flash-miaai</td>
 <td class='' title='2026-09-19 04:36 — measurement pass'>18.7 *</td>
 <td class='' title='2026-09-19 04:36 — measurement pass'>27.7 *</td>
@@ -301,6 +326,14 @@
 <th>×4</th>
 <th>×8</th>
 <th>per-stream ×1 → max</th><th>ttft p50 ×1</th><th>taken</th></tr></thead><tbody>
+<tr><td class='dep'>glm-5.3-flash-bizuayeu</td>
+<td class='' title='2026-09-19 07:19 — reasoning sweep'>24.6 *</td>
+<td class='' title='2026-09-19 06:43 — measurement pass'>24.4 *</td>
+<td class='best' title='2026-09-19 07:19 — reasoning sweep'>25.3 *</td>
+<td class='' title='2026-09-19 06:43 — measurement pass'>25.2 *</td>
+<td>24.8 → 25.4</td>
+<td>0.61 s</td>
+<td class='when'>2026-09-19 06:43 … 2026-09-19 07:19</td></tr>
 <tr><td class='dep'>glm-5.3-flash-miaai</td>
 <td class='' title='2026-09-19 04:50 — reasoning sweep'>22.9 *</td>
 <td class='' title='2026-09-19 04:36 — measurement pass'>28.3 *</td>
@@ -325,6 +358,14 @@
 <th>×4</th>
 <th>×8</th>
 <th>per-stream ×1 → max</th><th>ttft p50 ×1</th><th>taken</th></tr></thead><tbody>
+<tr><td class='dep'>glm-5.3-flash-bizuayeu</td>
+<td class='' title='2026-09-19 07:19 — reasoning sweep'>25.0 *</td>
+<td class='na'>&mdash;</td>
+<td class='best' title='2026-09-19 07:19 — reasoning sweep'>25.4 *</td>
+<td class='na'>&mdash;</td>
+<td>25.2 → 25.9</td>
+<td>0.72 s</td>
+<td class='when'>2026-09-19 07:19</td></tr>
 <tr><td class='dep'>glm-5.3-flash-miaai</td>
 <td class='' title='2026-09-19 04:50 — reasoning sweep'>21.1 *</td>
 <td class='na'>&mdash;</td>
@@ -397,6 +438,14 @@
 <th>×4</th>
 <th>×8</th>
 <th>per-stream ×1 → max</th><th>ttft p50 ×1</th><th>taken</th></tr></thead><tbody>
+<tr><td class='dep'>glm-5.3-flash-bizuayeu</td>
+<td class='' title='2026-09-19 06:43 — measurement pass'>9.5 *</td>
+<td class='' title='2026-09-19 06:43 — measurement pass'>11.4 *</td>
+<td class='best' title='2026-09-19 06:43 — measurement pass'>11.5 *</td>
+<td class='' title='2026-09-19 06:43 — measurement pass'>11.4 *</td>
+<td>28.4 → 28.2</td>
+<td>1.97 s</td>
+<td class='when'>2026-09-19 06:43</td></tr>
 <tr><td class='dep'>glm-5.3-flash-miaai</td>
 <td class='' title='2026-09-19 04:36 — measurement pass'>12.7 *</td>
 <td class='' title='2026-09-19 04:36 — measurement pass'>23.4 *</td>
@@ -427,61 +476,91 @@
 <tr><td class='dep'>qwen3.8-flash-next</td><td>162699</td><td>2535.3 tok/s</td><td>3349.6 tok/s</td><td>4</td><td>dgx01 3.32, dgx02 6.83 GiB</td><td class='when'>2026-09-19 05:32</td></tr>
 </tbody></table>
 <h2>Review cases — what each deployment actually found</h2>
-<p class="sub">Five files, one planted defect each. Scored by whether the answer names the defect, not by prose: each case carries loose signals, and a partial hit means the symptom was spotted and the cause was not. Throughput tables cannot show this, and it is the difference that decides what the review lane runs. The defect column is for readers — the model is sent only the language and the code.</p>
-<table><thead><tr><th>case</th><th>language</th><th>defect</th>
-<th>deepseek-v4-flash</th>
-<th>deepseek-v4.1-flash</th>
-<th>glm-5.3-flash-himorishige</th>
-<th>glm-5.3-flash-miaai</th>
-<th>qwen3.8-27b-sglang</th>
-<th>qwen3.8-27b-sglang (pool of 2)</th>
-<th>qwen3.8-flash-next</th>
-</tr></thead><tbody>
-<tr><td class='dep'>php-discount-logic</td><td class='model'>PHP / Laravel</td><td class='model'>logic</td>
-<td class='best'>found</td>
-<td class='best'>found</td>
-<td class='best'>found (in reasoning)</td>
-<td class='best'>found</td>
-<td class='best'>found (in reasoning)</td>
-<td class='best'>found (in reasoning)</td>
-<td class='best'>found (in reasoning)</td>
-</tr>
-<tr><td class='dep'>laravel-missing-validation</td><td class='model'>PHP / Laravel</td><td class='model'>validation</td>
-<td class='best'>found</td>
-<td class='best'>found</td>
-<td class='best'>found (in reasoning)</td>
-<td class='best'>found (in reasoning)</td>
-<td class='best'>found (in reasoning)</td>
-<td class='best'>found (in reasoning)</td>
-<td class='best'>found (in reasoning)</td>
-</tr>
-<tr><td class='dep'>laravel-balance-race</td><td class='model'>PHP / Laravel</td><td class='model'>concurrency</td>
-<td class='best'>found</td>
-<td class='best'>found</td>
-<td class='best'>found (in reasoning)</td>
-<td class='best'>found</td>
-<td class='best'>found</td>
-<td class='best'>found (in reasoning)</td>
-<td class='best'>found (in reasoning)</td>
-</tr>
-<tr><td class='dep'>csharp-cache-race</td><td class='model'>C#</td><td class='model'>concurrency</td>
-<td class='best'>found</td>
-<td class='best'>found</td>
-<td class='best'>found (in reasoning)</td>
-<td class='best'>found (in reasoning)</td>
-<td class='best'>found (in reasoning)</td>
-<td class='best'>found (in reasoning)</td>
-<td class='best'>found (in reasoning)</td>
-</tr>
-<tr><td class='dep'>csharp-expiry-logic</td><td class='model'>C#</td><td class='model'>logic</td>
-<td class='best'>found</td>
-<td class='best'>found</td>
-<td class='best'>found (in reasoning)</td>
-<td class='best'>found (in reasoning)</td>
+<p class="sub">Five files, one planted defect each. Scored by whether the answer names the defect, not by prose: each case carries loose signals, and a partial hit means the symptom was spotted and the cause was not. Deployments read down and cases across, so the table grows with the fleet instead of sideways; a row is one deployment in one reasoning mode. <b>in reasoning</b> means the message body was empty and the finding was in the trace — a lane reading message content would have received nothing. Throughput tables cannot show any of this, and it is the difference that decides what the review lane runs.</p>
+<table><thead><tr><th>deployment</th>
+<th>php-discount-logic<br><span class='mode'>logic · PHP / Laravel</span></th>
+<th>laravel-missing-validation<br><span class='mode'>validation · PHP / Laravel</span></th>
+<th>laravel-balance-race<br><span class='mode'>concurrency · PHP / Laravel</span></th>
+<th>csharp-cache-race<br><span class='mode'>concurrency · C#</span></th>
+<th>csharp-expiry-logic<br><span class='mode'>logic · C#</span></th>
+<th>found</th></tr></thead><tbody>
+<tr><td class='dep'>deepseek-v4-flash</td>
+<td class=''>partial 1/2</td>
 <td class='best'>found</td>
 <td class='best'>found</td>
 <td class='best'>found</td>
-</tr>
+<td class='best'>found</td>
+<td class='dep'>4/5<br><span class='mode'>+1 partial</span></td></tr>
+<tr><td class='dep'>deepseek-v4.1-flash</td>
+<td class=''>partial 1/2</td>
+<td class='best'>found</td>
+<td class='best'>found</td>
+<td class='best'>found</td>
+<td class='best'>found</td>
+<td class='dep'>4/5<br><span class='mode'>+1 partial</span></td></tr>
+<tr><td class='dep'>glm-5.3-flash-bizuayeu · nothink</td>
+<td class=''>partial 1/2</td>
+<td class='best'>found</td>
+<td class='best'>found</td>
+<td class='best'>found</td>
+<td class='best'>found</td>
+<td class='dep'>4/5<br><span class='mode'>+1 partial</span></td></tr>
+<tr><td class='dep'>glm-5.3-flash-bizuayeu · think</td>
+<td class=''>partial 1/2<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found</td>
+<td class='dep'>4/5<br><span class='mode'>+1 partial</span></td></tr>
+<tr><td class='dep'>glm-5.3-flash-himorishige</td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='dep'>5/5</td></tr>
+<tr><td class='dep'>glm-5.3-flash-miaai · nothink</td>
+<td class='best'>found</td>
+<td class='best'>found</td>
+<td class='best'>found</td>
+<td class='best'>found</td>
+<td class='best'>found</td>
+<td class='dep'>5/5</td></tr>
+<tr><td class='dep'>glm-5.3-flash-miaai · think</td>
+<td class=''>partial 1/2<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found</td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='dep'>4/5<br><span class='mode'>+1 partial</span></td></tr>
+<tr><td class='dep'>qwen3.8-27b-sglang</td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found</td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found</td>
+<td class='dep'>5/5</td></tr>
+<tr><td class='dep'>qwen3.8-27b-sglang (pool of 2)</td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found</td>
+<td class='dep'>5/5</td></tr>
+<tr><td class='dep'>qwen3.8-flash-next · nothink</td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found</td>
+<td class='dep'>5/5</td></tr>
+<tr><td class='dep'>qwen3.8-flash-next · think</td>
+<td class='na'>missed</td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class=''>partial 1/2</td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found</td>
+<td class='dep'>3/5<br><span class='mode'>+1 partial</span></td></tr>
 </tbody></table>
 <h3 class="scen">what each case plants</h3><table><thead><tr><th>case</th><th>expected finding</th></tr></thead><tbody>
 <tr><td class='dep'>php-discount-logic</td><td class='note'>The tiered discount uses &gt;= on the lower bound of the next tier, so an order of exactly 10000 gets the 5% tier instead of 10%; the boundary case is off by one tier. Also returns a float where money should stay integer minor units.</td></tr>
@@ -493,6 +572,30 @@
 <h2>Every run, in order</h2>
 <p class="sub">Nothing is averaged or dropped. A run taken under load keeps its note, so it can be read as what it is rather than compared as if conditions matched.</p>
 <table><thead><tr><th>taken</th><th>deployment</th><th>model</th><th>scenario</th><th>conc</th><th>aggregate</th><th>per-stream</th><th>ttft p50</th><th>note</th></tr></thead><tbody>
+<tr><td class='when'>2026-09-19 07:19</td><td class='dep'>glm-5.3-flash-bizuayeu</td><td class='model'>glm-5.3-flash-nvidia</td><td>review</td><td>×1</td><td>25.0</td><td>25.2</td><td>0.72 s</td><td class='note'>reasoning sweep</td></tr>
+<tr><td class='when'>2026-09-19 07:19</td><td class='dep'>glm-5.3-flash-bizuayeu</td><td class='model'>glm-5.3-flash-nvidia</td><td>review</td><td>×4</td><td>25.4</td><td>25.9</td><td>125.79 s</td><td class='note'>reasoning sweep</td></tr>
+<tr><td class='when'>2026-09-19 07:19</td><td class='dep'>glm-5.3-flash-bizuayeu</td><td class='model'>glm-5.3-flash-nvidia</td><td>review</td><td>×1</td><td>24.6</td><td>24.8</td><td>0.61 s</td><td class='note'>reasoning sweep</td></tr>
+<tr><td class='when'>2026-09-19 07:19</td><td class='dep'>glm-5.3-flash-bizuayeu</td><td class='model'>glm-5.3-flash-nvidia</td><td>review</td><td>×4</td><td>25.3</td><td>25.7</td><td>126.44 s</td><td class='note'>reasoning sweep</td></tr>
+<tr><td class='when'>2026-09-19 06:43</td><td class='dep'>glm-5.3-flash-bizuayeu</td><td class='model'>glm-5.3-flash-nvidia</td><td>chat</td><td>×1</td><td>22.3</td><td>25.5</td><td>1.42 s</td><td class='note'>measurement pass</td></tr>
+<tr><td class='when'>2026-09-19 06:43</td><td class='dep'>glm-5.3-flash-bizuayeu</td><td class='model'>glm-5.3-flash-nvidia</td><td>chat</td><td>×2</td><td>19.2</td><td>21.4</td><td>1.38 s</td><td class='note'>measurement pass</td></tr>
+<tr><td class='when'>2026-09-19 06:43</td><td class='dep'>glm-5.3-flash-bizuayeu</td><td class='model'>glm-5.3-flash-nvidia</td><td>chat</td><td>×4</td><td>20.1</td><td>22.8</td><td>27.22 s</td><td class='note'>measurement pass</td></tr>
+<tr><td class='when'>2026-09-19 06:43</td><td class='dep'>glm-5.3-flash-bizuayeu</td><td class='model'>glm-5.3-flash-nvidia</td><td>chat</td><td>×8</td><td>20.0</td><td>22.5</td><td>52.8 s</td><td class='note'>measurement pass</td></tr>
+<tr><td class='when'>2026-09-19 06:43</td><td class='dep'>glm-5.3-flash-bizuayeu</td><td class='model'>glm-5.3-flash-nvidia</td><td>code</td><td>×1</td><td>25.6</td><td>27.6</td><td>1.43 s</td><td class='note'>measurement pass</td></tr>
+<tr><td class='when'>2026-09-19 06:43</td><td class='dep'>glm-5.3-flash-bizuayeu</td><td class='model'>glm-5.3-flash-nvidia</td><td>code</td><td>×2</td><td>25.8</td><td>27.8</td><td>1.37 s</td><td class='note'>measurement pass</td></tr>
+<tr><td class='when'>2026-09-19 06:43</td><td class='dep'>glm-5.3-flash-bizuayeu</td><td class='model'>glm-5.3-flash-nvidia</td><td>code</td><td>×4</td><td>25.2</td><td>27.1</td><td>42.02 s</td><td class='note'>measurement pass</td></tr>
+<tr><td class='when'>2026-09-19 06:43</td><td class='dep'>glm-5.3-flash-bizuayeu</td><td class='model'>glm-5.3-flash-nvidia</td><td>code</td><td>×8</td><td>24.5</td><td>26.1</td><td>83.87 s</td><td class='note'>measurement pass</td></tr>
+<tr><td class='when'>2026-09-19 06:43</td><td class='dep'>glm-5.3-flash-bizuayeu</td><td class='model'>glm-5.3-flash-nvidia</td><td>essay</td><td>×1</td><td>19.9</td><td>20.6</td><td>1.41 s</td><td class='note'>measurement pass</td></tr>
+<tr><td class='when'>2026-09-19 06:43</td><td class='dep'>glm-5.3-flash-bizuayeu</td><td class='model'>glm-5.3-flash-nvidia</td><td>essay</td><td>×2</td><td>21.7</td><td>22.4</td><td>1.23 s</td><td class='note'>measurement pass</td></tr>
+<tr><td class='when'>2026-09-19 06:43</td><td class='dep'>glm-5.3-flash-bizuayeu</td><td class='model'>glm-5.3-flash-nvidia</td><td>essay</td><td>×4</td><td>21.3</td><td>22.1</td><td>85.5 s</td><td class='note'>measurement pass</td></tr>
+<tr><td class='when'>2026-09-19 06:43</td><td class='dep'>glm-5.3-flash-bizuayeu</td><td class='model'>glm-5.3-flash-nvidia</td><td>essay</td><td>×8</td><td>21.3</td><td>22.2</td><td>169.94 s</td><td class='note'>measurement pass</td></tr>
+<tr><td class='when'>2026-09-19 06:43</td><td class='dep'>glm-5.3-flash-bizuayeu</td><td class='model'>glm-5.3-flash-nvidia</td><td>review</td><td>×1</td><td>25.8</td><td>26.1</td><td>0.68 s</td><td class='note'>measurement pass</td></tr>
+<tr><td class='when'>2026-09-19 06:43</td><td class='dep'>glm-5.3-flash-bizuayeu</td><td class='model'>glm-5.3-flash-nvidia</td><td>review</td><td>×2</td><td>24.4</td><td>25.9</td><td>7.2 s</td><td class='note'>measurement pass</td></tr>
+<tr><td class='when'>2026-09-19 06:43</td><td class='dep'>glm-5.3-flash-bizuayeu</td><td class='model'>glm-5.3-flash-nvidia</td><td>review</td><td>×4</td><td>25.1</td><td>25.4</td><td>130.29 s</td><td class='note'>measurement pass</td></tr>
+<tr><td class='when'>2026-09-19 06:43</td><td class='dep'>glm-5.3-flash-bizuayeu</td><td class='model'>glm-5.3-flash-nvidia</td><td>review</td><td>×8</td><td>25.2</td><td>25.4</td><td>253.63 s</td><td class='note'>measurement pass</td></tr>
+<tr><td class='when'>2026-09-19 06:43</td><td class='dep'>glm-5.3-flash-bizuayeu</td><td class='model'>glm-5.3-flash-nvidia</td><td>structured</td><td>×1</td><td>9.5</td><td>28.4</td><td>1.97 s</td><td class='note'>measurement pass</td></tr>
+<tr><td class='when'>2026-09-19 06:43</td><td class='dep'>glm-5.3-flash-bizuayeu</td><td class='model'>glm-5.3-flash-nvidia</td><td>structured</td><td>×2</td><td>11.4</td><td>28.5</td><td>1.47 s</td><td class='note'>measurement pass</td></tr>
+<tr><td class='when'>2026-09-19 06:43</td><td class='dep'>glm-5.3-flash-bizuayeu</td><td class='model'>glm-5.3-flash-nvidia</td><td>structured</td><td>×4</td><td>11.5</td><td>28.2</td><td>6.4 s</td><td class='note'>measurement pass</td></tr>
+<tr><td class='when'>2026-09-19 06:43</td><td class='dep'>glm-5.3-flash-bizuayeu</td><td class='model'>glm-5.3-flash-nvidia</td><td>structured</td><td>×8</td><td>11.4</td><td>28.2</td><td>11.31 s</td><td class='note'>measurement pass</td></tr>
 <tr><td class='when'>2026-09-19 05:29</td><td class='dep'>qwen3.8-flash-next</td><td class='model'>qwen3.8-flash-next</td><td>review</td><td>×1</td><td>46.2</td><td>46.8</td><td>0.32 s</td><td class='note'>reasoning sweep</td></tr>
 <tr><td class='when'>2026-09-19 05:29</td><td class='dep'>qwen3.8-flash-next</td><td class='model'>qwen3.8-flash-next</td><td>review</td><td>×4</td><td>115.3</td><td>34.5</td><td>0.52 s</td><td class='note'>reasoning sweep</td></tr>
 <tr><td class='when'>2026-09-19 05:29</td><td class='dep'>qwen3.8-flash-next</td><td class='model'>qwen3.8-flash-next</td><td>review</td><td>×1</td><td>47.9</td><td>48.6</td><td>0.28 s</td><td class='note'>reasoning sweep</td></tr>

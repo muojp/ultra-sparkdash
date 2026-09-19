@@ -122,10 +122,19 @@ def score_answer(case, text):
 
 
 def review_section(bench_runs, cases):
-    """Per-deployment, per-case verdicts from the answers the review scenario kept."""
+    """Per-deployment, per-case verdicts from the answers the review scenario kept.
+
+    A deployment asked for thinking on and one asked for thinking off are two rows, because they
+    answer a review differently and a lane picks one of them. The label carries the mode; a run
+    that never sent the kwarg keeps the bare deployment name, since its mode is the server's
+    default rather than anything we asked for.
+    """
     by_dep = {}
     for run in bench_runs:
         for row in run.get("rows", []):
+            mode = row.get("thinking")
+            label = run["_deployment"] if mode is None else (
+                f"{run['_deployment']} · {'think' if mode else 'nothink'}")
             for ans in row.get("answers", []):
                 case = cases.get(ans.get("case"))
                 if not case:
@@ -141,7 +150,7 @@ def review_section(bench_runs, cases):
                 if scored is None:
                     continue
                 hit, total = scored
-                key = (run["_deployment"], ans["case"])
+                key = (label, ans["case"])
                 prev = by_dep.get(key)
                 # Keep the best attempt per case: a deployment that finds it once can find it.
                 if prev is None or hit > prev[0] or (hit == prev[0] and run["_stamp"] > prev[2]):
@@ -155,34 +164,46 @@ def render_review(bench_runs, cases):
     p.append('<h2>Review cases — what each deployment actually found</h2>')
     p.append('<p class="sub">Five files, one planted defect each. Scored by whether the answer names '
              'the defect, not by prose: each case carries loose signals, and a partial hit means the '
-             'symptom was spotted and the cause was not. Throughput tables cannot show this, and it '
-             'is the difference that decides what the review lane runs. The defect column is for '
-             'readers — the model is sent only the language and the code.</p>')
+             'symptom was spotted and the cause was not. Deployments read down and cases across, so '
+             'the table grows with the fleet instead of sideways; a row is one deployment in one '
+             'reasoning mode. <b>in reasoning</b> means the message body was empty and the finding '
+             'was in the trace — a lane reading message content would have received nothing. '
+             'Throughput tables cannot show any of this, and it is the difference that decides what '
+             'the review lane runs.</p>')
     if not cases:
         p.append('<p class="sub">No cases file found.</p>')
         return p
-    deployments = sorted({k[0] for k in scored})
-    p.append('<table><thead><tr><th>case</th><th>language</th><th>defect</th>')
-    for dep in deployments:
-        p.append(f"<th>{esc(dep)}</th>")
-    p.append("</tr></thead><tbody>")
+    labels = sorted({k[0] for k in scored})
+    p.append('<table><thead><tr><th>deployment</th>')
     for cid, case in cases.items():
-        p.append(f"<tr><td class='dep'>{esc(cid)}</td><td class='model'>{esc(case['language'])}</td>"
-                 f"<td class='model'>{esc(case['defect'])}</td>")
-        for dep in deployments:
-            got = scored.get((dep, cid))
+        p.append(f"<th>{esc(cid)}<br><span class='mode'>{esc(case['defect'])} · "
+                 f"{esc(case['language'])}</span></th>")
+    p.append("<th>found</th></tr></thead><tbody>")
+    for label in labels:
+        p.append(f"<tr><td class='dep'>{esc(label)}</td>")
+        found = partial = shown = 0
+        for cid in cases:
+            got = scored.get((label, cid))
             if not got:
                 p.append("<td class='na'>not run</td>")
-            else:
-                hit, total, _, _, source = got
-                cls = "best" if hit == total else ("na" if hit == 0 else "")
-                label = "found" if hit == total else ("missed" if hit == 0 else f"partial {hit}/{total}")
-                if source != "answer" and hit:
-                    label += " (in reasoning)"
-                p.append(f"<td class='{cls}'>{label}</td>")
-        p.append("</tr>")
+                continue
+            hit, total, _, _, source = got
+            shown += 1
+            cls = "best" if hit == total else ("na" if hit == 0 else "")
+            text = "found" if hit == total else ("missed" if hit == 0 else f"partial {hit}/{total}")
+            if source != "answer" and hit:
+                text += "<br><span class='mode'>in reasoning</span>"
+            # The column counts full hits only: a partial is the symptom without the cause,
+            # and rolling it in would make a deployment that never named the defect look complete.
+            if hit == total:
+                found += 1
+            elif hit:
+                partial += 1
+            p.append(f"<td class='{cls}'>{text}</td>")
+        tail = f"{found}/{shown}" + (f"<br><span class='mode'>+{partial} partial</span>" if partial else "")
+        p.append(f"<td class='dep'>{tail}</td></tr>" if shown else "<td class='na'>—</td></tr>")
     p.append("</tbody></table>")
-    if not deployments:
+    if not labels:
         p.append('<p class="sub">No scored answers yet — run '
                  '<code>dgx-model bench -- --scenario review</code>.</p>')
     else:
@@ -314,6 +335,7 @@ HEAD = """<!doctype html>
       letter-spacing: 0.04em; }
  td.dep { font-weight: 600; }
  td.when, td.model, td.note { color: var(--muted); font-size: 13px; white-space: normal; }
+ span.mode { color: var(--muted); font-size: 11px; font-weight: 400; text-transform: none; letter-spacing: 0; }
  td.best { color: var(--best); background: var(--bestbg); font-weight: 600; }
  td.na { color: var(--muted); }
  code { font: 13px ui-monospace, SFMono-Regular, Menlo, monospace; background: rgba(127,127,127,.12);

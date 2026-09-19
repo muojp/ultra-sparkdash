@@ -86,6 +86,21 @@ def test_partial_hit_is_reported_as_partial(report):
     assert partial[0] == 1 and partial[1] == 2
 
 
+def test_quoting_the_file_back_does_not_score(report):
+    """A signal a model can satisfy by pasting the code is not a signal.
+
+    `>=` used to be one: every answer that showed a corrected version of the discount service
+    repeated `$totalYen >= 5000` and scored the boundary case it had never mentioned.
+    """
+    case = report.load_cases()["php-discount-logic"]
+    quoted = ("The return type should be int. Here is the fix:\n"
+              "if ($totalYen > 10000) { $rate = 0.10; } elseif ($totalYen >= 5000) { $rate = 0.05; }")
+    named = ("The mixed > and >= is a classic off-by-one smell: an order of exactly 10000 yen "
+             "gets the 5% tier instead of the 10% one.")
+    assert report.score_answer(case, quoted) == (0, 2)
+    assert report.score_answer(case, named) == (2, 2)
+
+
 def test_review_section_keeps_the_best_attempt(report, tmp_path):
     state = tmp_path / "state"
     ans_bad = {"case": "csharp-expiry-logic", "text": "looks fine"}
@@ -100,6 +115,24 @@ def test_review_section_keeps_the_best_attempt(report, tmp_path):
     scored = report.review_section(runs, report.load_cases())
     hit, total, _, _, _ = scored[("alpha", "csharp-expiry-logic")]
     assert hit == total, "the better attempt must win"
+
+
+def test_thinking_modes_are_separate_rows_in_the_review_table(report, tmp_path):
+    """One deployment asked for thinking on and off is two rows: a lane runs one of them."""
+    state = tmp_path / "state"
+    ans = {"case": "csharp-expiry-logic",
+           "text": "Any() should be All(); also DateTime.Now vs UtcNow"}
+    write_run(state, "bench", "20260101T000000+0000", "alpha",
+              {"model": "m", "rows": [{"scenario": "review", "concurrency": 1, "aggregate_tok_s": 5,
+                                       "thinking": True, "answers": [ans]},
+                                      {"scenario": "review", "concurrency": 1, "aggregate_tok_s": 5,
+                                       "thinking": False, "answers": [ans]}]})
+    runs = report.load_runs(state, "bench")
+    scored = report.review_section(runs, report.load_cases())
+    labels = {k[0] for k in scored}
+    assert labels == {"alpha \u00b7 think", "alpha \u00b7 nothink"}, labels
+    page = report.render(runs, [], tmp_path / "r.html").read_text()
+    assert "alpha \u00b7 nothink" in page
 
 
 def test_review_table_renders_even_with_no_answers(report, tmp_path):

@@ -50,9 +50,11 @@ sessions = 2
 price_input = 0.0
 price_output = 0.0
 price_cache_read = 0.0
-# Being measured right now: this deployment's first pass runs the review scenario with thinking on
-# and off, so the answer comes from its own rows rather than from the sibling GLM kits.
-extra = {}
+# Measured on its own rows, both ways: with the kwarg the 20 nothink answers came back with a full
+# body and no trace at all, and the 5 think answers put four of five findings in a trace behind an
+# empty body. The kit parses reasoning (api.reasoning_parser = glm45), so the absence under nothink
+# is the kwarg being honoured, not a server that cannot emit one.
+extra = { chat_template_kwargs = { thinking = false } }
 
 [prerequisites]
 notes = [

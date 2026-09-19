@@ -66,7 +66,8 @@ class StubHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "text/event-stream")
             self.end_headers()
             for i in range(n):
-                self._sse({"choices": [{"delta": {"content": "x"}}]})
+                key = "reasoning_content" if self.server.reasoning_key else "content"
+                self._sse({"choices": [{"delta": {key: "x"}}]})
             self._sse({"choices": [{"delta": {}, "finish_reason": "length"}],
                        "usage": {"completion_tokens": n, "prompt_tokens": prompt_tokens,
                                  "completion_tokens_details": {"reasoning_tokens": 0},
@@ -91,10 +92,11 @@ class StubHandler(BaseHTTPRequestHandler):
         self.wfile.flush()
 
 
-def make_server(model_id="stub-model", reject_thinking=False):
+def make_server(model_id="stub-model", reject_thinking=False, reasoning_key=False):
     srv = HTTPServer(("127.0.0.1", 0), StubHandler)
     srv.model_id = model_id
     srv.reject_thinking = reject_thinking
+    srv.reasoning_key = reasoning_key
     srv.requests = []
     t = threading.Thread(target=srv.serve_forever, daemon=True)
     t.start()

@@ -188,3 +188,22 @@ def test_review_prompts_rotate_and_carry_the_code(quickbench):
     p = quickbench.build_prompt(0, 0, "review")
     assert cases[0]["code"].splitlines()[0] in p
     assert "filler" not in p and "Context follows" not in p
+
+
+def test_ttft_is_recorded_when_a_model_streams_reasoning_content(quickbench):
+    """SGLang says reasoning_content where vLLM says reasoning; missing it loses TTFT entirely."""
+    srv = make_server(reasoning_key=True)
+    try:
+        r = quickbench.one_request(url(srv), "stub-model", "hello", 6, None, 30)
+        assert r.ok and r.ttft is not None
+    finally:
+        srv.shutdown()
+
+
+def test_review_capture_follows_the_reasoning_key_too(quickbench):
+    srv = make_server(reasoning_key=True)
+    try:
+        r = quickbench.one_request(url(srv), "stub-model", "hi", 4, None, 30, keep_text=True)
+        assert r.think_text, "reasoning must be captured under either key"
+    finally:
+        srv.shutdown()

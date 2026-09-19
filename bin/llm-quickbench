@@ -255,7 +255,11 @@ def one_request(api, model, prompt, max_tokens, thinking, timeout, response_form
                     delta = ch.get("delta") or {}
                     # Reasoning tokens arrive before content on thinking models;
                     # both count as "first token" for the caller's latency.
-                    if (delta.get("content") or delta.get("reasoning")) and res.ttft is None:
+                    # vLLM calls it `reasoning`, SGLang `reasoning_content`. Missing one means no
+                    # TTFT at all on a model that thinks before it speaks — the row comes back with
+                    # None where the latency should be.
+                    think = delta.get("reasoning") or delta.get("reasoning_content")
+                    if (delta.get("content") or think) and res.ttft is None:
                         res.ttft = time.time() - t0
                     if keep_text:
                         # Only for scored scenarios: a review number means nothing without the
@@ -265,8 +269,8 @@ def one_request(api, model, prompt, max_tokens, thinking, timeout, response_form
                         # record five silent misses.
                         if delta.get("content"):
                             res.text += delta["content"]
-                        elif delta.get("reasoning"):
-                            res.think_text += delta["reasoning"]
+                        elif think:
+                            res.think_text += think
                     if ch.get("finish_reason"):
                         res.finish = ch["finish_reason"]
                 u = ev.get("usage")

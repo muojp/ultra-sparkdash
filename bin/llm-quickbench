@@ -211,7 +211,16 @@ class Result:
         self.think_text = ""
 
 
-THINKING_UNSUPPORTED = []  # one-element flag: set once a model rejects the kwarg
+# Templates spell the reasoning switch differently — GLM takes `thinking`, Qwen takes
+# `enable_thinking` — and a template silently ignores a variable it does not define. Sending the
+# wrong one therefore measures thinking ON while the row says off, which is exactly what happened
+# to the Qwen deployments here until 2026-09-19. Send both and let each template take its own; the
+# list is walked in order if a server rejects the pair outright.
+THINKING_OFF_KWARGS = ({"thinking": False, "enable_thinking": False},
+                       {"thinking": False},
+                       {"enable_thinking": False})
+THINKING_OFF_CHOICE = [0]  # which spelling this run settled on
+THINKING_UNSUPPORTED = []  # one-element flag: set once a model rejects every spelling
 
 
 EFFORT_UNSUPPORTED = []  # set once a server rejects reasoning_effort
@@ -221,9 +230,10 @@ def one_request(api, model, prompt, max_tokens, thinking, timeout, response_form
                 keep_text=False, effort=None):
     """Streamed, so time-to-first-token and decode time are separable.
 
-    `thinking=False` is sent as chat_template_kwargs, which a template that does not define the
-    variable rejects with a 400. Models differ here, and the sweep is meant to be comparable across
-    them, so the first rejection drops the kwarg for the rest of the run instead of failing.
+    `thinking=False` is sent as chat_template_kwargs under every spelling a template here uses, so
+    one sweep is comparable across models that disagree about the name. A template that does not
+    define a variable ignores it; a server that rejects the whole object answers 400, and the first
+    rejection walks to the next candidate and then drops the kwarg for the rest of the run.
     """
     if thinking is False and THINKING_UNSUPPORTED:
         thinking = None
@@ -241,7 +251,7 @@ def one_request(api, model, prompt, max_tokens, thinking, timeout, response_form
     if effort and not EFFORT_UNSUPPORTED:
         payload["reasoning_effort"] = effort
     if thinking is False:
-        payload["chat_template_kwargs"] = {"thinking": False}
+        payload["chat_template_kwargs"] = dict(THINKING_OFF_KWARGS[THINKING_OFF_CHOICE[0]])
     req = urllib.request.Request(api.rstrip("/") + "/chat/completions",
                                  data=json.dumps(payload).encode(),
                                  headers={"Content-Type": "application/json"})
@@ -295,8 +305,15 @@ def one_request(api, model, prompt, max_tokens, thinking, timeout, response_form
             return one_request(api, model, prompt, max_tokens, thinking, timeout, response_format,
                                keep_text, None)
         if e.code == 400 and thinking is False and not THINKING_UNSUPPORTED:
+            if THINKING_OFF_CHOICE[0] + 1 < len(THINKING_OFF_KWARGS):
+                dropped = THINKING_OFF_KWARGS[THINKING_OFF_CHOICE[0]]
+                THINKING_OFF_CHOICE[0] += 1
+                print(f"# this server rejects chat_template_kwargs={json.dumps(dropped)};"
+                      f" retrying with {json.dumps(THINKING_OFF_KWARGS[THINKING_OFF_CHOICE[0]])}")
+                return one_request(api, model, prompt, max_tokens, thinking, timeout,
+                                   response_format, keep_text, effort)
             THINKING_UNSUPPORTED.append(True)
-            print("# this model rejects chat_template_kwargs={'thinking': false}; continuing without it")
+            print("# this model rejects every thinking kwarg spelling; continuing without it")
             return one_request(api, model, prompt, max_tokens, None, timeout, response_format,
                                keep_text, effort)
         res.wall = time.time() - t0

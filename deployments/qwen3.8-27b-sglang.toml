@@ -65,11 +65,13 @@ sessions = 20                                 # MAX_CONCURRENT_REQUESTS=10 per n
 price_input = 0.0
 price_output = 0.0
 price_cache_read = 0.0
-# NOT PROBED YET — every stored row predates the reasoning sweep, so the kwarg has never been sent
-# here. What is measured: 30 of its review answers carried reasoning content and 20 of them had an
-# empty message body at the 1600-token budget, 23 of 30 ending on `length`. Probe the kwarg on the
-# next switch (the long-context re-run needs one anyway) and set this then.
-extra = {}
+# Probed 2026-09-19 while serving: this template takes the QWEN spelling. `enable_thinking` false
+# returns an empty reasoning trace and the same 267-character answer; `thinking` false — the GLM
+# spelling the sweep had been sending — is accepted and silently ignored, 729 characters of trace
+# either way. `reasoning_effort = "none"` also works and is left out to keep one knob.
+# Why it matters: 20 of this deployment's 30 review answers came back with an empty body at the
+# 1600-token budget, every one of them with the finding in the trace.
+extra = { chat_template_kwargs = { enable_thinking = false } }
 
 [observability]
 # What is automatic (deployments/README.md §6) and what this recipe does not give us.

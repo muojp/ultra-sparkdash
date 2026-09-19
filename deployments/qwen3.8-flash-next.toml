@@ -33,11 +33,13 @@ sessions = 2
 price_input = 0.0
 price_output = 0.0
 price_cache_read = 0.0
-# Deliberately empty: this server IGNORES chat_template_kwargs {"thinking": false}. It was sent on
-# 22 rows and 20 answers still came back with reasoning content, 16,376 reasoning tokens by the
-# server's own usage counter, and 12 of 20 review answers had an EMPTY message body at the 1600
-# token budget. A lane that reads only message content gets nothing from the fastest deployment
-# here; it must read reasoning_content too, or raise the budget (results/review-scoring.md).
+# Empty because the right spelling has not been probed on THIS deployment yet, not because none
+# works. The sweep sent `thinking` false — the GLM spelling — on 22 rows and got reasoning anyway
+# (16,376 reasoning tokens, 12 of 20 review answers with an empty body at the 1600-token budget),
+# which read as "the server ignores it". The sibling Qwen deployment then took
+# `enable_thinking` false and returned no trace at all, so the likely reading is that this
+# template never saw a variable it defines. Probe it on the next switch and set it then;
+# llm-quickbench now sends both spellings, so a re-measured row is the real off.
 extra = {}
 
 [prerequisites]

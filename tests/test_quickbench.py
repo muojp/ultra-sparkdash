@@ -42,9 +42,29 @@ def test_streamed_request_reports_usage_and_ttft(quickbench, stub):
     assert r.finish == "length"
 
 
+def test_both_spellings_of_thinking_off_are_sent(quickbench):
+    """GLM templates read `thinking`, Qwen templates read `enable_thinking`.
+
+    A template ignores a variable it does not define, so sending only one spelling measures
+    thinking ON on half the fleet while the row is labelled off — which is what happened to the
+    Qwen deployments here until it was probed directly.
+    """
+    quickbench.THINKING_UNSUPPORTED.clear()
+    quickbench.THINKING_OFF_CHOICE[0] = 0
+    srv = make_server()
+    try:
+        r = quickbench.one_request(url(srv), "stub-model", "hello", 4, False, 30)
+        assert r.ok, r.err
+        sent = srv.requests[0]["chat_template_kwargs"]
+        assert sent == {"thinking": False, "enable_thinking": False}, sent
+    finally:
+        srv.shutdown()
+
+
 def test_thinking_kwarg_is_dropped_after_a_rejection(quickbench):
     """Templates differ between models; a sweep must not die on the first 400."""
     quickbench.THINKING_UNSUPPORTED.clear()
+    quickbench.THINKING_OFF_CHOICE[0] = 0
     srv = make_server(reject_thinking=True)
     try:
         r = quickbench.one_request(url(srv), "stub-model", "hello", 4, False, 30)
@@ -55,6 +75,7 @@ def test_thinking_kwarg_is_dropped_after_a_rejection(quickbench):
         assert "chat_template_kwargs" not in bodies[-1]
     finally:
         quickbench.THINKING_UNSUPPORTED.clear()
+        quickbench.THINKING_OFF_CHOICE[0] = 0
         srv.shutdown()
 
 

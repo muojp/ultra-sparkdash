@@ -43,9 +43,16 @@ puts every finding in the body.
 **Asking for thinking off moves findings into the body, where the server honours it.** The two GLM
 kits show it from both sides in the same table: `glm-5.3-flash-bizuayeu · nothink` answers with a
 full body and no trace, and the same deployment's `think` row has four of five answers with an
-empty body and the findings in the trace. That contrast is what `[lane].extra` is set from, not the
-model family — `qwen3.8-flash-next` is *sent* the same kwarg, ignores it, and still spends 12 of 20
-review answers' budget on a trace.
+empty body and the findings in the trace. That contrast is what `[lane].extra` is set from.
+
+**But every `nothink` row for a Qwen deployment above is mislabelled.** Templates spell the switch
+differently: GLM reads `thinking`, Qwen reads `enable_thinking`, and a template silently ignores a
+variable it does not define. The sweep sent only the GLM spelling, so `qwen3.8-27b-sglang` and
+`qwen3.8-flash-next` were measured with thinking ON while the rows say off. Probed directly on the
+27B on 2026-09-19 while it was serving: `enable_thinking` false returns an empty trace and the same
+answer, `thinking` false returns 729 characters of trace, and `reasoning_effort: "none"` also
+works. `llm-quickbench` now sends both spellings in one object, and the Qwen rows here should be
+re-measured before they are compared as off.
 
 **The discount case is the discriminating one, and it is where partials cluster.** The planted
 defect is that `> 10000` beside `>= 5000` gives an order of exactly ¥10,000 the 5% tier. Both

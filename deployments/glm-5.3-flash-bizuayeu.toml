@@ -1,8 +1,9 @@
 # GLM-5.3-Flash NVFP4, Bizuayeu's BIZ kit — recipe submodule GLM-5.3-Flash-NVFP4-2x-DGX-Sparks-BIZ.
 # Same model and quantization as glm-5.3-flash-himorishige; a different operating philosophy.
 #
-# NOT PROVISIONED, and it does not fit the switch pattern yet — see [prerequisites]. This file
-# exists so the deployment is defined and its gaps are written down rather than rediscovered.
+# PROVISIONED 2026-09-19: both ranks pass `server preflight`. Four adaptations were needed and all
+# four are derived commits on the mirror branch `feat/dgx-spark-pair-ops`, not edits on the hosts —
+# see [prerequisites.traps].
 #
 # What makes it different from every other deployment here: it is not a pair of shell scripts but a
 # Python package (`python -m glm53_setup`) with plan / preflight / start / status / stop phases, a
@@ -11,31 +12,31 @@
 # model load — so it cannot be driven by dgx-model's start steps as written; it needs a detached
 # wrapper, and `resources.run_seconds` has to be long enough for a session rather than a smoke test.
 name = "glm-5.3-flash-bizuayeu"
-served_model = "glm-5.3-flash-nvfp4"         # confirm against the profile before the first switch
+served_model = "glm-5.3-flash-nvidia"        # api.served_model_name in settings.toml, the kit's own default
 served_aliases = []
 api_url = "http://192.168.0.100:8888"
 boot_timeout_s = 2400
 
 [containers]
-# Container names come from the profile; fill them in from `server status` on the first run rather
-# than guessing, because detection is what `dgx-model status` reports and a wrong name reads as
-# "not running".
-head = []
-worker = []
+# From the first run: the kit names a container per rank and per start, `glm53-startup-r<rank>-<utc
+# stamp>`, so the name is not a constant. dgx-model anchors each entry as `^name$` and docker
+# matches names by regex, which makes the trailing `.*` the way to say "this rank, this start".
+head = ["glm53-startup-r0-.*"]
+worker = ["glm53-startup-r1-.*"]
 
 [host]
 recipe_dir = "/home/muo/GLM-5.3-Flash-NVFP4-2x-DGX-Sparks-BIZ"
 worker = "dgx02"
 # Rank 1 (worker) first, then rank 0 — the recipe is explicit about the order. Both need detaching.
 start = [
-  ["ssh", "-o", "BatchMode=yes", "dgx02", "cd /home/muo/GLM-5.3-Flash-NVFP4-2x-DGX-Sparks-BIZ && setsid nohup python -m glm53_setup server start --rank 1 >/tmp/biz-rank1.log 2>&1 &"],
-  ["bash", "-lc", "cd /home/muo/GLM-5.3-Flash-NVFP4-2x-DGX-Sparks-BIZ && setsid nohup python -m glm53_setup server start --rank 0 >/tmp/biz-rank0.log 2>&1 &"],
+  ["ssh", "-o", "BatchMode=yes", "dgx02", "cd /home/muo/GLM-5.3-Flash-NVFP4-2x-DGX-Sparks-BIZ && setsid nohup env HF_HOME=/home/muo/hf-home ./.venv/bin/python -m glm53_setup server start --rank 1 --config settings.toml >/tmp/biz-rank1.log 2>&1 &"],
+  ["bash", "-lc", "cd /home/muo/GLM-5.3-Flash-NVFP4-2x-DGX-Sparks-BIZ && setsid nohup env HF_HOME=/home/muo/hf-home ./.venv/bin/python -m glm53_setup server start --rank 0 --config settings.toml >/tmp/biz-rank0.log 2>&1 &"],
 ]
 stop = [
-  ["bash", "-lc", "cd /home/muo/GLM-5.3-Flash-NVFP4-2x-DGX-Sparks-BIZ && python -m glm53_setup server stop --rank 0"],
-  ["ssh", "-o", "BatchMode=yes", "dgx02", "cd /home/muo/GLM-5.3-Flash-NVFP4-2x-DGX-Sparks-BIZ && python -m glm53_setup server stop --rank 1"],
+  ["bash", "-lc", "cd /home/muo/GLM-5.3-Flash-NVFP4-2x-DGX-Sparks-BIZ && HF_HOME=/home/muo/hf-home ./.venv/bin/python -m glm53_setup server stop --rank 0 --config settings.toml"],
+  ["ssh", "-o", "BatchMode=yes", "dgx02", "cd /home/muo/GLM-5.3-Flash-NVFP4-2x-DGX-Sparks-BIZ && HF_HOME=/home/muo/hf-home ./.venv/bin/python -m glm53_setup server stop --rank 1 --config settings.toml"],
 ]
-status = [["bash", "-lc", "cd /home/muo/GLM-5.3-Flash-NVFP4-2x-DGX-Sparks-BIZ && python -m glm53_setup server status --rank 0"]]
+status = [["bash", "-lc", "cd /home/muo/GLM-5.3-Flash-NVFP4-2x-DGX-Sparks-BIZ && HF_HOME=/home/muo/hf-home ./.venv/bin/python -m glm53_setup server status --rank 0 --config settings.toml"]]
 
 [lane]
 model = "dgx-spark/glm-5.3-flash-bizuayeu"
@@ -47,14 +48,21 @@ price_cache_read = 0.0
 
 [prerequisites]
 notes = [
-  "same checkout on BOTH hosts, plus `pip install -r requirements/huggingface.lock.txt`",
-  "a settings TOML for this kit (fabric, memory reserve, run_seconds); the template is in the repo",
+  "the same checkout on BOTH hosts (each has its own .venv; the CLI is `./.venv/bin/python -m glm53_setup`)",
+  "settings.toml is per kit and lives on both hosts, untracked; it carries the fabric addresses, the API bind, the per-node image IDs and the memory budget",
   "assets: the downloader reads the pinned revision from the lock — never substitute main",
   "checksum verification is a SEPARATE step from download completion; the kit says so explicitly",
+  "the MTP view is built per host with tools/prepare_mtp_view.py, under the same cache root as the snapshot",
   "`server preflight --rank N` refuses to start beside another GPU container, so the pair must be idle",
-  "start/stop commands above are detached wrappers; verify them by hand once before trusting a switch",
+  "every rank command carries HF_HOME=/home/muo/hf-home; the default cache is root-owned on both nodes",
 ]
 
 [prerequisites.traps]
-foreground_supervisor = """`server start` supervises its container in the foreground and stops that rank on Ctrl+C, deadline or low memory. `resources.run_seconds` includes model loading, so a value sized for a smoke test ends the session mid-use."""
+foreground_supervisor = """`server start` supervises its container in the foreground and stops that rank on Ctrl+C, deadline or low memory. `resources.run_seconds` includes model loading, so a value sized for a smoke test ends the session mid-use. The start steps above detach it; `run_seconds = 0` removes the deadline and leaves the memory guard."""
 separate_checksum_step = """A "complete" download state only checks presence and sizes. Treat the checksum step as required; the kit's own runbook says never to infer PASS from the absence of errors."""
+hf_home_was_not_read = """The launcher composed the cache path from $HOME in three places while the downloader honoured HF_HOME, so preflight compared a snapshot under ~/hf-home against an expectation under the root-owned ~/.cache/huggingface and failed with "Download state must identify the pinned HF cache snapshot", naming neither path. Fixed on the mirror (config.cache_root)."""
+two_ids_for_one_image = """The head's daemon uses the classic image store and the worker's the containerd snapshotter, so the same image carries two IDs: `docker save | docker load` keeps every layer digest and the created time and rewrites the config. glm53-enterprise:reference is fcca92d1 on the head and 3fa1b3b5 on the worker. The profile pins one per node (`[[nodes]].reference_image`, added on the mirror); a rebuild on the worker would have produced a third ID."""
+loopback_api = """The kit binds 127.0.0.1 by design. Measuring from the Mac through a tunnel or a userspace forwarder would put that hop in every token's path, so `api.host` became a profile setting on the mirror and this profile sets 0.0.0.0 with port 8888. The API is unauthenticated, exactly like the other six deployments here."""
+dotfiles_missed_by_the_blob_copy = """A snapshot's dangling symlink surfaces far from its cause. Copying blobs resolved from `snapshots/*/*` misses `.gitattributes` and `.quant_summary.txt`, and the first thing to notice was prepare_mtp_view refusing with "Unexpected non-file in the snapshot" — after which the view it had already half-built still looked plausible. Resolve `.*` as well, and check for dangling links before trusting a copy."""
+worker_has_no_ipv6_egress = """`hf cache verify` on dgx02 hangs with no CPU use: the node has a global IPv6 address, the CDN resolves to IPv6 first, and the connection sits in SYN-SENT rather than failing over. The offline equivalent is enough here — in the HF cache a blob's filename is the sha256 of its bytes — and the non-LFS files are compared against the head's copies."""
+max_num_seqs_is_one = """`context.max_num_seqs = 1` is the kit's validated value and stays. Every concurrency column for this deployment is therefore a queue in front of one sequence, not parallel decoding; compare it with the other six only at c=1, and read the rest as this profile's behaviour under load."""

@@ -27,10 +27,15 @@ worker = ["glm53-startup-r1-.*"]
 [host]
 recipe_dir = "/home/muo/GLM-5.3-Flash-NVFP4-2x-DGX-Sparks-BIZ"
 worker = "dgx02"
-# Rank 1 (worker) first, then rank 0 — the recipe is explicit about the order. Both need detaching.
+# Rank 1 (worker) first, then rank 0 — the recipe is explicit about the order. Both need detaching,
+# and the redirection has to be on the SUBSHELL, not on the supervisor: with `cmd >log 2>&1 &` the
+# shell that ssh started stays alive around the job with the session's pipes still open, so the ssh
+# never returns and `switch` waits forever on a rank that started perfectly. Measured on this pair:
+# 20 s timeout against 0.3 s for the form below. It only looked like it worked the first time
+# because that rank had died. Same shape for the head: the local step hangs the same way.
 start = [
-  ["ssh", "-o", "BatchMode=yes", "dgx02", "cd /home/muo/GLM-5.3-Flash-NVFP4-2x-DGX-Sparks-BIZ && setsid nohup env HF_HOME=/home/muo/hf-home ./.venv/bin/python -m glm53_setup server start --rank 1 --config settings.toml >/tmp/biz-rank1.log 2>&1 &"],
-  ["bash", "-lc", "cd /home/muo/GLM-5.3-Flash-NVFP4-2x-DGX-Sparks-BIZ && setsid nohup env HF_HOME=/home/muo/hf-home ./.venv/bin/python -m glm53_setup server start --rank 0 --config settings.toml >/tmp/biz-rank0.log 2>&1 &"],
+  ["ssh", "-n", "-o", "BatchMode=yes", "dgx02", "( cd /home/muo/GLM-5.3-Flash-NVFP4-2x-DGX-Sparks-BIZ && setsid nohup env HF_HOME=/home/muo/hf-home ./.venv/bin/python -m glm53_setup server start --rank 1 --config settings.toml >/tmp/biz-rank1.log 2>&1 </dev/null & ) >/dev/null 2>&1"],
+  ["bash", "-lc", "( cd /home/muo/GLM-5.3-Flash-NVFP4-2x-DGX-Sparks-BIZ && setsid nohup env HF_HOME=/home/muo/hf-home ./.venv/bin/python -m glm53_setup server start --rank 0 --config settings.toml >/tmp/biz-rank0.log 2>&1 </dev/null & ) >/dev/null 2>&1"],
 ]
 stop = [
   ["bash", "-lc", "cd /home/muo/GLM-5.3-Flash-NVFP4-2x-DGX-Sparks-BIZ && HF_HOME=/home/muo/hf-home ./.venv/bin/python -m glm53_setup server stop --rank 0 --config settings.toml"],

@@ -4,7 +4,7 @@ Working state for the dgx pair, kept here rather than in a chat log or anyone's 
 `deployments/README.md`: if a step is missing here, it is missing. Numbers live in the deployment
 files; this file only says what is done, what is running, and what is next.
 
-_Last updated: 2026-09-19 00:25Z_
+_Last updated: 2026-09-19 05:45Z_
 
 ## The gate
 
@@ -12,27 +12,28 @@ _Last updated: 2026-09-19 00:25Z_
 change is committed, and before a measurement taken with a changed tool is trusted.** See
 `tests/README.md` for why: every bug it has caught so far was silent in the output.
 
-## Now — one measurement pass over every deployment
+## Now — six of seven measured
 
-Every deployment gets the same sequence, and is measured **as it has been used** — no restart in
-between to flatter the numbers. A setup that only holds up on a freshly booted server is not usable
-for the review lane, which will not restart it between requests, so degradation under continued
-inference is a result to record rather than a condition to control away.
+| deployment | decode (5 scenarios) | long context | review content |
+|---|---|---|---|
+| `glm-5.3-flash-himorishige` | done | done | 5/5, every finding in the reasoning trace |
+| `deepseek-v4-flash` | done | done | answers captured, unscored |
+| `deepseek-v4.1-flash` | done | done | answers captured, unscored |
+| `qwen3.8-27b-sglang` | done (pool and single node) | **redo** | answers captured, unscored |
+| `glm-5.3-flash-miaai` | done | done (2 of 4 long requests dropped) | answers captured, unscored |
+| `qwen3.8-flash-next` | done — fastest everywhere | done | answers captured, unscored |
+| `glm-5.3-flash-bizuayeu` | **blocked** | — | — |
 
-    dgx-model switch <name>
-    dgx-model bench   -- --scenario all -c 1,2,4,8 --no-thinking --note "post-boot"
-    dgx-model longctx -- --tokens 115000 -c 4 --no-thinking
-    llm-bench-report
-
-| # | deployment | boot | decode (all scenarios) | longctx | notes |
-|---|---|---|---|---|---|
-| 1 | `glm-5.3-flash-himorishige` | done | in flight | done | sweep follows a long-context leg; that is the state it is measured in |
-| 2 | `qwen3.8-27b-sglang` | — | — | — | two servers, one per node; image + weights staged |
-| 3 | `deepseek-v4-flash` | — | chat only | uncalibrated | both legs need redoing |
-| 4 | `deepseek-v4.1-flash` | — | chat only | uncalibrated | both legs need redoing |
-| 5 | `qwen3.8-flash-next` | — | — | — | provisioned; first boot rsyncs ~133 GiB to the worker |
-| 6 | `glm-5.3-flash-miaai` | — | — | — | image + weights staged (120/120 shards, DFlash2 skipped by SPEC_METHOD=mtp) |
-| 7 | `glm-5.3-flash-bizuayeu` | — | — | — | needs a settings profile; does not fit the switch pattern yet |
+- [ ] **bizuayeu is blocked in preflight.** `glm53_setup/server.py:204` hardcodes
+      `Path.home()/".cache/huggingface"` and ignores HF_HOME, so it cannot find the snapshot we
+      keep in `~/hf-home` (this head's hub directory is root-owned). Fix it on the mirror the way
+      the sibling recipe took WORKER_HF_HOME, then run the pass.
+- [ ] **Re-run the Qwen 27B long-context leg.** Its two attempts are void: one replayed a cached
+      prompt (fixed seeds — 140k tokens "in" 3.2 s), the other reported an empty memory floor
+      (Prometheus is not reachable from the head). Both causes are fixed; the leg just needs
+      running again.
+- [ ] **Score the review answers** for the five deployments that have them. The report does the
+      scoring; only GLM has been read so far.
 
 ## Improvements noticed while measuring
 

@@ -330,11 +330,15 @@ def sync_to_head() -> int:
     if r.returncode:
         print(r.stderr.strip()[:400], file=sys.stderr)
         return r.returncode
-    cmd = ["rsync", "-az", "--delete", f"{src}/deployments/", f"{host}:{remote}/deployments/"]
-    r = sh(cmd, timeout=120)
-    if r.returncode:
-        print(r.stderr.strip()[:400], file=sys.stderr)
-        return r.returncode
+    for sub in ("deployments", "bench"):
+        # bench/ carries the review cases: the tools resolve them relative to their own directory,
+        # so a sweep run on the head fails without it.
+        if not (src / sub).is_dir():
+            continue
+        r = sh(["rsync", "-az", "--delete", f"{src}/{sub}/", f"{host}:{remote}/{sub}/"], timeout=120)
+        if r.returncode:
+            print(r.stderr.strip()[:400], file=sys.stderr)
+            return r.returncode
     names = sorted(p.stem for p in (src / "deployments").glob("*.toml"))
     print(f"synced to {host}:{remote} — {len(names)} deployments: {', '.join(names)}")
     return 0
@@ -375,10 +379,16 @@ def probe(deps: dict[str, dict], name: str | None, extra: list[str], tool: str, 
     run_on = d.get("bench_from", "local")
     if run_on == "head":
         host = os.environ.get("DGX_MODEL_HOST", "muo@192.168.0.100")
-        remote_bin = os.environ.get("DGX_MODEL_REMOTE_DIR", "~/dgx-model") + f"/bin/{tool}"
+        remote_dir = os.environ.get("DGX_MODEL_REMOTE_DIR", "~/dgx-model")
         remote_out = f"/tmp/{out.name}"
-        cmd = shlex.join([remote_bin, "--api", api, "--model", d["served_model"],
-                          "--json", remote_out, *extra])
+        # shlex.join quotes the path, and a quoted ~ is a literal directory name — the shell never
+        # expands it. Keep the tilde outside the quoting.
+        prefix = ""
+        if remote_dir.startswith("~"):
+            prefix, remote_dir = "$HOME", remote_dir[1:].lstrip("/")
+            remote_dir = f"$HOME/{remote_dir}"
+        cmd = shlex.join([f"{remote_dir}/bin/{tool}", "--api", api, "--model", d["served_model"],
+                          "--json", remote_out, *extra]).replace("'$HOME/", "$HOME/'")
         print(f"# {target} via {api} (client on {host})  ->  {out}")
         rc = subprocess.call(["ssh", "-o", "BatchMode=yes", host, cmd])
         subprocess.run(["scp", "-q", f"{host}:{remote_out}", str(out)], check=False)

@@ -155,3 +155,20 @@ def test_head_containers_are_local_when_running_on_the_head(dgx_model, monkeypat
     monkeypatch.setattr(dgx_model.socket, "gethostname", lambda: dgx_model.HEAD_HOSTNAME + ".local")
     dgx_model.deployment_containers({"name": "x", "host": {}, "containers": {"head": ["c"]}}, "head")
     assert seen["argv"][0] == "docker", seen["argv"]
+
+
+def test_remote_command_expands_the_home_tilde(dgx_model, monkeypatch, tmp_path):
+    """shlex quotes the path, and a quoted ~ is a literal directory the shell never expands."""
+    sent = {}
+    monkeypatch.setattr(dgx_model.subprocess, "call", lambda argv: sent.update(argv=argv) or 0)
+    monkeypatch.setattr(dgx_model.subprocess, "run", lambda *a, **k: None)
+    monkeypatch.setattr(dgx_model, "status", lambda deps: {"active": "d", "api": {}})
+    monkeypatch.setattr(dgx_model, "served_models", lambda url, **k: ["m"])
+    monkeypatch.setattr(dgx_model, "STATE_DIR", tmp_path)
+    deps = {"d": {"name": "d", "served_model": "m", "api_url": "http://x",
+                  "api_urls": ["http://a", "http://b"], "bench_from": "head", "host": {}}}
+    dgx_model.probe(deps, None, [], "llm-quickbench", "bench")
+    cmd = sent["argv"][-1]
+    assert "'~/" not in cmd, cmd
+    assert "$HOME/" in cmd, cmd
+    assert "http://a/v1,http://b/v1" in cmd

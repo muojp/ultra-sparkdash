@@ -156,3 +156,19 @@ def test_a_finding_in_the_reasoning_trace_still_counts(report, tmp_path):
     assert hit == total and source == "reasoning only"
     page = report.render(runs, [], tmp_path / "r.html").read_text()
     assert "in reasoning" in page
+
+
+def test_a_pool_run_and_a_single_node_run_stay_separate(report, tmp_path):
+    """One server per node and a single server are different systems under one deployment name."""
+    state = tmp_path / "state"
+    single = bench_payload("m", [row("chat", 1, 20.0)])
+    single["endpoints"] = ["http://a/v1"]
+    pool = bench_payload("m", [row("chat", 1, 38.0)])
+    pool["endpoints"] = ["http://a/v1", "http://b/v1"]
+    write_run(state, "bench", "20260101T000000+0000", "qwen", single)
+    write_run(state, "bench", "20260101T010000+0000", "qwen", pool)
+    runs = report.load_runs(state, "bench")
+    labels = {r["_deployment"] for r in runs}
+    assert labels == {"qwen", "qwen (pool of 2)"}
+    page = report.render(runs, [], tmp_path / "r.html").read_text()
+    assert "20.0" in page and "38.0" in page

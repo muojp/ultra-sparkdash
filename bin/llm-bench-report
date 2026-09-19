@@ -43,8 +43,14 @@ def load_runs(state: pathlib.Path, kind: str):
         stamp, _, deployment = f.stem.partition("-")
         data["_file"] = f.name
         name = deployment or data.get("model", "?")
-        data["_deployment"] = RENAMED.get(name, name)
-        data["_recorded_as"] = name
+        name = RENAMED.get(name, name)
+        # A deployment can be measured in more than one shape — one server per node as a pool, or a
+        # single node on its own. Those are different systems and must not overwrite each other's
+        # cells, so the endpoint count is part of the row label.
+        endpoints = data.get("endpoints") or [data.get("api", "")]
+        data["_endpoints"] = len(endpoints)
+        data["_deployment"] = name if len(endpoints) < 2 else f"{name} (pool of {len(endpoints)})"
+        data["_recorded_as"] = deployment or name
         data["_stamp"] = stamp
         runs.append(data)
     return runs

@@ -169,6 +169,7 @@ def test_remote_command_expands_the_home_tilde(dgx_model, monkeypatch, tmp_path)
                   "api_urls": ["http://a", "http://b"], "bench_from": "head", "host": {}}}
     dgx_model.probe(deps, None, [], "llm-quickbench", "bench")
     cmd = sent["argv"][-1]
+    assert "-tt" in sent["argv"], "a killed local run must take the remote sweep with it"
     assert "'~/" not in cmd, cmd
     assert "$HOME/" in cmd, cmd
     assert "http://a/v1,http://b/v1" in cmd

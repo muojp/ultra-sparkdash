@@ -25,6 +25,7 @@ def test_legs_spread_over_the_pool(longctx, stub_pair):
         thinking = None
         timeout = 30
         prometheus = "http://127.0.0.1:1"   # unreachable on purpose: the floor must not be fatal
+        mem_hosts = ""                      # and no direct sampling in a unit test
 
     row = longctx.leg("concurrent", [url(a), url(b)], "stub-model", 200, 4, Args(), 4.0)
     assert row["streams"] == 4

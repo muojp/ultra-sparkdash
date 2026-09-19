@@ -247,7 +247,22 @@ def recipe_present(d: dict) -> tuple[bool, str]:
     stopping the model that was serving would cost a 15-25 minute boot to undo, so check first.
     """
     directory = d["host"]["recipe_dir"]
-    start = d["host"]["start"][0][0]
+    # A start step may carry environment first ("env FOO=1 ./start.sh"): the recipe's own script is
+    # the first argument that looks like a path, not necessarily the first word.
+    # A start step may set environment first, or run on the worker first (rank 1 before rank 0 is
+    # the documented order for one of these recipes). Find the first local script among all steps;
+    # if none is local, the recipe is driven entirely over ssh and only the directory can be checked.
+    start = None
+    for argv in d["host"]["start"]:
+        if argv and argv[0] == "ssh":
+            continue
+        start = next((a for a in argv if a.startswith("./") or a.startswith("/")), None)
+        if start:
+            break
+    if start is None:
+        r = sh(["bash", "-lc", f"test -d {shlex.quote(directory)} && echo ok"], timeout=30)
+        return (r.stdout.strip() == "ok",
+                "" if r.stdout.strip() == "ok" else "recipe directory")
     probe = f"test -d {shlex.quote(directory)} && test -x {shlex.quote(directory + '/' + start.lstrip('./'))} && echo ok"
     r = sh(["bash", "-lc", probe], timeout=30)
     if r.stdout.strip() == "ok":

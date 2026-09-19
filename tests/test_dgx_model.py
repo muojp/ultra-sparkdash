@@ -191,3 +191,50 @@ def test_a_remote_longctx_probe_is_told_where_prometheus_is(dgx_model, monkeypat
     sent.clear()
     dgx_model.probe(deps, None, ["--prometheus", "http://given:9090"], "llm-longctx-probe", "longctx")
     assert sent["argv"][-1].count("--prometheus") == 1, "an explicit value must not be doubled"
+
+
+def test_recipe_presence_looks_past_an_env_prefix(dgx_model, monkeypatch, tmp_path):
+    """A start step may set environment before the recipe's script; env is not the script."""
+    seen = {}
+
+    class R:
+        returncode = 0
+        stdout = "ok"
+        stderr = ""
+
+    monkeypatch.setattr(dgx_model, "sh", lambda argv, **kw: (seen.update(cmd=argv[-1]), R())[1])
+    d = {"name": "x", "host": {"recipe_dir": "/opt/recipe",
+                               "start": [["env", "SKIP_BUILD=1", "./start.sh"]]}}
+    ok, _ = dgx_model.recipe_present(d)
+    assert ok
+    assert "/opt/recipe/./start.sh" in seen["cmd"] or "/opt/recipe/start.sh" in seen["cmd"], seen["cmd"]
+
+
+def test_recipe_presence_skips_ssh_steps(dgx_model, monkeypatch):
+    """One recipe starts the worker first, over ssh; ssh is not the recipe's script."""
+    seen = {}
+
+    class R:
+        returncode = 0
+        stdout = "ok"
+        stderr = ""
+
+    monkeypatch.setattr(dgx_model, "sh", lambda argv, **kw: (seen.update(cmd=argv[-1]), R())[1])
+    d = {"name": "x", "host": {"recipe_dir": "/opt/kit", "start": [
+        ["ssh", "-o", "BatchMode=yes", "dgx02", "cd /opt/kit && start --rank 1"],
+        ["bash", "-lc", "cd /opt/kit && /opt/kit/run --rank 0"]]}}
+    ok, _ = dgx_model.recipe_present(d)
+    assert ok and "/opt/kit" in seen["cmd"]
+
+
+def test_an_all_remote_recipe_only_checks_the_directory(dgx_model, monkeypatch):
+    class R:
+        returncode = 0
+        stdout = "ok"
+        stderr = ""
+
+    monkeypatch.setattr(dgx_model, "sh", lambda argv, **kw: R())
+    d = {"name": "x", "host": {"recipe_dir": "/opt/kit",
+                               "start": [["ssh", "host", "do something"]]}}
+    ok, _ = dgx_model.recipe_present(d)
+    assert ok

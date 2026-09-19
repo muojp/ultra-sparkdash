@@ -105,6 +105,21 @@ bin/dgx-model switch <name>
 Fetch images and weights **before** the first boot, and download once: pull to the head and rsync
 to the worker over CX7 (~100 s for 29 GiB) rather than fetching twice from Hugging Face.
 
+**Check weights with `stat -L`, never with `du` or a recipe's own check.** huggingface_hub keeps
+blobs in a store shared across repos (`hub/blobs/<xx>/<sha>`), so a model directory is mostly
+symlinks into it. Every recipe here judges by that directory and every one of them has been
+confidently wrong in both directions: "Nothing to do" with 123 GiB present, "Weights present on
+both nodes" with the worker holding none of it, and an rsync of the model directory that copies
+symlinks and no data. The failures surface far away — a gloo rendezvous error, or a tokenizer the
+server cannot read and blames on a missing sentencepiece. Resolve the links and copy the blobs:
+
+```sh
+for f in "$D"/snapshots/*/*; do t=$(readlink -f "$f") || continue
+  case "$t" in "$HUB"/blobs/*) echo "${t#$HUB/}" ;; esac
+done | sort -u > /tmp/blobs.txt
+rsync -a --files-from=/tmp/blobs.txt "$HUB/" "worker:$HUB/"
+```
+
 Expect the first boot of a new deployment to fail on something. Both EXL3 failures were recipe
 defects that only appear on a kit other than the author's, and each surfaced minutes after the step
 that caused it. Budget for it, fix it on the mirror, write the trap down.

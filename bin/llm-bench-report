@@ -1,0 +1,325 @@
+#!/usr/bin/env python3
+"""llm-bench-report — one HTML page over every run dgx-model has recorded.
+
+The point is accumulation. Runs land in ~/.local/state/dgx-model/{bench,longctx}/ as
+<stamp>-<deployment>.json and are never edited; this reads all of them and renders a fixed layout,
+so adding a run adds rows rather than changing the page. Two things follow from that: the
+comparison table always shows the *latest* run per (deployment, scenario, concurrency), and the
+history table below keeps every earlier run with its timestamp and its note, so a number taken
+under load stays visible as such instead of being quietly averaged in.
+
+  bin/llm-bench-report                      # -> results/report.html
+  bin/llm-bench-report --out /tmp/r.html --state ~/.local/state/dgx-model
+"""
+import argparse
+import datetime as dt
+import html
+import json
+import pathlib
+import re
+import sys
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+
+# Deployments were renamed once the model stopped identifying them (three GLM-5.3 recipes, two
+# DeepSeek V4 ones). Run files keep the name they were written with, so without this the history
+# splits in two and nothing lines up across the rename.
+RENAMED = {
+    "glm-5.3-flash": "glm-5.3-flash-himorishige",
+    "deepseek-v4.1-flash-exl3": "deepseek-v4.1-flash",
+}
+
+
+def load_runs(state: pathlib.Path, kind: str):
+    runs = []
+    d = state / kind
+    if not d.is_dir():
+        return runs
+    for f in sorted(d.glob("*.json")):
+        try:
+            data = json.loads(f.read_text())
+        except (json.JSONDecodeError, OSError):
+            continue
+        stamp, _, deployment = f.stem.partition("-")
+        data["_file"] = f.name
+        name = deployment or data.get("model", "?")
+        data["_deployment"] = RENAMED.get(name, name)
+        data["_recorded_as"] = name
+        data["_stamp"] = stamp
+        runs.append(data)
+    return runs
+
+
+def parse_stamp(stamp):
+    """20260918T231943+0000 -> readable UTC."""
+    try:
+        return dt.datetime.strptime(stamp.split("+")[0], "%Y%m%dT%H%M%S").strftime("%Y-%m-%d %H:%M")
+    except ValueError:
+        return stamp
+
+
+def esc(x):
+    return html.escape(str(x)) if x is not None else "&mdash;"
+
+
+def cell(v, suffix=""):
+    return "&mdash;" if v in (None, "") else f"{v}{suffix}"
+
+
+def latest_matrix(bench_runs):
+    """(deployment, scenario, concurrency) -> the most recent row for it."""
+    latest = {}
+    for run in bench_runs:
+        for row in run.get("rows", []):
+            if not row.get("aggregate_tok_s"):
+                continue
+            key = (run["_deployment"], row.get("scenario", "chat"), row["concurrency"])
+            prev = latest.get(key)
+            if prev is None or run["_stamp"] > prev["_stamp"]:
+                latest[key] = {**row, "_stamp": run["_stamp"], "_note": run.get("note", ""),
+                               "_model": run.get("model", "")}
+    return latest
+
+
+def load_cases():
+    """The review cases, with their signals. Read here for scoring; never sent anywhere."""
+    f = ROOT / "bench/review_cases/cases.json"
+    try:
+        return {c["id"]: c for c in json.loads(f.read_text())["cases"]}
+    except (OSError, json.JSONDecodeError, KeyError):
+        return {}
+
+
+def score_answer(case, text):
+    """How many of the case's signals the answer hits.
+
+    Signals are loose on purpose: they separate "named the defect" from "described the file". A
+    partial hit is reported as partial rather than rounded to either end, because the interesting
+    failure is an answer that spots the symptom and misses the cause.
+    """
+    hits = [bool(re.search(sig, text, re.I | re.S)) for sig in case.get("signals", [])]
+    if not hits:
+        return None
+    return sum(hits), len(hits)
+
+
+def review_section(bench_runs, cases):
+    """Per-deployment, per-case verdicts from the answers the review scenario kept."""
+    by_dep = {}
+    for run in bench_runs:
+        for row in run.get("rows", []):
+            for ans in row.get("answers", []):
+                case = cases.get(ans.get("case"))
+                if not case:
+                    continue
+                # Fall back to the reasoning trace when content is empty: the finding is often
+                # there, and "the budget went to thinking" is a different result from "missed it".
+                body = ans.get("text") or ""
+                source = "answer"
+                if not body.strip():
+                    body = ans.get("reasoning") or ""
+                    source = "reasoning only"
+                scored = score_answer(case, body)
+                if scored is None:
+                    continue
+                hit, total = scored
+                key = (run["_deployment"], ans["case"])
+                prev = by_dep.get(key)
+                # Keep the best attempt per case: a deployment that finds it once can find it.
+                if prev is None or hit > prev[0] or (hit == prev[0] and run["_stamp"] > prev[2]):
+                    by_dep[key] = (hit, total, run["_stamp"], body, source)
+    return by_dep
+
+
+def render_review(bench_runs, cases):
+    scored = review_section(bench_runs, cases)
+    p = []
+    p.append('<h2>Review cases — what each deployment actually found</h2>')
+    p.append('<p class="sub">Five files, one planted defect each. Scored by whether the answer names '
+             'the defect, not by prose: each case carries loose signals, and a partial hit means the '
+             'symptom was spotted and the cause was not. Throughput tables cannot show this, and it '
+             'is the difference that decides what the review lane runs. The defect column is for '
+             'readers — the model is sent only the language and the code.</p>')
+    if not cases:
+        p.append('<p class="sub">No cases file found.</p>')
+        return p
+    deployments = sorted({k[0] for k in scored})
+    p.append('<table><thead><tr><th>case</th><th>language</th><th>defect</th>')
+    for dep in deployments:
+        p.append(f"<th>{esc(dep)}</th>")
+    p.append("</tr></thead><tbody>")
+    for cid, case in cases.items():
+        p.append(f"<tr><td class='dep'>{esc(cid)}</td><td class='model'>{esc(case['language'])}</td>"
+                 f"<td class='model'>{esc(case['defect'])}</td>")
+        for dep in deployments:
+            got = scored.get((dep, cid))
+            if not got:
+                p.append("<td class='na'>not run</td>")
+            else:
+                hit, total, _, _, source = got
+                cls = "best" if hit == total else ("na" if hit == 0 else "")
+                label = "found" if hit == total else ("missed" if hit == 0 else f"partial {hit}/{total}")
+                if source != "answer" and hit:
+                    label += " (in reasoning)"
+                p.append(f"<td class='{cls}'>{label}</td>")
+        p.append("</tr>")
+    p.append("</tbody></table>")
+    if not deployments:
+        p.append('<p class="sub">No scored answers yet — run '
+                 '<code>dgx-model bench -- --scenario review</code>.</p>')
+    else:
+        p.append('<h3 class="scen">what each case plants</h3><table><thead><tr><th>case</th>'
+                 '<th>expected finding</th></tr></thead><tbody>')
+        for cid, case in cases.items():
+            p.append(f"<tr><td class='dep'>{esc(cid)}</td><td class='note'>{esc(case['expected'])}</td></tr>")
+        p.append("</tbody></table>")
+    return p
+
+
+def render(bench_runs, longctx_runs, out_path):
+    latest = latest_matrix(bench_runs)
+    deployments = sorted({k[0] for k in latest})
+    scenarios = sorted({k[1] for k in latest})
+    concurrencies = sorted({k[2] for k in latest})
+
+    p = []
+    p.append(HEAD)
+    p.append(f"<h1>dgx pair — measured deployments</h1>")
+    p.append(f'<p class="sub">Generated {dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")} '
+             f'from {len(bench_runs)} decode run(s) and {len(longctx_runs)} long-context run(s). '
+             f'Regenerate with <code>bin/llm-bench-report</code>; runs accumulate, the layout does not change.</p>')
+
+    p.append('<h2>Decode throughput — latest run per cell</h2>')
+    p.append('<p class="sub">Aggregate tok/s across all streams. Each cell is the most recent run for that '
+             'deployment, scenario and concurrency; the history below keeps the rest.</p>')
+    for scen in scenarios:
+        p.append(f'<h3 class="scen">{esc(scen)}</h3>')
+        p.append('<table><thead><tr><th>deployment</th>')
+        for c in concurrencies:
+            p.append(f"<th>×{c}</th>")
+        p.append("<th>per-stream ×1 → max</th><th>ttft p50 ×1</th><th>taken</th></tr></thead><tbody>")
+        for dep in deployments:
+            cells = [latest.get((dep, scen, c)) for c in concurrencies]
+            if not any(cells):
+                continue
+            best = max((c["aggregate_tok_s"] for c in cells if c), default=None)
+            p.append(f"<tr><td class='dep'>{esc(dep)}</td>")
+            for c in cells:
+                if not c:
+                    p.append("<td class='na'>&mdash;</td>")
+                else:
+                    cls = "best" if c["aggregate_tok_s"] == best else ""
+                    note = " *" if c.get("_note") else ""
+                    title = parse_stamp(c["_stamp"]) + ((" — " + c["_note"]) if c.get("_note") else "")
+                    p.append(f"<td class='{cls}' title='{esc(title)}'>{c['aggregate_tok_s']}{note}</td>")
+            first = cells[0]
+            last = [c for c in cells if c][-1]
+            p.append(f"<td>{cell(first and first.get('per_stream_tok_s'))} → {cell(last.get('per_stream_tok_s'))}</td>")
+            p.append(f"<td>{cell(first and first.get('ttft_p50_s'), ' s')}</td>")
+            # Cells in one row can come from different runs — each keeps its own time in a tooltip,
+            # and the column shows the span rather than pretending the row was measured at once.
+            stamps = sorted({parse_stamp(c["_stamp"]) for c in cells if c})
+            when = stamps[0] if len(stamps) == 1 else f"{stamps[0]} … {stamps[-1]}"
+            p.append(f"<td class='when'>{when}</td></tr>")
+        p.append("</tbody></table>")
+
+    p.append('<h2>Long context — prefill and the memory floor</h2>')
+    p.append('<p class="sub">The floor is what decides whether a setting is safe, and it is reached during a '
+             'long prefill — never at boot, never under steady decode. Lower is closer to the edge.</p>')
+    p.append('<table><thead><tr><th>deployment</th><th>prompt tokens</th><th>single</th>'
+             '<th>concurrent</th><th>streams</th><th>floor (head / worker)</th><th>taken</th></tr></thead><tbody>')
+    for run in sorted(longctx_runs, key=lambda r: (r["_deployment"], r["_stamp"])):
+        rows = {r["label"]: r for r in run.get("rows", [])}
+        single, conc = rows.get("single", {}), rows.get("concurrent", {})
+        floor = conc.get("mem_floor_gib") or single.get("mem_floor_gib") or {}
+        floor_s = ", ".join(f"{k} {v:.2f}" for k, v in sorted(floor.items()) if isinstance(v, float)) or "&mdash;"
+        p.append(f"<tr><td class='dep'>{esc(run['_deployment'])}</td>"
+                 f"<td>{cell(single.get('prompt_tokens'))}</td>"
+                 f"<td>{cell(single.get('prefill_aggregate_tok_s'), ' tok/s')}</td>"
+                 f"<td>{cell(conc.get('prefill_aggregate_tok_s'), ' tok/s')}</td>"
+                 f"<td>{cell(conc.get('streams'))}</td>"
+                 f"<td>{floor_s} GiB</td>"
+                 f"<td class='when'>{parse_stamp(run['_stamp'])}</td></tr>")
+    p.append("</tbody></table>")
+
+    p.extend(render_review(bench_runs, load_cases()))
+
+    p.append('<h2>Every run, in order</h2>')
+    p.append('<p class="sub">Nothing is averaged or dropped. A run taken under load keeps its note, so it can '
+             'be read as what it is rather than compared as if conditions matched.</p>')
+    p.append('<table><thead><tr><th>taken</th><th>deployment</th><th>model</th><th>scenario</th>'
+             '<th>conc</th><th>aggregate</th><th>per-stream</th><th>ttft p50</th><th>note</th>'
+             '</tr></thead><tbody>')
+    for run in sorted(bench_runs, key=lambda r: r["_stamp"], reverse=True):
+        for row in run.get("rows", []):
+            if not row.get("aggregate_tok_s"):
+                continue
+            p.append(f"<tr><td class='when'>{parse_stamp(run['_stamp'])}</td>"
+                     f"<td class='dep'>{esc(run['_deployment'])}</td>"
+                     f"<td class='model'>{esc(run.get('model'))}"
+                     f"{'' if run['_recorded_as'] == run['_deployment'] else ' (recorded as ' + esc(run['_recorded_as']) + ')'}</td>"
+                     f"<td>{esc(row.get('scenario', 'chat'))}</td>"
+                     f"<td>×{row['concurrency']}</td>"
+                     f"<td>{row['aggregate_tok_s']}</td>"
+                     f"<td>{cell(row.get('per_stream_tok_s'))}</td>"
+                     f"<td>{cell(row.get('ttft_p50_s'), ' s')}</td>"
+                     f"<td class='note'>{esc(run.get('note') or '')}</td></tr>")
+    p.append("</tbody></table>")
+    p.append('<p class="sub">* marks a cell whose run carries a note.</p>')
+    p.append(FOOT)
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text("\n".join(p))
+    return out_path
+
+
+HEAD = """<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dgx pair benchmarks</title>
+<style>
+ :root { color-scheme: light dark; --fg:#1a1a1a; --bg:#fbfbfa; --line:#d9d7d2; --muted:#6b6862;
+         --best:#1f6f43; --bestbg:#e7f3ec; }
+ @media (prefers-color-scheme: dark) { :root { --fg:#e8e6e1; --bg:#16171a; --line:#33363c;
+         --muted:#9a968e; --best:#7fd3a3; --bestbg:#1d2a23; } }
+ body { font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: var(--fg); background: var(--bg); margin: 0 auto; padding: 32px 20px 64px; max-width: 1100px; }
+ h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -0.01em; }
+ h2 { font-size: 19px; margin: 40px 0 6px; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+ h3.scen { font-size: 15px; margin: 22px 0 6px; color: var(--muted); text-transform: uppercase;
+           letter-spacing: 0.08em; }
+ p.sub { color: var(--muted); margin: 0 0 14px; font-size: 13.5px; }
+ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; margin-bottom: 8px; }
+ th, td { text-align: right; padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+ th:first-child, td:first-child, td.dep, td.note, td.model { text-align: left; }
+ th { font-weight: 600; font-size: 12.5px; color: var(--muted); text-transform: uppercase;
+      letter-spacing: 0.04em; }
+ td.dep { font-weight: 600; }
+ td.when, td.model, td.note { color: var(--muted); font-size: 13px; white-space: normal; }
+ td.best { color: var(--best); background: var(--bestbg); font-weight: 600; }
+ td.na { color: var(--muted); }
+ code { font: 13px ui-monospace, SFMono-Regular, Menlo, monospace; background: rgba(127,127,127,.12);
+        padding: 1px 5px; border-radius: 4px; }
+</style></head><body>"""
+
+FOOT = "</body></html>"
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Render recorded benchmark runs as one HTML page")
+    ap.add_argument("--state", default=str(pathlib.Path.home() / ".local/state/dgx-model"))
+    ap.add_argument("--out", default=str(ROOT / "results/report.html"))
+    args = ap.parse_args()
+    state = pathlib.Path(args.state).expanduser()
+    bench = load_runs(state, "bench")
+    longctx = load_runs(state, "longctx")
+    if not bench and not longctx:
+        print(f"no runs under {state}", file=sys.stderr)
+        return 1
+    out = render(bench, longctx, pathlib.Path(args.out).expanduser())
+    print(f"wrote {out} ({len(bench)} decode run(s), {len(longctx)} long-context run(s))")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

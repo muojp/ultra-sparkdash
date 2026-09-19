@@ -1,0 +1,169 @@
+#!/usr/bin/env python3
+"""llm-longctx-probe — what a long prompt costs: prefill rate, and the memory floor it leaves.
+
+On a Spark the host RAM *is* GPU memory, and the recipes are explicit that the floor comes during
+a long prefill rather than at boot or under steady decode — so a smoke test cannot tell you whether
+a setting is safe. This sends one long prompt, then several at once, and reads the memory floor for
+both nodes out of Prometheus (`sparkdash_unified_memory_available_bytes`, which tracks MemAvailable)
+rather than sampling /proc on the head, so the worker is covered too.
+
+  bin/llm-longctx-probe                        # ~115k tokens, then 4 at once
+  bin/llm-longctx-probe --tokens 60000 -c 2
+  dgx-model longctx                            # same, against whatever is serving
+
+Prompt size is requested in tokens and reported as measured: the filler is sized by characters, so
+the number that matters is `prompt_tokens` in the reply, not the request.
+"""
+import argparse
+import json
+import statistics
+import sys
+import threading
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+
+DEFAULT_API = "http://192.168.0.100:8888/v1"
+DEFAULT_PROM = "http://localhost:9090"
+# Starting guess only; calibrate() replaces it per model. Tokenizers disagree by a lot on this
+# filler — the same request produced 116683 tokens on one model and 324625 on another — so a fixed
+# ratio makes the "same" prompt a different length on each, and the numbers stop being comparable.
+CHARS_PER_TOKEN = 3.5
+
+
+def http_json(url, payload=None, timeout=60):
+    data = json.dumps(payload).encode() if payload is not None else None
+    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read())
+
+
+def build_prompt(tokens, seed, chars_per_token=None):
+    unit = "record %d: telemetry sample, no anomalies detected; "
+    cpt = chars_per_token or CHARS_PER_TOKEN
+    n = max(1, int(tokens * cpt / len(unit % 0)))
+    return ("Run %d.\n" % seed + "".join(unit % (seed * 1000000 + i) for i in range(n))
+            + "\n\nIn one sentence, say what kind of data this is.")
+
+
+def calibrate(api, model, timeout):
+    """Ask this model how long our filler actually is, in its own tokenizer.
+
+    One short request: build a small prompt, read prompt_tokens back, and derive chars per token.
+    Without it a sweep across models compares prompts of wildly different sizes.
+    """
+    probe_tokens = 2000
+    payload = {"model": model, "messages": [{"role": "user", "content": build_prompt(probe_tokens, 1)}],
+               "max_tokens": 1, "temperature": 0}
+    chars = len(payload["messages"][0]["content"])
+    d = http_json(api.rstrip("/") + "/chat/completions", payload, timeout=timeout)
+    got = d["usage"]["prompt_tokens"]
+    cpt = chars / got if got else CHARS_PER_TOKEN
+    print("# calibration: %d chars -> %d tokens (%.2f chars/token)" % (chars, got, cpt))
+    return cpt
+
+
+THINKING_UNSUPPORTED = []  # set once a model's chat template rejects the kwarg
+
+
+def ask(api, model, tokens, seed, thinking, timeout, out, idx, chars_per_token=None):
+    payload = {"model": model, "messages": [{"role": "user", "content": build_prompt(tokens, seed, chars_per_token)}],
+               "max_tokens": 64, "temperature": 0}
+    if thinking is False and not THINKING_UNSUPPORTED:
+        payload["chat_template_kwargs"] = {"thinking": False}
+    t0 = time.time()
+    try:
+        d = http_json(api.rstrip("/") + "/chat/completions", payload, timeout=timeout)
+        out[idx] = (d["usage"]["prompt_tokens"], time.time() - t0, None)
+    except urllib.error.HTTPError as e:
+        if e.code == 400 and "chat_template_kwargs" in json.dumps(payload) and not THINKING_UNSUPPORTED:
+            THINKING_UNSUPPORTED.append(True)
+            print("# this model rejects chat_template_kwargs={'thinking': false}; continuing without it")
+            return ask(api, model, tokens, seed, None, timeout, out, idx, chars_per_token)
+        out[idx] = (0, time.time() - t0, "HTTP %s %s" % (e.code, str(e)[:140]))
+    except Exception as e:  # noqa: BLE001 - any failure is a result here
+        out[idx] = (0, time.time() - t0, str(e)[:160])
+
+
+def mem_floor(prom, t0, t1):
+    """Lowest MemAvailable each node reached during the window, from Prometheus."""
+    span = max(15, int(t1 - t0) + 15)
+    expr = "min_over_time(sparkdash_unified_memory_available_bytes[%ds])" % span
+    url = "%s/api/v1/query?query=%s&time=%f" % (prom.rstrip("/"), urllib.parse.quote(expr), t1)
+    try:
+        res = http_json(url, timeout=20)["data"]["result"]
+    except Exception as e:  # noqa: BLE001
+        return {"error": str(e)[:120]}
+    return {s["metric"].get("spark", "?"): round(float(s["value"][1]) / 1073741824, 2) for s in res}
+
+
+def leg(label, apis, model, tokens, n, args, chars_per_token=None):
+    outs = [None] * n
+    t0 = time.time()
+    # Round-robin, so a single-node recipe run as one server per node is measured as the pool it is.
+    ts = [threading.Thread(target=ask, args=(apis[i % len(apis)], model, tokens, 100 + i,
+                                            args.thinking, args.timeout, outs, i, chars_per_token))
+          for i in range(n)]
+    for t in ts:
+        t.start()
+    for t in ts:
+        t.join()
+    wall = time.time() - t0
+    ok = [o for o in outs if o and not o[2]]
+    errs = [o[2] for o in outs if o and o[2]]
+    total = sum(o[0] for o in ok)
+    floor = mem_floor(args.prometheus, t0, time.time())
+    print("%s: streams=%d prompt_tokens=%s wall=%.1fs prefill_aggregate=%.0f tok/s" % (
+        label, n, ok[0][0] if ok else 0, wall, (total / wall) if wall else 0))
+    if len(ok) > 1:
+        lat = sorted(o[1] for o in ok)
+        print("   per-request s: %s (last answer at %.1fs)" % (
+            ", ".join("%.0f" % x for x in lat), lat[-1]))
+    print("   memory floor: %s" % ", ".join("%s %.2f GiB" % (k, v) for k, v in sorted(floor.items())
+                                            if isinstance(v, float)) or floor)
+    for e in errs:
+        print("   ERROR: %s" % e)
+    return {"label": label, "streams": n, "prompt_tokens": ok[0][0] if ok else 0,
+            "wall_s": round(wall, 1), "prefill_aggregate_tok_s": round(total / wall, 1) if wall else None,
+            "per_request_s": [round(o[1], 1) for o in ok], "mem_floor_gib": floor,
+            "errors": errs}
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Long-prompt prefill and memory-floor probe")
+    ap.add_argument("--api", default=DEFAULT_API)
+    ap.add_argument("--model")
+    ap.add_argument("--prometheus", default=DEFAULT_PROM)
+    ap.add_argument("--tokens", type=int, default=115000, help="approximate prompt size (default: %(default)s)")
+    ap.add_argument("-c", "--concurrency", type=int, default=4, help="streams in the second leg")
+    ap.add_argument("--no-thinking", dest="thinking", action="store_false")
+    ap.add_argument("--timeout", type=int, default=2400)
+    ap.add_argument("--json", dest="json_out")
+    args = ap.parse_args()
+
+    apis = [a.strip() for a in args.api.split(",") if a.strip()]
+    models = http_json(apis[0].rstrip("/") + "/models", timeout=20)["data"]
+    model = args.model or models[0]["id"]
+    limit = models[0].get("max_model_len")
+    tokens = args.tokens
+    if limit and tokens * 1.25 > limit:
+        tokens = int(limit / 1.25)
+        print("# capping prompt at ~%d tokens for a %s context" % (tokens, limit))
+    print("api:   %s" % ", ".join(apis))
+    print("model: %s (max_model_len=%s)" % (model, limit))
+    print()
+    cpt = calibrate(apis[0], model, 120)
+    print()
+    rows = [leg("single", apis, model, tokens, 1, args, cpt),
+            leg("concurrent", apis, model, tokens, args.concurrency, args, cpt)]
+    if args.json_out:
+        with open(args.json_out, "w") as f:
+            json.dump({"api": args.api, "endpoints": apis, "model": model, "max_model_len": limit,
+                       "requested_tokens": tokens, "rows": rows}, f, indent=2)
+        print("wrote %s" % args.json_out)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

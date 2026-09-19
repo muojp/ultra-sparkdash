@@ -1,0 +1,51 @@
+# GLM-5.3-Flash, EXL3 quantized, MiaAI-Lab's recipe — recipe submodule
+# GLM-5.3-Flash-EXL3-2x-DGX-Sparks. Third GLM-5.3 deployment here; see
+# glm-5.3-flash-himorishige (NVFP4, the one that has been serving) and glm-5.3-flash-bizuayeu.
+#
+# NOT PROVISIONED: no checkout on the head, no weights, image not pulled.
+#
+# LICENSE CONSTRAINT — read before changing SPEC_METHOD. The recipe's default and its entire
+# benchmark table use the DFlash2 speculator (incoai/GLM-5.3-Flash-DFlash2). **We cannot use
+# DFlash2: its licence does not permit our use.** This deployment therefore runs the recipe's own
+# documented rollback, `SPEC_METHOD=mtp`, which is a supported path in start.sh (it even adjusts
+# the CUDA-graph capture sizes for it). The consequence is that the recipe's published numbers do
+# not apply here: its lab figures put MTP k=2 at ~24.6 tok/s against 65.1 for DFlash2 on structured
+# output. Measure this deployment before comparing it to anything.
+name = "glm-5.3-flash-miaai"
+served_model = "GLM-5.3-Flash-EXL3"          # .env.example SERVED_MODEL_NAME
+served_aliases = []
+api_url = "http://192.168.0.100:8888"
+boot_timeout_s = 2400
+
+[containers]
+head = ["glm53-exl3-head"]
+worker = ["glm53-exl3-worker"]
+
+[host]
+recipe_dir = "/home/muo/GLM-5.3-Flash-EXL3-2x-DGX-Sparks"
+worker = "dgx02"
+start = [["./start.sh"]]                     # start-tp3.sh / start-tp4.sh are for 3- and 4-node kits
+stop = [["./stop.sh"]]
+
+[lane]
+# Unmeasured here, and the recipe's numbers are for an engine we cannot run. Do not seed a budget
+# from its README.
+model = "dgx-spark/glm-5.3-flash-miaai"
+timeout_s = 3600
+sessions = 2
+price_input = 0.0
+price_output = 0.0
+price_cache_read = 0.0
+
+[prerequisites]
+notes = [
+  "clone the mirror on the head at host.recipe_dir, on the branch this submodule pins",
+  "cp .env.example .env, then set SPEC_METHOD=mtp — the default is dflash, which we may not use",
+  "this kit: head 192.168.100.30 / worker 192.168.100.40, enp1s0f0np0 + rocep1s0f0, GID 3, worker user muo",
+  "HF_HOME must be a user-owned path (~/hf-home): ~/.cache/huggingface/hub is root-owned on this head",
+  "pull ghcr.io/miaai-lab/glm-5.3-flash-2x-dgx-sparks:exl3-instanttensor on both nodes first",
+  "weights via the recipe's download.sh; PORT=8888 is shared, so the first start follows a stop",
+]
+
+[prerequisites.traps]
+dflash_is_the_default = """SPEC_METHOD=dflash in .env.example. Leaving it pulls incoai/GLM-5.3-Flash-DFlash2 and runs an engine whose licence we cannot accept. Set SPEC_METHOD=mtp before the first start, and check the launch line in the log rather than trusting the file."""

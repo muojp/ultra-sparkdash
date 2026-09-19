@@ -1,0 +1,458 @@
+#!/usr/bin/env python3
+"""dgx-model — which model the dgx pair serves, and switch it.
+
+The pair (dgx01 head + dgx02 worker, TP=2) holds one 300B-class checkpoint at a time. Each candidate
+is a *deployment*: a recipe submodule of ultra-sparkdash plus the start/stop/status commands its
+README documents, pinned in `deployments/<name>.toml`. This tool is a thin layer over those scripts:
+it never composes vLLM flags itself.
+
+  dgx-model list                       the deployments and what they serve
+  dgx-model status [--json]            what is up now: compose projects on head and worker, the served
+                                       model behind the API, uptime, and the lane hints of the active one
+  dgx-model switch <name> [--dry-run]  stop whatever is running, drop the page cache, start <name>, wait
+                                       until /v1/models serves its model; refuses when <name> is already up
+  dgx-model history                    past switches (~/.local/state/dgx-model/history/)
+  dgx-model bench [-- ARGS]            concurrency sweep against whatever is serving now, with
+                                       llm-quickbench; ARGS go to it (e.g. -- -c 1,2,4,8 --no-thinking).
+                                       Results land in ~/.local/state/dgx-model/bench/ labelled with
+                                       the deployment, so two models can be compared later.
+  dgx-model longctx [-- ARGS]          long-prompt prefill + memory floor, with llm-longctx-probe;
+                                       the floor is the number that says whether a setting is safe,
+                                       and a smoke test never shows it. Same output directory.
+  dgx-model sync                       copy bin/ and deployments/ to the head's ~/dgx-model. The head
+                                       runs its own copy (list/status/switch re-execute there), so a
+                                       new deployment file is invisible until this is run.
+
+Runs on the head node. From a Mac it re-executes itself over ssh when DGX_MODEL_HOST is set
+(e.g. DGX_MODEL_HOST=muo@192.168.0.100) or the hostname is not the head's.
+"""
+from __future__ import annotations
+
+import argparse
+import datetime as dt
+import json
+import os
+import shlex
+import socket
+import subprocess
+import sys
+import time
+import tomllib
+import urllib.request
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+DEPLOYMENTS = HERE.parent / "deployments"
+STATE_DIR = Path(os.environ.get("DGX_MODEL_STATE", Path.home() / ".local/state/dgx-model"))
+HEAD_HOSTNAME = os.environ.get("DGX_MODEL_HEAD", "dgx01")
+
+
+def load_deployments() -> dict[str, dict]:
+    out = {}
+    for p in sorted(DEPLOYMENTS.glob("*.toml")):
+        d = tomllib.loads(p.read_text())
+        out[d["name"]] = d
+    return out
+
+
+def now_iso() -> str:
+    return dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat()
+
+
+def sh(argv: list[str], cwd: Path | None = None, env: dict | None = None, timeout: int = 60) -> subprocess.CompletedProcess:
+    e = dict(os.environ)
+    if env:
+        e.update(env)
+    return subprocess.run(argv, cwd=cwd, env=e, capture_output=True, text=True, timeout=timeout)
+
+
+def served_models(api_url: str, timeout: float = 15.0, attempts: int = 3) -> list[str] | None:
+    """What the API says it serves, or None if it did not answer.
+
+    Retried, and not on a short fuse: a busy pair — a long prefill, a weight download, an image
+    pull — can take seconds to answer /v1/models, and a single 5-second miss used to read as
+    "nothing is serving", which stopped a benchmark that had a healthy server in front of it.
+    """
+    last = None
+    for attempt in range(attempts):
+        try:
+            with urllib.request.urlopen(f"{api_url}/v1/models", timeout=timeout) as r:
+                return [m["id"] for m in json.loads(r.read()).get("data", [])]
+        except Exception as e:  # noqa: BLE001 - any failure means "no answer this time"
+            last = e
+            if attempt + 1 < attempts:
+                time.sleep(1.5)
+    return None
+
+
+def deployment_containers(d: dict, side: str) -> list[dict]:
+    """The deployment's live containers on one side of the pair.
+
+    Two recipes, two shapes. A Compose recipe (DeepSeek V4 Flash, GLM-5.3) labels every container
+    with its project, so one filter finds them wherever they run. A plain-`docker run` recipe
+    (DeepSeek v4.1 Flash EXL3) names them instead, and the names differ per side (`dsv41-exl3-head`
+    on the head, `dsv41-exl3-worker` on the worker), so the toml lists the names to look for.
+    Neither filter proves the model answers — that is what the API probe is for.
+    """
+    # The head side is local only when this process runs on the head. bench/longctx/sync stay on
+    # the operator's machine on purpose, and a `docker ps` there finds nothing — which used to make
+    # a healthy deployment look stopped.
+    if side == "head":
+        host = None if socket.gethostname().startswith(HEAD_HOSTNAME) else os.environ.get(
+            "DGX_MODEL_HOST", "muo@192.168.0.100")
+    else:
+        host = d["host"].get("worker")
+    containers = d.get("containers")
+    if containers is not None:
+        # A [containers] table means this deployment names its containers, so an empty list for a
+        # side is an answer — "nothing runs there" — not a reason to fall back to Compose. The
+        # single-node deployments have exactly that shape, and falling through used to raise
+        # KeyError('compose_project') and take down every command that calls status().
+        names = containers.get(side) or []
+        if not names:
+            return []
+        argv = ["docker", "ps", "--format", "{{json .}}"]
+        for name in names:
+            argv += ["--filter", f"name=^{name}$"]
+    elif d.get("compose_project"):
+        argv = ["docker", "ps", "--filter", f"label=com.docker.compose.project={d['compose_project']}",
+                "--format", "{{json .}}"]
+    else:
+        raise SystemExit(f"deployment {d['name']}: needs either [containers] or compose_project")
+    if host:
+        argv = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8", host, shlex.join(argv)]
+    try:
+        r = sh(argv, timeout=30)
+    except subprocess.TimeoutExpired:
+        return []
+    rows = []
+    for line in r.stdout.splitlines():
+        line = line.strip()
+        if line:
+            try:
+                rows.append(json.loads(line))
+            except json.JSONDecodeError:
+                pass
+    return rows
+
+
+def status(deps: dict[str, dict]) -> dict:
+    ids = None
+    api_seen = None
+    rep = {"checked_at": now_iso(), "head": socket.gethostname(), "active": None, "api": None, "deployments": {}}
+    for name, d in deps.items():
+        head = deployment_containers(d, "head")
+        worker = deployment_containers(d, "worker")
+        if api_seen != d["api_url"]:
+            ids = served_models(d["api_url"])
+            api_seen = d["api_url"]
+            rep["api"] = {"url": d["api_url"], "served": ids}
+        names = set([d["served_model"], *d.get("served_aliases", [])])
+        # The API's answer alone is not enough to say *which* deployment is serving: three of the
+        # GLM-5.3 recipes can be configured to answer with the same model id, and a deployment with
+        # no containers up was reporting serving=True on a sibling's reply. Require both — the model
+        # matches and this deployment's own containers are running.
+        serving = bool(ids) and any(i in names for i in ids) and bool(head)
+        entry = {
+            "head_containers": [c.get("Names") for c in head],
+            "worker_containers": [c.get("Names") for c in worker],
+            "head_created": head[0].get("CreatedAt") if head else None,
+            "serving": serving,
+            "lane": d.get("lane", {}),
+        }
+        rep["deployments"][name] = entry
+        if serving:
+            rep["active"] = name
+    st = read_state()
+    if st:
+        rep["last_switch"] = st
+    return rep
+
+
+def read_state() -> dict | None:
+    p = STATE_DIR / "state.json"
+    if p.exists():
+        try:
+            return json.loads(p.read_text())
+        except json.JSONDecodeError:
+            return None
+    return None
+
+
+def write_state(obj: dict) -> None:
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = STATE_DIR / "state.json.tmp"
+    tmp.write_text(json.dumps(obj, indent=1))
+    tmp.replace(STATE_DIR / "state.json")
+
+
+def run_steps(steps: list[list[str]], d: dict, log, dry: bool, timeout: int) -> None:
+    cwd = Path(d["host"]["recipe_dir"])
+    env = {k: str(v) for k, v in d["host"].get("env", {}).items()}
+    for argv in steps:
+        if argv and argv[0] == "sleep":
+            log(f"$ sleep {argv[1]}")
+            if not dry:
+                time.sleep(float(argv[1]))
+            continue
+        argv = [str(cwd / argv[0]) if not argv[0].startswith("/") and "/" in argv[0] else argv[0]] + list(argv[1:])
+        log(f"$ (cd {cwd}; {' '.join(f'{k}={shlex.quote(v)}' for k, v in env.items())} {shlex.join(argv)})")
+        if dry:
+            continue
+        p = subprocess.Popen(argv, cwd=cwd, env={**os.environ, **env}, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        start = time.monotonic()
+        assert p.stdout is not None
+        for line in p.stdout:
+            log(line.rstrip("\n"))
+            if time.monotonic() - start > timeout:
+                p.kill()
+                raise RuntimeError(f"step timed out after {timeout}s: {shlex.join(argv)}")
+        if p.wait() != 0:
+            raise RuntimeError(f"step failed rc={p.returncode}: {shlex.join(argv)}")
+
+
+def drop_caches(log, dry: bool) -> None:
+    # The GB10 driver does not reclaim page cache before a 100+ GiB load (NV_ERR_NO_MEMORY otherwise).
+    # The GLM recipe's flusher works with or without passwordless sudo; use it for both deployments.
+    flusher = Path("/home/muo/glm53-cluster/scripts/cache-flusher.sh")
+    for host in (None, "dgx02"):
+        argv = [str(flusher), "once"]
+        if host:
+            argv = ["ssh", "-o", "BatchMode=yes", host, shlex.join(argv)]
+        log(f"$ {shlex.join(argv)}")
+        if not dry and flusher.exists():
+            r = sh(argv, timeout=120)
+            log(r.stdout.strip() or r.stderr.strip())
+
+
+def wait_served(d: dict, log, dry: bool) -> bool:
+    if dry:
+        log(f"(wait until {d['api_url']}/v1/models serves {d['served_model']}, up to {d['boot_timeout_s']}s)")
+        return True
+    deadline = time.monotonic() + int(d["boot_timeout_s"])
+    while time.monotonic() < deadline:
+        ids = served_models(d["api_url"])
+        if ids and d["served_model"] in ids:
+            log(f"API serves {ids}")
+            return True
+        time.sleep(15)
+    return False
+
+
+def recipe_present(d: dict) -> tuple[bool, str]:
+    """Is the target's recipe actually on the head?
+
+    A deployment can be defined here long before it is provisioned: the EXL3 recipe needs its own
+    checkout, an `.env` written for this kit and ~390 GiB of weights. Finding that out *after*
+    stopping the model that was serving would cost a 15-25 minute boot to undo, so check first.
+    """
+    directory = d["host"]["recipe_dir"]
+    start = d["host"]["start"][0][0]
+    probe = f"test -d {shlex.quote(directory)} && test -x {shlex.quote(directory + '/' + start.lstrip('./'))} && echo ok"
+    r = sh(["bash", "-lc", probe], timeout=30)
+    if r.stdout.strip() == "ok":
+        return True, ""
+    missing = "recipe directory" if not Path(directory).is_dir() else f"{start} (not executable)"
+    return False, f"{directory}: {missing} — see the deployment's [prerequisites]"
+
+
+def switch(deps: dict[str, dict], name: str, dry: bool) -> int:
+    if name not in deps:
+        print(f"unknown deployment {name!r}; known: {', '.join(deps)}", file=sys.stderr)
+        return 2
+    target = deps[name]
+    ok, why = recipe_present(target)
+    if not ok:
+        print(f"refusing to switch to {name}: {why}", file=sys.stderr)
+        return 2
+    rep = status(deps)
+    ts = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+    hist = STATE_DIR / "history" / f"{ts}-{name}"
+    if not dry:
+        hist.mkdir(parents=True, exist_ok=True)
+    logf = open(hist / "switch.log", "a") if not dry else None
+
+    def log(msg: str) -> None:
+        line = f"[{now_iso()}] {msg}"
+        print(line, flush=True)
+        if logf:
+            logf.write(line + "\n")
+            logf.flush()
+
+    log(f"switch -> {name} (dry_run={dry}); active now: {rep['active']}; api serves {rep['api'] and rep['api']['served']}")
+    if rep["active"] == name:
+        log("already active; nothing to do")
+        return 0
+    running = [n for n, e in rep["deployments"].items() if e["head_containers"] or e["worker_containers"]]
+    try:
+        for other in running:
+            if other == name:
+                continue
+            log(f"stopping {other}")
+            run_steps(deps[other]["host"]["stop"], deps[other], log, dry, timeout=600)
+        drop_caches(log, dry)
+        log(f"starting {name}")
+        run_steps(target["host"]["start"], target, log, dry, timeout=int(target["boot_timeout_s"]) + 600)
+        if not wait_served(target, log, dry):
+            log(f"FAIL: {target['api_url']} did not serve {target['served_model']} within {target['boot_timeout_s']}s")
+            return 1
+    except Exception as e:  # noqa: BLE001
+        log(f"FAIL: {e}")
+        return 1
+    if not dry:
+        write_state({"active": name, "since": now_iso(), "previous": rep["active"], "history": str(hist), "lane": target.get("lane", {})})
+    log(f"DONE: {name} is serving; lane hints: {json.dumps(target.get('lane', {}))}")
+    return 0
+
+
+def maybe_remote(argv: list[str]) -> None:
+    host = os.environ.get("DGX_MODEL_HOST")
+    if not host and not socket.gethostname().startswith(HEAD_HOSTNAME):
+        host = "muo@192.168.0.100"
+    if host:
+        remote = os.environ.get("DGX_MODEL_REMOTE_BIN", "~/dgx-model/bin/dgx-model")
+        os.execvp("ssh", ["ssh", "-o", "BatchMode=yes", "-t" if sys.stdout.isatty() else "-T", host, f"{remote} --local {shlex.join(argv)}"])
+
+
+def sync_to_head() -> int:
+    """Push this checkout's bin/ and deployments/ to the head.
+
+    The head holds a plain copy, not a git checkout, and every command that touches containers
+    re-executes there — so a deployment added here does not exist as far as `switch` is concerned
+    until it is copied over. Doing that by hand is the step people forget.
+    """
+    host = os.environ.get("DGX_MODEL_HOST", "muo@192.168.0.100")
+    remote = os.environ.get("DGX_MODEL_REMOTE_DIR", "~/dgx-model")
+    src = HERE.parent
+    cmd = ["rsync", "-az", "--delete", "--exclude", "__pycache__",
+           f"{src}/bin/", f"{host}:{remote}/bin/"]
+    r = sh(cmd, timeout=120)
+    if r.returncode:
+        print(r.stderr.strip()[:400], file=sys.stderr)
+        return r.returncode
+    cmd = ["rsync", "-az", "--delete", f"{src}/deployments/", f"{host}:{remote}/deployments/"]
+    r = sh(cmd, timeout=120)
+    if r.returncode:
+        print(r.stderr.strip()[:400], file=sys.stderr)
+        return r.returncode
+    names = sorted(p.stem for p in (src / "deployments").glob("*.toml"))
+    print(f"synced to {host}:{remote} — {len(names)} deployments: {', '.join(names)}")
+    return 0
+
+
+def probe(deps: dict[str, dict], name: str | None, extra: list[str], tool: str, kind: str) -> int:
+    """Shared body of `bench` and `longctx`: resolve the deployment, then hand off to the tool."""
+    rep = status(deps)
+    target = name or rep["active"]
+    if not target:
+        api = (rep.get("api") or {})
+        if api.get("served") is None:
+            print(f"{api.get('url')} did not answer /v1/models (tried 3 times). Containers may still "
+                  f"be up — check `dgx-model status` before assuming the pair is idle.", file=sys.stderr)
+        else:
+            print("nothing is serving; start a deployment first (dgx-model switch <name>)", file=sys.stderr)
+        return 1
+    if target not in deps:
+        print(f"unknown deployment: {target}", file=sys.stderr)
+        return 2
+    d = deps[target]
+    served = served_models(d["api_url"])
+    if not served or d["served_model"] not in served:
+        print(f"{target} is not the model answering {d['api_url']} (serves {served})", file=sys.stderr)
+        return 1
+
+    out_dir = STATE_DIR / kind
+    out_dir.mkdir(parents=True, exist_ok=True)
+    stamp = now_iso().replace(":", "").replace("-", "")
+    out = out_dir / f"{stamp}-{target}.json"
+
+    # A deployment that runs one server per node (rather than one model across both) declares every
+    # endpoint; the tools treat the list as one pool. `bench_from` says where the client belongs:
+    # measuring two nodes from a host with a fast link to one and a tunnel to the other measures the
+    # link, not the model.
+    urls = d.get("api_urls") or [d["api_url"]]
+    api = ",".join(f"{u}/v1" for u in urls)
+    run_on = d.get("bench_from", "local")
+    if run_on == "head":
+        host = os.environ.get("DGX_MODEL_HOST", "muo@192.168.0.100")
+        remote_bin = os.environ.get("DGX_MODEL_REMOTE_DIR", "~/dgx-model") + f"/bin/{tool}"
+        remote_out = f"/tmp/{out.name}"
+        cmd = shlex.join([remote_bin, "--api", api, "--model", d["served_model"],
+                          "--json", remote_out, *extra])
+        print(f"# {target} via {api} (client on {host})  ->  {out}")
+        rc = subprocess.call(["ssh", "-o", "BatchMode=yes", host, cmd])
+        subprocess.run(["scp", "-q", f"{host}:{remote_out}", str(out)], check=False)
+        return rc
+    argv = [sys.executable, str(HERE / tool), "--api", api, "--model", d["served_model"],
+            "--json", str(out), *extra]
+    print(f"# {target} via {api}  ->  {out}")
+    return subprocess.call(argv)
+
+
+def bench(deps: dict[str, dict], name: str | None, extra: list[str]) -> int:
+    """Run llm-quickbench against a deployment that is actually serving.
+
+    The point of going through dgx-model rather than calling llm-quickbench directly is
+    attribution: the row is only worth keeping if we know which deployment produced it, and
+    that it was the one answering the API at the time.
+    """
+    return probe(deps, name, extra, "llm-quickbench", "bench")
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(prog="dgx-model", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    sub.add_parser("list")
+    s = sub.add_parser("status"); s.add_argument("--json", action="store_true")
+    w = sub.add_parser("switch"); w.add_argument("name"); w.add_argument("--dry-run", action="store_true")
+    sub.add_parser("history")
+    b = sub.add_parser("bench")
+    b.add_argument("--deployment", help="default: whatever is serving now")
+    b.add_argument("rest", nargs=argparse.REMAINDER, help="arguments for llm-quickbench, after --")
+    sub.add_parser("sync")
+    lc = sub.add_parser("longctx")
+    lc.add_argument("--deployment", help="default: whatever is serving now")
+    lc.add_argument("rest", nargs=argparse.REMAINDER, help="arguments for llm-longctx-probe, after --")
+    ap.add_argument("--local", action="store_true", help="never re-execute over ssh")
+    args = ap.parse_args()
+    # bench talks to the API over the network and writes its rows where it runs, so it stays local.
+    if not args.local and args.cmd not in ("bench", "longctx", "sync"):
+        maybe_remote([a for a in sys.argv[1:] if a != "--local"])
+    if args.cmd == "sync":
+        return sync_to_head()
+    deps = load_deployments()
+    if args.cmd == "list":
+        for n, d in deps.items():
+            where = d.get("compose_project") or ",".join((d.get("containers") or {}).get("head") or ["-"])
+            print(f"{n:22} serves {d['served_model']:26} {where:20} {d['host']['recipe_dir']}")
+        return 0
+    if args.cmd == "status":
+        rep = status(deps)
+        if args.json:
+            print(json.dumps(rep, indent=1))
+        else:
+            print(f"active: {rep['active'] or '(none)'}   api {rep['api']['url'] if rep['api'] else '-'} serves {rep['api']['served'] if rep['api'] else None}")
+            for n, e in rep["deployments"].items():
+                print(f"  {n:20} head={len(e['head_containers'])} worker={len(e['worker_containers'])} serving={e['serving']} since={e['head_created'] or '-'}")
+            if rep.get("last_switch"):
+                print(f"last switch: {rep['last_switch'].get('active')} at {rep['last_switch'].get('since')}")
+        return 0
+    if args.cmd == "switch":
+        return switch(deps, args.name, args.dry_run)
+    if args.cmd == "bench":
+        return bench(deps, args.deployment, [a for a in args.rest if a != "--"])
+    if args.cmd == "longctx":
+        return probe(deps, args.deployment, [a for a in args.rest if a != "--"],
+                     "llm-longctx-probe", "longctx")
+    if args.cmd == "history":
+        h = STATE_DIR / "history"
+        for p in sorted(h.glob("*")) if h.exists() else []:
+            log = p / "switch.log"
+            last = log.read_text().splitlines()[-1] if log.exists() else ""
+            print(f"{p.name}: {last[:160]}")
+        return 0
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())

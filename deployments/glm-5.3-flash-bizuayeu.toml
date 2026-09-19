@@ -1,0 +1,60 @@
+# GLM-5.3-Flash NVFP4, Bizuayeu's BIZ kit — recipe submodule GLM-5.3-Flash-NVFP4-2x-DGX-Sparks-BIZ.
+# Same model and quantization as glm-5.3-flash-himorishige; a different operating philosophy.
+#
+# NOT PROVISIONED, and it does not fit the switch pattern yet — see [prerequisites]. This file
+# exists so the deployment is defined and its gaps are written down rather than rediscovered.
+#
+# What makes it different from every other deployment here: it is not a pair of shell scripts but a
+# Python package (`python -m glm53_setup`) with plan / preflight / start / status / stop phases, a
+# settings TOML profile per kit, pinned asset locks and checksum verification. `server start` stays
+# in the FOREGROUND supervising its rank's container and has a `run_seconds` deadline that includes
+# model load — so it cannot be driven by dgx-model's start steps as written; it needs a detached
+# wrapper, and `resources.run_seconds` has to be long enough for a session rather than a smoke test.
+name = "glm-5.3-flash-bizuayeu"
+served_model = "glm-5.3-flash-nvfp4"         # confirm against the profile before the first switch
+served_aliases = []
+api_url = "http://192.168.0.100:8888"
+boot_timeout_s = 2400
+
+[containers]
+# Container names come from the profile; fill them in from `server status` on the first run rather
+# than guessing, because detection is what `dgx-model status` reports and a wrong name reads as
+# "not running".
+head = []
+worker = []
+
+[host]
+recipe_dir = "/home/muo/GLM-5.3-Flash-NVFP4-2x-DGX-Sparks-BIZ"
+worker = "dgx02"
+# Rank 1 (worker) first, then rank 0 — the recipe is explicit about the order. Both need detaching.
+start = [
+  ["ssh", "-o", "BatchMode=yes", "dgx02", "cd /home/muo/GLM-5.3-Flash-NVFP4-2x-DGX-Sparks-BIZ && setsid nohup python -m glm53_setup server start --rank 1 >/tmp/biz-rank1.log 2>&1 &"],
+  ["bash", "-lc", "cd /home/muo/GLM-5.3-Flash-NVFP4-2x-DGX-Sparks-BIZ && setsid nohup python -m glm53_setup server start --rank 0 >/tmp/biz-rank0.log 2>&1 &"],
+]
+stop = [
+  ["bash", "-lc", "cd /home/muo/GLM-5.3-Flash-NVFP4-2x-DGX-Sparks-BIZ && python -m glm53_setup server stop --rank 0"],
+  ["ssh", "-o", "BatchMode=yes", "dgx02", "cd /home/muo/GLM-5.3-Flash-NVFP4-2x-DGX-Sparks-BIZ && python -m glm53_setup server stop --rank 1"],
+]
+status = [["bash", "-lc", "cd /home/muo/GLM-5.3-Flash-NVFP4-2x-DGX-Sparks-BIZ && python -m glm53_setup server status --rank 0"]]
+
+[lane]
+model = "dgx-spark/glm-5.3-flash-bizuayeu"
+timeout_s = 3600
+sessions = 2
+price_input = 0.0
+price_output = 0.0
+price_cache_read = 0.0
+
+[prerequisites]
+notes = [
+  "same checkout on BOTH hosts, plus `pip install -r requirements/huggingface.lock.txt`",
+  "a settings TOML for this kit (fabric, memory reserve, run_seconds); the template is in the repo",
+  "assets: the downloader reads the pinned revision from the lock — never substitute main",
+  "checksum verification is a SEPARATE step from download completion; the kit says so explicitly",
+  "`server preflight --rank N` refuses to start beside another GPU container, so the pair must be idle",
+  "start/stop commands above are detached wrappers; verify them by hand once before trusting a switch",
+]
+
+[prerequisites.traps]
+foreground_supervisor = """`server start` supervises its container in the foreground and stops that rank on Ctrl+C, deadline or low memory. `resources.run_seconds` includes model loading, so a value sized for a smoke test ends the session mid-use."""
+separate_checksum_step = """A "complete" download state only checks presence and sizes. Treat the checksum step as required; the kit's own runbook says never to infer PASS from the absence of errors."""

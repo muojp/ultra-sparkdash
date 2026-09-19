@@ -1,0 +1,99 @@
+# DeepSeek-V4.1-Flash, EXL3 2.9 bpw, on the dgx pair — recipe submodule
+# DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks (MiaAI-Lab). Values are the recipe's own defaults
+# (.env.example at 8404ac7) unless a comment says otherwise.
+#
+# PROVISIONED and proven (2026-09-18): both weight trees are staged under ~/models — 201 GiB
+# EXL3 (39/39 shards) and 189 GiB Engram (shards 47+48 + index + config.json) — and the first
+# boot succeeded on the third attempt, after two recipe fixes that only a foreign kit hits
+# (see prerequisites.traps). A switch now takes 9m30s with the image already local.
+name = "deepseek-v4.1-flash"
+served_model = "DeepSeek-v4.1-Flash-EXL3"
+served_aliases = []
+api_url = "http://192.168.0.100:8888"          # vLLM binds 0.0.0.0:8888 and the containers use --network host
+# No Compose project: this recipe runs two named containers through docker run.
+boot_timeout_s = 3000                           # the recipe's own notes describe a 25-minute boot (README "25-minute-boot server")
+
+[containers]                                    # how `dgx-model status` finds it, per side of the pair
+head = ["dsv41-exl3-head"]
+worker = ["dsv41-exl3-worker"]
+
+[host]
+recipe_dir = "/home/muo/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks"
+worker = "dgx02"                                # ssh alias from the head; the recipe reaches it as WORKER_SSH over CX7
+start = [["./start.sh"]]                        # preflight -> image -> NFSv4 share -> worker --headless -> head vllm serve -> wait /health
+stop = [["./start.sh", "stop"]]                 # ./stop.sh is the same teardown
+status = [["./start.sh", "status"]]
+
+[lane]
+# First measurement on this pair, 2026-09-18 smoke (single stream, temperature 0): 160 completion
+# tokens in 6.78 s end to end, i.e. ~23.6 tok/s including prefill and 84 reasoning tokens — the
+# low end of the recipe's own 23-43 tok/s band, and just above GLM-5.3-Flash's 22.5 tok/s. Prefix
+# cache: a 14434-token prompt took 25.34 s cold and 1.61 s warm with 14336 cached_tokens reported.
+# Fuller smoke the same evening: 400 tokens of steady-state decode at 26.0 tok/s; streaming TTFT
+# 2.86 s; two concurrent streams at 19.6 + 18.5 tok/s for 36.0 tok/s aggregate (MAX_NUM_SEQS=2);
+# json_schema structured output valid; an 83055-token needle prompt answered correctly in 107.9 s.
+# Still not a benchmark: single node, no sustained load, vision untested.
+# Reasoning budget, measured 2026-09-18: this model thinks before it answers, and the length of
+# that thinking varies for the *same* prompt at temperature 0 (300 / 597 / 1200 tokens observed —
+# speculative decoding and prefix caching make it non-deterministic). When max_tokens is small the
+# whole budget can go to reasoning and the reply comes back with finish_reason=length and
+# content=None — null, not "" — so a caller that assumes a string raises instead of retrying.
+# Budget generously, or send chat_template_kwargs={"thinking": false}, which answered the same
+# json_schema request in 2.7 s with 0 reasoning tokens.
+model = "dgx-spark/deepseek-v4.1-flash"
+timeout_s = 3600
+sessions = 2                                    # the recipe's MAX_NUM_SEQS=2, confirmed by measurement:
+# `dgx-model bench -- -c 1,2,4,8 --max-tokens 256 --no-thinking` (2026-09-18) gave 27.9 / 38.0 /
+# 37.3 / 37.0 aggregate tok/s — the pair stops gaining work past two streams, exactly the server's
+# MAX_NUM_SEQS. What does change past it is latency: TTFT p50 goes 1.10 / 1.67 / 14.42 / 27.21 s
+# (p95 43.9 s at eight) because everything beyond the second stream is queued, and per-stream decode
+# settles at ~20 tok/s. Raising the ceiling means raising MAX_NUM_SEQS *and* the 2.5 GiB KV cache.
+# Priced at the upstream deepseek-v4-flash rate as a placeholder: DeepSeek does not list a v4.1
+# Flash price, and this lane is local anyway. Correct it before any cost comparison is published.
+price_input = 0.44
+price_output = 1.32
+price_cache_read = 0.014
+
+# A second, measured operating point. Not the default and not wired into dgx-model: recorded here
+# so the choice is made from numbers rather than re-derived. Run it by hand on the head with
+#   SPEC_METHOD=none MAX_NUM_SEQS=4 MAX_MODEL_LEN=131072 ./start.sh
+# KV_CACHE_MEMORY_BYTES stays at the shipped 2.5 GiB: 4 x 128k = 524,288 tokens fits the pool's
+# 774,400, so the head prefill margin the README warns about is never touched. With speculation off
+# the EXL3_TEMP_ROWS_FUSED >= MAX_NUM_SEQS x (DSPARK_TOKENS+1) constraint also stops binding.
+[profiles.batch]
+measured = "2026-09-18"
+settings = "SPEC_METHOD=none MAX_NUM_SEQS=4 MAX_MODEL_LEN=131072"
+# decode tok/s, `dgx-model bench -- -c 1,2,4,8 --max-tokens 256 --no-thinking`
+shipped_decode = "27.9 / 38.0 / 37.3 / 37.0 at 1/2/4/8 (peak 38.0 at two streams)"
+batch_decode = "21.0 / 30.1 / 43.7 / 43.5 at 1/2/4/8 (peak 43.7 at four streams)"
+ttft_p50_at_4 = "14.42 s shipped vs 3.10 s batch — shipped queues everything past the second stream"
+prefill = "808 tok/s for one 114929-token prompt; 863 tok/s aggregate for four 116683-token prompts at once, and the last of the four returns after 541 s"
+memory = "MemAvailable floor 9.06 GiB on the single long prompt and 8.08 GiB on four at once — nowhere near the 1.5 GiB guard threshold, and far above the 2.1 GiB the shipped profile reaches at 601k"
+verdict = """Worth +15% peak decode, and only for short prompts sent many at a time. It costs 25% of
+single-stream decode (27.9 -> 21.0 tok/s) and drops the context ceiling from 600k to 128k. For the
+review lane — long prompts, few at a time — prefill dominates and concurrency buys just 7%
+(808 -> 863 tok/s aggregate) while the last request waits nine minutes, so the shipped profile wins.
+The recipe's README reports 53.7 tok/s at four streams with speculation off; we measured 43.7 under
+our own prompt mix, so treat 53.7 as that kit's number, not a target here."""
+
+[prerequisites]
+# What a human has to do once, before the first switch.
+# 2026-09-18: all of the one-time work is done. `download.sh` on the head now answers
+# "39/39 shards / 3/3 files / complete". Logs: <recipe_dir>/logs/download.log (EXL3, 49 min,
+# ~4.4 GiB/min, five resumed `peer closed connection` errors) and logs/engram-download.log
+# (Engram over Xet, 46 min, ~4 GiB/min).
+notes = [
+  "clone the recipe on the head at host.recipe_dir (the submodule pins the revision this file was written against) — DONE",
+  ".env from .env.example: this kit is head 192.168.100.30 / worker 192.168.100.40, both CX7 ports enp1s0f0np0 + rocep1s0f0, RoCEv2 GID index 3, worker user muo — DONE",
+  "weights: 201 GiB EXL3 (39 shards) + 189 GiB Engram (shards 47+48) into ~/models — DONE",
+  "the worker reads the weights over NFSv4 (WEIGHT_SYNC=nfs), so no second copy on dgx02",
+  "PORT=8888 is the same port GLM-5.3 serves on, so the first start has to follow a stop — which is what `dgx-model switch` does",
+]
+
+# Three traps this recipe has on a host that is not its authors', all hit on 2026-09-18.
+[prerequisites.traps]
+download_sh_silent_exit = """download.sh dies with no output at all when MODEL_HOST does not exist yet: under `set -e` with pipefail, `find $MODEL_HOST ... | wc -l` fails before the first echo. Create MODEL_HOST and ENGRAM_DIR first. Only bites when MODEL_HOST is not the default ./model."""
+hub_cache_owned_by_root = """~/.cache/huggingface/hub on this head is root-owned (an earlier sudo download), so the hub metadata write is refused with a Permission denied warning. Downloads to --local-dir still work; this deployment sets HF_HUB_CACHE to a user-owned path rather than chowning root state."""
+engram_needs_xet = """The two Engram shards are ~95 GiB each and the hub refuses a file that large over the regular (non-Xet) path, so a kit that sets HF_HUB_DISABLE_XET=1 — which this one did, carried over from an older hf-xet hang on the GLM download — fails the Engram stage instantly, and only after the 197 GiB EXL3 fetch has already succeeded. The mirror's download.sh (00621d5) forces Xet for that one call. Xet did not hang here (hf-xet 1.6.0 / huggingface_hub 1.32.0) and its chunk cache stayed at 5 MiB, so it costs no extra disk."""
+nfs_export_on_overlay2 = """The exporter left /export as the container's own root while bind-mounting the weight trees below it, and the kernel nfsd refuses to export an overlay2 upper dir ("does not support NFS export"); the entrypoint dies under set -e and the container restart-loops, so the boot reports "NFS server did not become ready". Mirror 07f307b binds a host directory at /export and adds crossmnt — without crossmnt the worker mounts the export and reads an EMPTY directory rather than erroring."""
+engram_config_json_missing = """ENGRAM_FILES did not list config.json and prepare_engram_src.py copied it only if present, but engram_file_backend requires it to derive each table's layer id. The download reports success and every rank dies later at the first decoder layer with FileNotFoundError: /engram-src/config.json. Mirror b56cddc fetches it and fails in the staging step instead."""

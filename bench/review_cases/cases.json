@@ -1,0 +1,60 @@
+{
+  "_comment": "Five rough bug-fix exercises for the review lane's preflight. Each case is a short file with exactly one planted defect, of a kind that review actually has to catch: a plain logic mistake, a check-then-act race, or input that reaches a sink unvalidated. They are deliberately small — this measures whether a deployment can hold a review-shaped task at a workable speed, not whether it can read a codebase. Expected findings are written down so an answer can be scored by hand without re-deriving the bug.",
+  "cases": [
+    {
+      "id": "php-discount-logic",
+      "language": "PHP / Laravel",
+      "defect": "logic",
+      "expected": "The tiered discount uses >= on the lower bound of the next tier, so an order of exactly 10000 gets the 5% tier instead of 10%; the boundary case is off by one tier. Also returns a float where money should stay integer minor units.",
+      "code": "<?php\n\nnamespace App\\Services;\n\nclass DiscountService\n{\n    /** Order totals are in yen (integer). Returns the discounted total. */\n    public function apply(int $totalYen, bool $isMember): float\n    {\n        $rate = 0.0;\n\n        if ($totalYen > 10000) {\n            $rate = 0.10;\n        } elseif ($totalYen >= 5000) {\n            $rate = 0.05;\n        }\n\n        if ($isMember) {\n            $rate += 0.05;\n        }\n\n        return $totalYen - ($totalYen * $rate);\n    }\n}\n",
+      "signals": [
+        "\\b10000\\b.*\\b(5|five)\\s*%|boundary|off.by|>=|greater than or equal",
+        "\\btier\\b|\\bthreshold\\b"
+      ]
+    },
+    {
+      "id": "laravel-missing-validation",
+      "language": "PHP / Laravel",
+      "defect": "validation",
+      "expected": "The controller mass-assigns the whole request into the model with no validation and no allow-list, so a client can set role, is_admin or any other fillable column, and can also send an unvalidated email. Needs a FormRequest (or $request->validate) plus an explicit field list; $fillable is not a substitute for validation.",
+      "code": "<?php\n\nnamespace App\\Http\\Controllers;\n\nuse App\\Models\\User;\nuse Illuminate\\Http\\Request;\n\nclass ProfileController extends Controller\n{\n    public function update(Request $request, int $id)\n    {\n        $user = User::findOrFail($id);\n        $user->fill($request->all());\n        $user->save();\n\n        return response()->json(['ok' => true, 'user' => $user]);\n    }\n}\n",
+      "signals": [
+        "validat|FormRequest|\\$request->validate|allow.?list|whitelist",
+        "mass.assign|fill\\(|all\\(\\)"
+      ]
+    },
+    {
+      "id": "laravel-balance-race",
+      "language": "PHP / Laravel",
+      "defect": "concurrency",
+      "expected": "Read-modify-write on the balance outside any transaction or row lock: two concurrent withdrawals both read the same balance and both pass the check, so the account can go negative (lost update). Needs a transaction with lockForUpdate(), or an atomic conditional UPDATE ... WHERE balance >= :amount, and the affected-row count checked.",
+      "code": "<?php\n\nnamespace App\\Services;\n\nuse App\\Models\\Account;\n\nclass WalletService\n{\n    public function withdraw(int $accountId, int $amountYen): bool\n    {\n        $account = Account::find($accountId);\n\n        if ($account->balance_yen < $amountYen) {\n            return false;\n        }\n\n        $account->balance_yen = $account->balance_yen - $amountYen;\n        $account->save();\n\n        return true;\n    }\n}\n",
+      "signals": [
+        "race|concurren|lost update|atomic",
+        "lockForUpdate|transaction|SELECT .*FOR UPDATE|WHERE balance"
+      ]
+    },
+    {
+      "id": "csharp-cache-race",
+      "language": "C#",
+      "defect": "concurrency",
+      "expected": "Check-then-act on a non-thread-safe Dictionary from concurrent callers: two threads can both miss and both build the value (duplicate work, and the factory may have side effects), and concurrent writes to Dictionary can corrupt it or throw. Needs ConcurrentDictionary.GetOrAdd with Lazy<T>, or a lock around the whole check-and-insert.",
+      "code": "using System;\nusing System.Collections.Generic;\nusing System.Threading.Tasks;\n\npublic sealed class RateCache\n{\n    private readonly Dictionary<string, decimal> _rates = new();\n    private readonly IRateApi _api;\n\n    public RateCache(IRateApi api) => _api = api;\n\n    public async Task<decimal> GetRateAsync(string pair)\n    {\n        if (_rates.TryGetValue(pair, out var cached))\n        {\n            return cached;\n        }\n\n        var rate = await _api.FetchAsync(pair);\n        _rates[pair] = rate;\n        return rate;\n    }\n}\n",
+      "signals": [
+        "race|concurren|thread.?safe|not safe",
+        "ConcurrentDictionary|lock\\b|GetOrAdd|Lazy<"
+      ]
+    },
+    {
+      "id": "csharp-expiry-logic",
+      "language": "C#",
+      "defect": "logic",
+      "expected": "Any() means 'at least one item is still valid', so a basket with one unexpired item is treated as entirely valid — the intent is All(). Also compares DateTime.Now against what is presumably UTC storage, which shifts every boundary by the machine's offset.",
+      "code": "using System;\nusing System.Collections.Generic;\nusing System.Linq;\n\npublic sealed class Basket\n{\n    public required IReadOnlyList<Reservation> Items { get; init; }\n\n    /// <summary>True when every reservation in the basket is still valid.</summary>\n    public bool IsStillValid()\n    {\n        return Items.Any(item => item.ExpiresAtUtc > DateTime.Now);\n    }\n}\n\npublic sealed record Reservation(string Sku, DateTime ExpiresAtUtc);\n",
+      "signals": [
+        "\\bAll\\(|should be All|every|all items",
+        "\\bAny\\(|UtcNow|DateTime\\.Now"
+      ]
+    }
+  ]
+}

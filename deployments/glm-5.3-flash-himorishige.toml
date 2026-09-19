@@ -1,0 +1,42 @@
+# GLM-5.3-Flash NVFP4 on the pair, himorishige's recipe — one of three GLM-5.3 deployments
+# here, named by whose kit it is rather than by the model, because the model no longer
+# identifies the deployment. The others are glm-5.3-flash-bizuayeu (Bizuayeu, a setup and
+# validation kit) and glm-5.3-flash-miaai (MiaAI-Lab, EXL3 quantized).
+# GLM-5.3-Flash NVFP4 on the dgx pair — recipe submodule glm53-flash-2x-dgx-spark-recipe (deployed copy: ~/glm53-cluster).
+name = "glm-5.3-flash-himorishige"
+served_model = "glm-5.3-flash-nvfp4"
+served_aliases = []
+api_url = "http://192.168.0.100:8888"
+compose_project = "glm53"
+boot_timeout_s = 1800                              # cold boot 12-17 min (health.sh waits up to 90 min on its own)
+
+[host]
+recipe_dir = "/home/muo/glm53-cluster"
+worker = "dgx02"
+# The recipe's own scripts, in smoke.sh order: worker first, 25 s, head, then wait for the API.
+start = [["scripts/start-worker.sh"], ["sleep", "25"], ["scripts/start-head.sh"], ["scripts/health.sh"]]
+stop = [["scripts/stop-both.sh"]]
+status = [["scripts/status-node2.sh"]]
+
+[host.env]                                         # per-launch overrides the start scripts honour (start-*.sh: OVERRIDES="K=V ...")
+OVERRIDES = "MAX_NUM_SEQS=4"
+WAIT_ATTEMPTS = "180"
+
+[lane]
+model = "dgx-spark/glm-5.3-flash-himorishige"
+timeout_s = 3600
+sessions = 2
+price_input = 0.15
+price_output = 0.50
+price_cache_read = 0.03
+
+[review]
+# Measured 2026-09-19 with bench/review_cases (five files, one planted defect each).
+found = "5/5 — every defect correctly identified, including both races and the missing validation"
+caveat = """All five findings arrived in `reasoning_content` and the message content came back
+EMPTY, at 700 and again at 1600 max_tokens. chat_template_kwargs={"thinking": false} is not honoured
+by this template, so the model cannot be told to skip the trace, and a caller that reads only
+`content` — which is the obvious thing to write — gets nothing while paying for a correct review.
+Either budget generously and read reasoning_content, or treat this deployment as unsuitable for a
+lane that expects an answer in the message body."""
+

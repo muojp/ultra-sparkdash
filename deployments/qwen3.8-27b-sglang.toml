@@ -1,0 +1,92 @@
+# Qwen3.8-27B on SGLang — recipe submodule Qwen3.8-27B-SGLang-DGX-Spark (MiaAI-Lab, mirrored to
+# muojp per deployments/README.md §1). Values are the recipe's own defaults (.env.sample and
+# start.sh at 9fb18ed) unless a comment says otherwise.
+#
+# NOT PROVISIONED: the recipe is not checked out on the head and no weights are fetched. Unlike
+# the other three there is no download step to run first — the container pulls the ~24 GiB
+# checkpoint into <recipe_dir>/.cache/huggingface on its first start.
+#
+# This deployment breaks three assumptions the other three share, and they are the reason it is
+# worth writing down rather than assuming dgx-model "just works" with it:
+#
+#   1. It is a SINGLE-NODE recipe, so this deployment runs TWO independent servers — one per node,
+#      each with its own copy of the weights — instead of leaving dgx02 idle. They are not a
+#      cluster: no TP, no NFS weight sharing, no NCCL. Concurrency is measured against the pool of
+#      both endpoints (round-robin), which is what `api_urls` and `bench_from` below are for. No
+#      reverse proxy: the client addresses each node directly, by design for now.
+#   2. It is not a 300B-class checkpoint. 27B at NVFP4 is ~24 GiB on disk, so the memory pressure
+#      that shapes every other deployment here — 99.5 GiB of weights per rank against 121.7 GiB of
+#      unified memory — simply does not apply.
+#   3. It serves through SGLang, not vLLM. Same OpenAI-compatible surface on the same port, but the
+#      Prometheus metric names differ (`sglang:*`, not `vllm:*`), so the dashboard's vLLM row stays
+#      empty while this is up. See [observability] below.
+name = "qwen3.8-27b-sglang"
+served_model = "qwen3.8-27b-sglang"          # start.sh SERVED_MODEL_NAME
+served_aliases = []
+api_url = "http://192.168.0.100:8888"        # dgx01's server; kept for `status` and single-node use
+# Both servers. The client runs on the head (bench_from), so dgx02 is addressed over the CX7 link
+# it shares with dgx01 rather than its Wi-Fi LAN address, which the Mac cannot reach anyway. A
+# sweep run from the Mac would compare a wired path against a WireGuard tunnel.
+api_urls = ["http://127.0.0.1:8888", "http://192.168.100.40:8888"]
+bench_from = "head"
+boot_timeout_s = 1200                         # start.sh polls /v1/models itself; first boot also pulls ~24 GiB
+# No Compose project: one `docker run --privileged --network host` container per engine.
+[containers]
+head = ["qwen3.8-27b-sglang"]                 # start-mtp-8889.sh would add qwen3.8-27b-sglang-mtp
+worker = ["qwen3.8-27b-sglang"]               # same image and name, its own server, not a worker
+
+[host]
+recipe_dir = "/home/muo/Qwen3.8-27B-SGLang-DGX-Spark"
+worker = "dgx02"                              # unused by this recipe; kept so `status` reports the pair uniformly
+# Three interchangeable engines ship with it. DSpark is the one the README puts first, and the one
+# whose numbers it quotes for code and tool calls; `./start.sh` is MTP, `./start-dflash.sh` is
+# DFlash2 and pulls a different image. Switch engines by editing this list, not by hand-running a
+# script, so that what dgx-model starts is what this file says.
+start = [
+  ["./start-dspark.sh"],
+  ["ssh", "-o", "BatchMode=yes", "dgx02", "cd /home/muo/Qwen3.8-27B-SGLang-DGX-Spark && ./start-dspark.sh"],
+]
+stop = [
+  ["./stop.sh"],
+  ["ssh", "-o", "BatchMode=yes", "dgx02", "cd /home/muo/Qwen3.8-27B-SGLang-DGX-Spark && ./stop.sh"],
+]
+status = [["docker", "ps", "--filter", "name=qwen3.8-27b-sglang", "--format", "{{.Names}} {{.Status}}"]]
+
+[lane]
+# Unmeasured on this box. The recipe's own figures (its README, "Measured on this box") are
+# ~51.5 tok/s on code and ~23 on chat for DSpark, single stream — a different engine and a model an
+# order of magnitude smaller than the other deployments, so treat them as that author's numbers
+# until `dgx-model bench` has run here.
+model = "dgx-spark/qwen3.8-27b-sglang"
+timeout_s = 1800
+sessions = 20                                 # MAX_CONCURRENT_REQUESTS=10 per node, two nodes
+# Placeholder pricing, as with the EXL3 deployment: this lane is local and Qwen publishes no rate
+# that matches this quantization. Correct it before any cost comparison is published.
+price_input = 0.0
+price_output = 0.0
+price_cache_read = 0.0
+
+[observability]
+# What is automatic (deployments/README.md §6) and what this recipe does not give us.
+metrics = """SGLang exports Prometheus metrics with an `sglang:*` prefix when `--enable-metrics` is
+set, which start.sh does by default, together with `--enable-cache-report`. The fleet dashboard's
+"vLLM native /metrics" row queries `vllm:*` and will therefore be empty while this deployment is
+up; the sparkDash rows that read the OpenAI surface (availability, served model, the Deployment
+row) keep working, because they probe /v1/models rather than the engine's metrics."""
+todo = """Point the metrics proxy at SGLang's names, or add a second dashboard row, before this is
+used for anything that has to be measured over time rather than tried out."""
+
+[prerequisites]
+notes = [
+  "clone the mirror at host.recipe_dir on BOTH nodes, on the branch this submodule pins",
+  "cp .env.sample .env on both — ships YARN=0, CONTEXT_LENGTH=262144, MAX_CONCURRENT_REQUESTS=16",
+  "each node pulls its own ~24 GiB copy of the weights on first start; there is no shared cache here",
+  "HF_TOKEN in the environment for the checkpoint pull (higher rate limits; the repo is public)",
+  "no download step: the first start pulls ~24 GiB of weights, and DSpark fetches a ~2.7 GiB draft on top",
+  "PORT=8888 is shared with every other deployment, so the first start has to follow a stop — which is what `dgx-model switch` does",
+]
+
+[prerequisites.traps]
+# Carried over from the recipe's README rather than discovered here — nothing has been run yet.
+dspark_rejects_yarn = """Keep YARN=0 and CONTEXT_LENGTH=262144 with the DSpark engine: the YaRN rope override leaks into the draft config and crashes at boot. Contexts above 262144 need the MTP engine (./start.sh)."""
+mem_fraction_wedge = """The README records `--mem-fraction-static 0.95` with DFlash2 wedging the box once, needing a hard reboot — the same failure mode the EXL3 deployment has (README §4 trap 1 here). The shipped 0.90 is the validated value; do not raise it casually."""

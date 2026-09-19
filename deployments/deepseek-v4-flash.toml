@@ -1,0 +1,22 @@
+# DeepSeek-V4-Flash (Vision-Exp) on the dgx pair — recipe submodule DeepSeek-v4-Flash-DSpark-2x-DGX-Spark.
+name = "deepseek-v4-flash"
+served_model = "deepseek-v4-flash-vision-exp"      # /v1/models data[0].id (the alias deepseek-v4-flash-0731 is also served)
+served_aliases = ["deepseek-v4-flash-0731"]
+api_url = "http://192.168.0.100:8888"             # head, as the LAN reaches it (VLLM_HOST=0.0.0.0 in .env.dspark)
+compose_project = "deepseek-v4-flash"
+boot_timeout_s = 1500                              # cold boot ~10 min; the start script waits WAIT_ATTEMPTS x WAIT_SECONDS itself
+
+[host]                                             # paths on the head node (dgx01)
+recipe_dir = "/home/muo/DeepSeek-v4-Flash-DSpark-2x-DGX-Spark"
+worker = "dgx02"                                   # ssh alias from the head; the recipe reaches it as WORKER_HOST over the fabric
+start = [["./start-deepseek-v4-flash-dspark.sh"]]
+stop = [["./stop-deepseek-v4-flash-dspark.sh"]]
+status = [["./status-deepseek-v4-flash-dspark.sh"]]
+
+[lane]                                         # what the review lane should run with (docs/glm53-flash-trial-20260918.md for the GLM numbers)
+model = "dgx-spark/deepseek-v4-flash-vision-exp"
+timeout_s = 1800
+sessions = 4
+price_input = 0.44
+price_output = 1.32
+price_cache_read = 0.014

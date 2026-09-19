@@ -10,9 +10,45 @@
 [sparkdash-retention]: https://github.com/muojp/sparkDash/blob/f5b3a9c7ddfda4011a728988f5aab4f7671a37e3/docs/OBSERVABILITY.md#retention-and-long-term-dashboards
 [sparkdash-prometheus]: https://github.com/muojp/sparkDash/blob/f5b3a9c7ddfda4011a728988f5aab4f7671a37e3/observability/prometheus/prometheus.yml
 [deepseek-tree]: https://github.com/muojp/DeepSeek-v4-Flash-DSpark-2x-DGX-Spark/tree/058bc5f27a675fa9199d1b6accdd97cb0e823158
+[glm53-tree]: https://github.com/muojp/glm53-flash-2x-dgx-spark-recipe/tree/feat/dgx-spark-pair-ops
+[glm53-readme]: https://github.com/muojp/glm53-flash-2x-dgx-spark-recipe/blob/feat/dgx-spark-pair-ops/README.ja.md
+[exl3-tree]: https://github.com/muojp/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/tree/feat/dgx-spark-pair-ops
+[exl3-upstream]: https://github.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks
+[vllm-metrics]: https://github.com/muojp/sparkDash/blob/feat/grafana-export/observability/vllm-metrics/README.md
 [deepseek-readme]: https://github.com/muojp/DeepSeek-v4-Flash-DSpark-2x-DGX-Spark/blob/058bc5f27a675fa9199d1b6accdd97cb0e823158/README.md
 
 ## English
+
+### Deployments: which model the pair serves, and switching it
+
+The pair holds one checkpoint at a time, so DeepSeek-V4-Flash and GLM-5.3-Flash are two
+*deployments* of the same two nodes. Each is pinned in [`deployments/<name>.toml`](./deployments):
+the recipe directory on the head node, the recipe's own start / stop / status commands, the served
+model name behind `http://192.168.0.100:8888/v1/models`, the cold-boot budget, and the settings the
+the review lane should run with against it (model id, dispatch timeout, pool size, price).
+[`bin/dgx-model`](./bin/dgx-model) is a thin layer over those scripts:
+
+```bash
+bin/dgx-model status            # active deployment, compose projects on head + worker, served model, uptime
+bin/dgx-model switch glm-5.3-flash --dry-run   # the exact commands a switch would run
+bin/dgx-model switch deepseek-v4-flash         # stop the other, drop the page cache, start, wait for /v1/models
+bin/dgx-model history
+```
+
+Three deployments are defined: `deepseek-v4-flash`, `glm-5.3-flash` and `deepseek-v4.1-flash`.
+The third is **defined but not provisioned** — its recipe is not checked out on the head and its
+weights (~197 GiB EXL3 + ~190 GiB Engram) are not downloaded, so `switch` refuses it with the reason
+rather than stopping the model that is serving. Its `[prerequisites]` list what a human does once; [`deployments/README.md`](./deployments/README.md) is the procedure for adding, mirroring and provisioning one.
+It is also the first recipe here that does not use Compose: it runs two named containers
+(`dsv41-exl3-head`, `dsv41-exl3-worker`), which is why a deployment may name its containers instead
+of a Compose project.
+
+It runs on the head node (`~/dgx-model/`, synced from this repository) and re-executes itself over
+ssh when invoked elsewhere (`DGX_MODEL_HOST=muo@192.168.0.100` to pick the host). A switch takes
+10–17 minutes of model loading, so it is an 8-hourly or daily operation, not an interactive one; the
+The consuming side (pause the lane, apply the deployment's hints, resume) is orchestrated separately —
+see `fondi-workspace/the consuming repository's own docs`.
+
 
 `ultra-sparkdash` turns a **2× NVIDIA DGX Spark** deployment running
 DeepSeek-V4-Flash with TP=2 over RoCE into a real-time view of what happens
@@ -24,9 +60,15 @@ submodules.
 |---|---|
 | [`sparkDash`][sparkdash-tree] | TokenTrace Live UI, read-only tailer, DGX metrics, and optional Prometheus/InfluxDB exporters |
 | [`DeepSeek-V4-Flash-DSpark-2x-DGX-Spark`][deepseek-tree] | vLLM V2 expert-routing recorder and subscriber-aware short-interval flushing |
+| [`glm53-flash-2x-dgx-spark-recipe`][glm53-tree] | Second inference stack for the same pair — GLM-5.3-Flash NVFP4, TP=2, MTP speculation ([recipe][glm53-readme]) |
+| [`DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks`][exl3-tree] | Third stack — DeepSeek-V4.1-Flash at EXL3 2.9 bpw, TP=2 over CX7, in-checkpoint DSpark speculation ([upstream][exl3-upstream]) |
 
 Regular sparkDash features remain available. TokenTrace Live adds a view
-specialized for DeepSeek-V4-Flash, TP=2 over RoCE, and MTP-5.
+specialized for DeepSeek-V4-Flash, TP=2 over RoCE, and MTP-5. It reads that
+recipe's expert recorder, so it stays dark while the pair serves GLM-5.3-Flash
+or DeepSeek-V4.1-Flash EXL3 — every other row (Prometheus, the per-model token
+counters, the Deployment row) follows whichever model is serving, with no
+per-model configuration.
 
 The browser aligns a 43-layer × 256-expert routing map and accepted versus
 rejected work with engine-step latency, tok/s, actual token output, routing
@@ -210,6 +252,32 @@ the API. See
 for procedures, sizing, and verification. Back up the volumes and keep Grafana
 provisioning under `observability/grafana/provisioning/` in Git.
 
+### Two inference stacks on one pair
+
+Two 300B-class checkpoints do not fit: 184 GiB of weights against 121 GiB per
+node, and both stacks serve on port 8888. So the pair runs one at a time and is
+switched between them, which makes *which model produced these tokens* the
+question the metrics have to answer.
+
+Two things follow from that, and both are set up here:
+
+* Stored token totals are keyed by **spark, port and model** — the same tuple
+  the exported series is labelled with. Keyed on spark and port alone, a switch
+  looks like one backend that keeps resetting, and the incoming model inherits
+  the outgoing model's lifetime total under its own `model` label.
+* vLLM's own `/metrics` is scraped as well (Prometheus job `vllm`), through a
+  read-only proxy on the head node so the inference API stays on `127.0.0.1`.
+  Every series there carries vLLM's `model_name`, and
+  `vllm:prompt_tokens_by_source_total{source=...}` splits the prompt side into
+  `local_compute` / `local_cache_hit` / `external_kv_transfer` with the parts
+  summing to `vllm:prompt_tokens_total`, so input and cached-input are read at
+  the source instead of subtracted from each other. See
+  [`observability/vllm-metrics/README.md`][vllm-metrics].
+
+The Fleet overview dashboard has a *vLLM native /metrics — per model* row for
+tokens, KV pool, queue-by-reason, MTP draft acceptance (overall and per draft
+position) and latency quantiles, with a `model` variable to select between them.
+
 ### GPU clock cap for thermal-throttle avoidance
 
 Clock-cap application and monitoring/export are separate. Each DGX runs
@@ -320,6 +388,8 @@ docker compose -f observability/docker-compose.yml config --quiet
 - [Observability exporters][sparkdash-observability]
 - [sparkDash README][sparkdash-readme]
 - [DeepSeek fork README][deepseek-readme]
+- [GLM-5.3-Flash recipe README][glm53-readme]
+- [vLLM native metrics][vllm-metrics]
 
 The root repository is distributed under the [MIT License](./LICENSE).
 Submodules, model weights, container images, CUDA/NCCL, and other runtime
@@ -330,6 +400,33 @@ artifacts retain their own terms. See
 
 ## 日本語
 
+### デプロイメント: いまどのモデルが動いているか、切り替え
+
+2 台の pair は一度に 1 checkpoint しか持てないので、DeepSeek-V4-Flash と GLM-5.3-Flash は同じ 2 台の
+2 つの *deployment* です。それぞれ [`deployments/<name>.toml`](./deployments) に、head 上の recipe
+ディレクトリ、recipe 自身の start / stop / status コマンド、`http://192.168.0.100:8888/v1/models` が返す
+served model 名、cold boot の予算、そして the review lane がそのモデルに対して使う設定 (model id、
+dispatch timeout、pool、単価) を pin しています。[`bin/dgx-model`](./bin/dgx-model) はそれらの script の薄い層です:
+
+```bash
+bin/dgx-model status            # active な deployment、head/worker の compose project、served model、稼働開始
+bin/dgx-model switch glm-5.3-flash --dry-run   # 切替で実行されるコマンドそのもの
+bin/dgx-model switch deepseek-v4-flash         # 他方を stop → page cache を drop → start → /v1/models を待つ
+bin/dgx-model history
+```
+
+定義済みの deployment は `deepseek-v4-flash` / `glm-5.3-flash` / `deepseek-v4.1-flash` の 3 本です。
+3 本目は **定義だけで未 provision** — head に recipe が無く、重み（EXL3 約 197 GiB + Engram 約 190 GiB）も
+未取得なので、`switch` は稼働中のモデルを止める前に理由付きで拒否します。人手で一度やることは `[prerequisites]` に、追加・mirror・provisioning の手順は [`deployments/README.md`](./deployments/README.md) にあります。
+この recipe だけ Compose を使わず、名前付きコンテナ 2 本（`dsv41-exl3-head` / `dsv41-exl3-worker`）で動くため、
+deployment は Compose project の代わりにコンテナ名を書けるようにしてあります。
+
+head ノードで動き (`~/dgx-model/` にこの repo から同期)、他所から呼ぶと ssh 越しに自分を再実行します
+(`DGX_MODEL_HOST=muo@192.168.0.100` でホスト指定)。切替はモデル読み込みに 10〜17 分かかるので 8 時間〜daily の
+運用で、対話的に頻繁に行うものではありません。利用側 (lane の pause、deployment の hints 適用、resume) は
+別に orchestrate します — `fondi-workspace/the consuming repository's own docs`。
+
+
 `ultra-sparkdash`は、**NVIDIA DGX Spark 2台**でDeepSeek-V4-FlashをTP=2 over
 RoCE実行する構成を、生成tokenの裏側までリアルタイム可視化します。記録した
 routed expert情報とsparkDashのmachine telemetryを組み合わせ、2つの実装forkを
@@ -339,6 +436,8 @@ Git submoduleとして固定する配布用メタリポジトリです。
 |---|---|
 | [`sparkDash`][sparkdash-tree] | TokenTrace Live UI、read-only tailer、DGXメトリクス、optionalなPrometheus/InfluxDB exporter |
 | [`DeepSeek-V4-Flash-DSpark-2x-DGX-Spark`][deepseek-tree] | vLLM V2 expert-routing recorderとsubscriber接続時の短周期flush |
+| [`glm53-flash-2x-dgx-spark-recipe`][glm53-tree] | 同じ2台で動かすもう一方の推論スタック。GLM-5.3-Flash NVFP4 / TP=2 / MTP投機（[レシピ][glm53-readme]） |
+| [`DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks`][exl3-tree] | 3本目のスタック。DeepSeek-V4.1-Flash を EXL3 2.9 bpw で、TP=2 / CX7 / checkpoint 内蔵の DSpark 投機（[upstream][exl3-upstream]） |
 
 通常のsparkDash機能はそのまま利用できます。TokenTrace Liveは
 DeepSeek-V4-Flash、TP=2 over RoCE、MTP-5構成向けのアドオンです。
@@ -507,6 +606,31 @@ Prometheus設定は再起動後に反映されます。`DOCKER_INFLUXDB_INIT_RET
 [`Retention`][sparkdash-retention]を
 参照し、長期保存時はvolumeをbackupしてください。
 
+### 1 組の 2 台で 2 つの推論スタックを運用する
+
+300B 級の checkpoint は 2 つ載りません（重み 184 GiB に対して 1 ノード 121 GiB、
+しかもどちらも 8888 番で待ち受けます）。したがって 2 台は常にどちらか一方を動かし、
+切り替えて使います。その結果「このトークンはどのモデルが出したのか」がメトリクス側の
+本質的な問題になります。
+
+ここではその前提で 2 つ手を入れてあります。
+
+* 保存されるトークン積算は **spark・port・model** をキーにします（エクスポートされる
+  系列のラベル組と同一）。spark と port だけをキーにすると、切り替えは「reset を
+  繰り返す 1 つのバックエンド」に見え、後から起動したモデルが前のモデルの生涯合計を
+  自分の `model` ラベルのまま引き継いでしまいます。
+* vLLM 自身の `/metrics` も scrape します（Prometheus の `vllm` job）。head ノードに
+  読み取り専用の proxy を置くので、推論 API は `127.0.0.1` のままです。そこでは全系列が
+  vLLM の `model_name` を持ち、`vllm:prompt_tokens_by_source_total{source=...}` が
+  prompt 側を `local_compute` / `local_cache_hit` / `external_kv_transfer` に分解します
+  （合計は `vllm:prompt_tokens_total` と一致）。input と cached-input を互いに減算せず、
+  発生源で読めます。詳細は
+  [`observability/vllm-metrics/README.md`][vllm-metrics]。
+
+Fleet overview ダッシュボードには *vLLM native /metrics — per model* 行があり、
+トークン、KV プール、待ち理由別のキュー、MTP の draft 受理率（全体および draft 位置別）、
+レイテンシ分位を model 変数で切り替えて見られます。
+
 ### GPU clock cap（thermal throttle回避）
 
 cap適用と監視/exportは別機能です。各DGXの`gb10-clock-cap.service`がclockを変更し、
@@ -607,6 +731,8 @@ docker compose -f observability/docker-compose.yml config --quiet
 - [Observability exporters][sparkdash-observability]
 - [sparkDash README][sparkdash-readme]
 - [DeepSeek fork README][deepseek-readme]
+- [GLM-5.3-Flash レシピ README][glm53-readme]
+- [vLLM native metrics][vllm-metrics]
 
 root repositoryは[MIT License](./LICENSE)です。submodule、model weight、container
 image、CUDA/NCCL、その他runtime artifactには個別の条件が適用されます。詳細は

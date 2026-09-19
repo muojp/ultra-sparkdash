@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dgx pair benchmarks</title>
+<style>
+ :root { color-scheme: light dark; --fg:#1a1a1a; --bg:#fbfbfa; --line:#d9d7d2; --muted:#6b6862;
+         --best:#1f6f43; --bestbg:#e7f3ec; }
+ @media (prefers-color-scheme: dark) { :root { --fg:#e8e6e1; --bg:#16171a; --line:#33363c;
+         --muted:#9a968e; --best:#7fd3a3; --bestbg:#1d2a23; } }
+ body { font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: var(--fg); background: var(--bg); margin: 0 auto; padding: 32px 20px 64px; max-width: 1100px; }
+ h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -0.01em; }
+ h2 { font-size: 19px; margin: 40px 0 6px; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+ h3.scen { font-size: 15px; margin: 22px 0 6px; color: var(--muted); text-transform: uppercase;
+           letter-spacing: 0.08em; }
+ p.sub { color: var(--muted); margin: 0 0 14px; font-size: 13.5px; }
+ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; margin-bottom: 8px; }
+ th, td { text-align: right; padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+ th:first-child, td:first-child, td.dep, td.note, td.model { text-align: left; }
+ th { font-weight: 600; font-size: 12.5px; color: var(--muted); text-transform: uppercase;
+      letter-spacing: 0.04em; }
+ td.dep { font-weight: 600; }
+ td.when, td.model, td.note { color: var(--muted); font-size: 13px; white-space: normal; }
+ td.best { color: var(--best); background: var(--bestbg); font-weight: 600; }
+ td.na { color: var(--muted); }
+ code { font: 13px ui-monospace, SFMono-Regular, Menlo, monospace; background: rgba(127,127,127,.12);
+        padding: 1px 5px; border-radius: 4px; }
+</style></head><body>
+<h1>dgx pair — measured deployments</h1>
+<p class="sub">Generated 2026-09-19 01:11 UTC from 10 decode run(s) and 2 long-context run(s). Regenerate with <code>bin/llm-bench-report</code>; runs accumulate, the layout does not change.</p>
+<h2>Decode throughput — latest run per cell</h2>
+<p class="sub">Aggregate tok/s across all streams. Each cell is the most recent run for that deployment, scenario and concurrency; the history below keeps the rest.</p>
+<h3 class="scen">chat</h3>
+<table><thead><tr><th>deployment</th>
+<th>×1</th>
+<th>×2</th>
+<th>×4</th>
+<th>×8</th>
+<th>per-stream ×1 → max</th><th>ttft p50 ×1</th><th>taken</th></tr></thead><tbody>
+<tr><td class='dep'>deepseek-v4-flash</td>
+<td class='' title='2026-09-18 21:56'>37.7</td>
+<td class='' title='2026-09-18 21:56'>49.0</td>
+<td class='best' title='2026-09-18 21:56'>72.5</td>
+<td class='' title='2026-09-18 21:56'>69.3</td>
+<td>40.8 → 15.0</td>
+<td>0.51 s</td>
+<td class='when'>2026-09-18 21:56</td></tr>
+<tr><td class='dep'>deepseek-v4.1-flash</td>
+<td class='' title='2026-09-18 21:23'>21.0</td>
+<td class='' title='2026-09-18 21:23'>30.1</td>
+<td class='best' title='2026-09-18 21:23'>43.7</td>
+<td class='' title='2026-09-18 21:23'>43.5</td>
+<td>23.2 → 11.8</td>
+<td>1.17 s</td>
+<td class='when'>2026-09-18 21:23</td></tr>
+<tr><td class='dep'>glm-5.3-flash-himorishige</td>
+<td class='' title='2026-09-19 00:19 — clean: no downloads running'>5.9 *</td>
+<td class='' title='2026-09-19 00:19 — clean: no downloads running'>28.4 *</td>
+<td class='' title='2026-09-19 00:19 — clean: no downloads running'>28.8 *</td>
+<td class='best' title='2026-09-19 00:19 — clean: no downloads running'>39.7 *</td>
+<td>6.0 → 12.2</td>
+<td>0.92 s</td>
+<td class='when'>2026-09-19 00:19</td></tr>
+</tbody></table>
+<h3 class="scen">code</h3>
+<table><thead><tr><th>deployment</th>
+<th>×1</th>
+<th>×2</th>
+<th>×4</th>
+<th>×8</th>
+<th>per-stream ×1 → max</th><th>ttft p50 ×1</th><th>taken</th></tr></thead><tbody>
+<tr><td class='dep'>glm-5.3-flash-himorishige</td>
+<td class='' title='2026-09-19 00:19 — clean: no downloads running'>10.5 *</td>
+<td class='' title='2026-09-19 00:19 — clean: no downloads running'>21.0 *</td>
+<td class='' title='2026-09-19 00:19 — clean: no downloads running'>29.8 *</td>
+<td class='best' title='2026-09-19 00:19 — clean: no downloads running'>40.1 *</td>
+<td>10.7 → 14.5</td>
+<td>0.74 s</td>
+<td class='when'>2026-09-19 00:19</td></tr>
+</tbody></table>
+<h3 class="scen">essay</h3>
+<table><thead><tr><th>deployment</th>
+<th>×1</th>
+<th>×2</th>
+<th>×4</th>
+<th>×8</th>
+<th>per-stream ×1 → max</th><th>ttft p50 ×1</th><th>taken</th></tr></thead><tbody>
+<tr><td class='dep'>glm-5.3-flash-himorishige</td>
+<td class='' title='2026-09-19 00:19 — clean: no downloads running'>16.2 *</td>
+<td class='' title='2026-09-19 00:19 — clean: no downloads running'>16.3 *</td>
+<td class='' title='2026-09-19 00:19 — clean: no downloads running'>24.7 *</td>
+<td class='best' title='2026-09-19 00:19 — clean: no downloads running'>32.7 *</td>
+<td>16.5 → 11.8</td>
+<td>0.92 s</td>
+<td class='when'>2026-09-19 00:19</td></tr>
+</tbody></table>
+<h3 class="scen">review</h3>
+<table><thead><tr><th>deployment</th>
+<th>×1</th>
+<th>×2</th>
+<th>×4</th>
+<th>×8</th>
+<th>per-stream ×1 → max</th><th>ttft p50 ×1</th><th>taken</th></tr></thead><tbody>
+<tr><td class='dep'>glm-5.3-flash-himorishige</td>
+<td class='' title='2026-09-19 00:53 — answers+reasoning captured, 1600-token budget'>11.3 *</td>
+<td class='' title='2026-09-19 00:19 — clean: no downloads running'>31.3 *</td>
+<td class='' title='2026-09-19 00:53 — answers+reasoning captured, 1600-token budget'>36.7 *</td>
+<td class='best' title='2026-09-19 00:19 — clean: no downloads running'>49.6 *</td>
+<td>11.4 → 14.4</td>
+<td>0.72 s</td>
+<td class='when'>2026-09-19 00:19 … 2026-09-19 00:53</td></tr>
+</tbody></table>
+<h3 class="scen">structured</h3>
+<table><thead><tr><th>deployment</th>
+<th>×1</th>
+<th>×2</th>
+<th>×4</th>
+<th>×8</th>
+<th>per-stream ×1 → max</th><th>ttft p50 ×1</th><th>taken</th></tr></thead><tbody>
+<tr><td class='dep'>glm-5.3-flash-himorishige</td>
+<td class='' title='2026-09-19 00:19 — clean: no downloads running'>19.1 *</td>
+<td class='' title='2026-09-19 00:19 — clean: no downloads running'>21.5 *</td>
+<td class='' title='2026-09-19 00:19 — clean: no downloads running'>31.9 *</td>
+<td class='best' title='2026-09-19 00:19 — clean: no downloads running'>37.9 *</td>
+<td>20.3 → 14.6</td>
+<td>1.01 s</td>
+<td class='when'>2026-09-19 00:19</td></tr>
+</tbody></table>
+<h2>Long context — prefill and the memory floor</h2>
+<p class="sub">The floor is what decides whether a setting is safe, and it is reached during a long prefill — never at boot, never under steady decode. Lower is closer to the edge.</p>
+<table><thead><tr><th>deployment</th><th>prompt tokens</th><th>single</th><th>concurrent</th><th>streams</th><th>floor (head / worker)</th><th>taken</th></tr></thead><tbody>
+<tr><td class='dep'>deepseek-v4-flash</td><td>324625</td><td>1114.3 tok/s</td><td>1646.6 tok/s</td><td>4</td><td>dgx01 6.33, dgx02 7.85 GiB</td><td class='when'>2026-09-18 21:57</td></tr>
+<tr><td class='dep'>glm-5.3-flash-himorishige</td><td>134506</td><td>1201.1 tok/s</td><td>1276.1 tok/s</td><td>4</td><td>dgx01 3.72, dgx02 8.50 GiB</td><td class='when'>2026-09-18 22:50</td></tr>
+</tbody></table>
+<h2>Review cases — what each deployment actually found</h2>
+<p class="sub">Five files, one planted defect each. Scored by whether the answer names the defect, not by prose: each case carries loose signals, and a partial hit means the symptom was spotted and the cause was not. Throughput tables cannot show this, and it is the difference that decides what the review lane runs. The defect column is for readers — the model is sent only the language and the code.</p>
+<table><thead><tr><th>case</th><th>language</th><th>defect</th>
+<th>glm-5.3-flash-himorishige</th>
+</tr></thead><tbody>
+<tr><td class='dep'>php-discount-logic</td><td class='model'>PHP / Laravel</td><td class='model'>logic</td>
+<td class='best'>found (in reasoning)</td>
+</tr>
+<tr><td class='dep'>laravel-missing-validation</td><td class='model'>PHP / Laravel</td><td class='model'>validation</td>
+<td class='best'>found (in reasoning)</td>
+</tr>
+<tr><td class='dep'>laravel-balance-race</td><td class='model'>PHP / Laravel</td><td class='model'>concurrency</td>
+<td class='best'>found (in reasoning)</td>
+</tr>
+<tr><td class='dep'>csharp-cache-race</td><td class='model'>C#</td><td class='model'>concurrency</td>
+<td class='best'>found (in reasoning)</td>
+</tr>
+<tr><td class='dep'>csharp-expiry-logic</td><td class='model'>C#</td><td class='model'>logic</td>
+<td class='best'>found (in reasoning)</td>
+</tr>
+</tbody></table>
+<h3 class="scen">what each case plants</h3><table><thead><tr><th>case</th><th>expected finding</th></tr></thead><tbody>
+<tr><td class='dep'>php-discount-logic</td><td class='note'>The tiered discount uses &gt;= on the lower bound of the next tier, so an order of exactly 10000 gets the 5% tier instead of 10%; the boundary case is off by one tier. Also returns a float where money should stay integer minor units.</td></tr>
+<tr><td class='dep'>laravel-missing-validation</td><td class='note'>The controller mass-assigns the whole request into the model with no validation and no allow-list, so a client can set role, is_admin or any other fillable column, and can also send an unvalidated email. Needs a FormRequest (or $request-&gt;validate) plus an explicit field list; $fillable is not a substitute for validation.</td></tr>
+<tr><td class='dep'>laravel-balance-race</td><td class='note'>Read-modify-write on the balance outside any transaction or row lock: two concurrent withdrawals both read the same balance and both pass the check, so the account can go negative (lost update). Needs a transaction with lockForUpdate(), or an atomic conditional UPDATE ... WHERE balance &gt;= :amount, and the affected-row count checked.</td></tr>
+<tr><td class='dep'>csharp-cache-race</td><td class='note'>Check-then-act on a non-thread-safe Dictionary from concurrent callers: two threads can both miss and both build the value (duplicate work, and the factory may have side effects), and concurrent writes to Dictionary can corrupt it or throw. Needs ConcurrentDictionary.GetOrAdd with Lazy&lt;T&gt;, or a lock around the whole check-and-insert.</td></tr>
+<tr><td class='dep'>csharp-expiry-logic</td><td class='note'>Any() means &#x27;at least one item is still valid&#x27;, so a basket with one unexpired item is treated as entirely valid — the intent is All(). Also compares DateTime.Now against what is presumably UTC storage, which shifts every boundary by the machine&#x27;s offset.</td></tr>
+</tbody></table>
+<h2>Every run, in order</h2>
+<p class="sub">Nothing is averaged or dropped. A run taken under load keeps its note, so it can be read as what it is rather than compared as if conditions matched.</p>
+<table><thead><tr><th>taken</th><th>deployment</th><th>model</th><th>scenario</th><th>conc</th><th>aggregate</th><th>per-stream</th><th>ttft p50</th><th>note</th></tr></thead><tbody>
+<tr><td class='when'>2026-09-19 00:53</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>review</td><td>×1</td><td>11.3</td><td>11.4</td><td>0.72 s</td><td class='note'>answers+reasoning captured, 1600-token budget</td></tr>
+<tr><td class='when'>2026-09-19 00:53</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>review</td><td>×4</td><td>36.7</td><td>12.6</td><td>0.88 s</td><td class='note'>answers+reasoning captured, 1600-token budget</td></tr>
+<tr><td class='when'>2026-09-19 00:44</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>review</td><td>×1</td><td>12.5</td><td>12.6</td><td>0.76 s</td><td class='note'>answers captured for scoring</td></tr>
+<tr><td class='when'>2026-09-19 00:44</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>review</td><td>×4</td><td>45.8</td><td>13.5</td><td>0.84 s</td><td class='note'>answers captured for scoring</td></tr>
+<tr><td class='when'>2026-09-19 00:19</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>chat</td><td>×1</td><td>5.9</td><td>6.0</td><td>0.92 s</td><td class='note'>clean: no downloads running</td></tr>
+<tr><td class='when'>2026-09-19 00:19</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>chat</td><td>×2</td><td>28.4</td><td>15.6</td><td>1.21 s</td><td class='note'>clean: no downloads running</td></tr>
+<tr><td class='when'>2026-09-19 00:19</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>chat</td><td>×4</td><td>28.8</td><td>13.2</td><td>1.63 s</td><td class='note'>clean: no downloads running</td></tr>
+<tr><td class='when'>2026-09-19 00:19</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>chat</td><td>×8</td><td>39.7</td><td>12.2</td><td>20.85 s</td><td class='note'>clean: no downloads running</td></tr>
+<tr><td class='when'>2026-09-19 00:19</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>code</td><td>×1</td><td>10.5</td><td>10.7</td><td>0.74 s</td><td class='note'>clean: no downloads running</td></tr>
+<tr><td class='when'>2026-09-19 00:19</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>code</td><td>×2</td><td>21.0</td><td>10.9</td><td>1.22 s</td><td class='note'>clean: no downloads running</td></tr>
+<tr><td class='when'>2026-09-19 00:19</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>code</td><td>×4</td><td>29.8</td><td>15.0</td><td>1.6 s</td><td class='note'>clean: no downloads running</td></tr>
+<tr><td class='when'>2026-09-19 00:19</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>code</td><td>×8</td><td>40.1</td><td>14.5</td><td>36.67 s</td><td class='note'>clean: no downloads running</td></tr>
+<tr><td class='when'>2026-09-19 00:19</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>essay</td><td>×1</td><td>16.2</td><td>16.5</td><td>0.92 s</td><td class='note'>clean: no downloads running</td></tr>
+<tr><td class='when'>2026-09-19 00:19</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>essay</td><td>×2</td><td>16.3</td><td>8.7</td><td>6.07 s</td><td class='note'>clean: no downloads running</td></tr>
+<tr><td class='when'>2026-09-19 00:19</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>essay</td><td>×4</td><td>24.7</td><td>11.1</td><td>1.61 s</td><td class='note'>clean: no downloads running</td></tr>
+<tr><td class='when'>2026-09-19 00:19</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>essay</td><td>×8</td><td>32.7</td><td>11.8</td><td>71.0 s</td><td class='note'>clean: no downloads running</td></tr>
+<tr><td class='when'>2026-09-19 00:19</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>review</td><td>×1</td><td>11.9</td><td>12.0</td><td>0.61 s</td><td class='note'>clean: no downloads running</td></tr>
+<tr><td class='when'>2026-09-19 00:19</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>review</td><td>×2</td><td>31.3</td><td>16.5</td><td>0.82 s</td><td class='note'>clean: no downloads running</td></tr>
+<tr><td class='when'>2026-09-19 00:19</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>review</td><td>×4</td><td>49.5</td><td>13.6</td><td>0.87 s</td><td class='note'>clean: no downloads running</td></tr>
+<tr><td class='when'>2026-09-19 00:19</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>review</td><td>×8</td><td>49.6</td><td>14.4</td><td>47.28 s</td><td class='note'>clean: no downloads running</td></tr>
+<tr><td class='when'>2026-09-19 00:19</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>structured</td><td>×1</td><td>19.1</td><td>20.3</td><td>1.01 s</td><td class='note'>clean: no downloads running</td></tr>
+<tr><td class='when'>2026-09-19 00:19</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>structured</td><td>×2</td><td>21.5</td><td>11.9</td><td>1.25 s</td><td class='note'>clean: no downloads running</td></tr>
+<tr><td class='when'>2026-09-19 00:19</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>structured</td><td>×4</td><td>31.9</td><td>14.7</td><td>1.64 s</td><td class='note'>clean: no downloads running</td></tr>
+<tr><td class='when'>2026-09-19 00:19</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>structured</td><td>×8</td><td>37.9</td><td>14.6</td><td>30.25 s</td><td class='note'>clean: no downloads running</td></tr>
+<tr><td class='when'>2026-09-18 23:54</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>review</td><td>×1</td><td>18.0</td><td>18.3</td><td>0.76 s</td><td class='note'>under Flash-Next weight download and image pull</td></tr>
+<tr><td class='when'>2026-09-18 23:54</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>review</td><td>×4</td><td>44.9</td><td>14.7</td><td>0.84 s</td><td class='note'>under Flash-Next weight download and image pull</td></tr>
+<tr><td class='when'>2026-09-18 23:19</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>chat</td><td>×1</td><td>8.4</td><td>11.0</td><td>7.32 s</td><td class='note'></td></tr>
+<tr><td class='when'>2026-09-18 23:19</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>chat</td><td>×4</td><td>16.0</td><td>9.5</td><td>12.09 s</td><td class='note'></td></tr>
+<tr><td class='when'>2026-09-18 23:19</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>code</td><td>×1</td><td>15.3</td><td>15.8</td><td>0.98 s</td><td class='note'></td></tr>
+<tr><td class='when'>2026-09-18 23:19</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>code</td><td>×4</td><td>27.8</td><td>13.3</td><td>13.82 s</td><td class='note'></td></tr>
+<tr><td class='when'>2026-09-18 23:19</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>essay</td><td>×1</td><td>10.6</td><td>10.7</td><td>0.95 s</td><td class='note'></td></tr>
+<tr><td class='when'>2026-09-18 23:19</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>essay</td><td>×4</td><td>41.5</td><td>11.3</td><td>2.0 s</td><td class='note'></td></tr>
+<tr><td class='when'>2026-09-18 23:19</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>structured</td><td>×1</td><td>6.5</td><td>7.0</td><td>4.22 s</td><td class='note'></td></tr>
+<tr><td class='when'>2026-09-18 23:19</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>structured</td><td>×4</td><td>17.3</td><td>11.1</td><td>23.17 s</td><td class='note'></td></tr>
+<tr><td class='when'>2026-09-18 23:18</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4</td><td>chat</td><td>×1</td><td>8.1</td><td>8.4</td><td>0.99 s</td><td class='note'></td></tr>
+<tr><td class='when'>2026-09-18 22:47</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4 (recorded as glm-5.3-flash)</td><td>chat</td><td>×1</td><td>18.9</td><td>20.2</td><td>0.88 s</td><td class='note'></td></tr>
+<tr><td class='when'>2026-09-18 22:47</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4 (recorded as glm-5.3-flash)</td><td>chat</td><td>×2</td><td>31.4</td><td>17.5</td><td>1.23 s</td><td class='note'></td></tr>
+<tr><td class='when'>2026-09-18 22:47</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4 (recorded as glm-5.3-flash)</td><td>chat</td><td>×4</td><td>33.3</td><td>15.3</td><td>1.56 s</td><td class='note'></td></tr>
+<tr><td class='when'>2026-09-18 22:47</td><td class='dep'>glm-5.3-flash-himorishige</td><td class='model'>glm-5.3-flash-nvfp4 (recorded as glm-5.3-flash)</td><td>chat</td><td>×8</td><td>30.3</td><td>14.4</td><td>19.14 s</td><td class='note'></td></tr>
+<tr><td class='when'>2026-09-18 21:56</td><td class='dep'>deepseek-v4-flash</td><td class='model'>deepseek-v4-flash-vision-exp</td><td>chat</td><td>×1</td><td>37.7</td><td>40.8</td><td>0.51 s</td><td class='note'></td></tr>
+<tr><td class='when'>2026-09-18 21:56</td><td class='dep'>deepseek-v4-flash</td><td class='model'>deepseek-v4-flash-vision-exp</td><td>chat</td><td>×2</td><td>49.0</td><td>27.6</td><td>0.77 s</td><td class='note'></td></tr>
+<tr><td class='when'>2026-09-18 21:56</td><td class='dep'>deepseek-v4-flash</td><td class='model'>deepseek-v4-flash-vision-exp</td><td>chat</td><td>×4</td><td>72.5</td><td>20.5</td><td>1.28 s</td><td class='note'></td></tr>
+<tr><td class='when'>2026-09-18 21:56</td><td class='dep'>deepseek-v4-flash</td><td class='model'>deepseek-v4-flash-vision-exp</td><td>chat</td><td>×8</td><td>69.3</td><td>15.0</td><td>2.78 s</td><td class='note'></td></tr>
+<tr><td class='when'>2026-09-18 21:23</td><td class='dep'>deepseek-v4.1-flash</td><td class='model'>DeepSeek-v4.1-Flash-EXL3 (recorded as deepseek-v4.1-flash-exl3)</td><td>chat</td><td>×1</td><td>21.0</td><td>23.2</td><td>1.17 s</td><td class='note'></td></tr>
+<tr><td class='when'>2026-09-18 21:23</td><td class='dep'>deepseek-v4.1-flash</td><td class='model'>DeepSeek-v4.1-Flash-EXL3 (recorded as deepseek-v4.1-flash-exl3)</td><td>chat</td><td>×2</td><td>30.1</td><td>16.7</td><td>1.05 s</td><td class='note'></td></tr>
+<tr><td class='when'>2026-09-18 21:23</td><td class='dep'>deepseek-v4.1-flash</td><td class='model'>DeepSeek-v4.1-Flash-EXL3 (recorded as deepseek-v4.1-flash-exl3)</td><td>chat</td><td>×4</td><td>43.7</td><td>12.6</td><td>3.1 s</td><td class='note'></td></tr>
+<tr><td class='when'>2026-09-18 21:23</td><td class='dep'>deepseek-v4.1-flash</td><td class='model'>DeepSeek-v4.1-Flash-EXL3 (recorded as deepseek-v4.1-flash-exl3)</td><td>chat</td><td>×8</td><td>43.5</td><td>11.8</td><td>24.92 s</td><td class='note'></td></tr>
+<tr><td class='when'>2026-09-18 21:05</td><td class='dep'>deepseek-v4.1-flash</td><td class='model'>DeepSeek-v4.1-Flash-EXL3 (recorded as deepseek-v4.1-flash-exl3)</td><td>chat</td><td>×1</td><td>27.9</td><td>31.7</td><td>1.1 s</td><td class='note'></td></tr>
+<tr><td class='when'>2026-09-18 21:05</td><td class='dep'>deepseek-v4.1-flash</td><td class='model'>DeepSeek-v4.1-Flash-EXL3 (recorded as deepseek-v4.1-flash-exl3)</td><td>chat</td><td>×2</td><td>38.0</td><td>21.9</td><td>1.67 s</td><td class='note'></td></tr>
+<tr><td class='when'>2026-09-18 21:05</td><td class='dep'>deepseek-v4.1-flash</td><td class='model'>DeepSeek-v4.1-Flash-EXL3 (recorded as deepseek-v4.1-flash-exl3)</td><td>chat</td><td>×4</td><td>37.3</td><td>20.8</td><td>14.42 s</td><td class='note'></td></tr>
+<tr><td class='when'>2026-09-18 21:05</td><td class='dep'>deepseek-v4.1-flash</td><td class='model'>DeepSeek-v4.1-Flash-EXL3 (recorded as deepseek-v4.1-flash-exl3)</td><td>chat</td><td>×8</td><td>37.0</td><td>20.4</td><td>27.21 s</td><td class='note'></td></tr>
+</tbody></table>
+<p class="sub">* marks a cell whose run carries a note.</p>
+</body></html>

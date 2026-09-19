@@ -1,0 +1,466 @@
+#!/usr/bin/env python3
+"""llm-quickbench — concurrency sweep against any OpenAI-compatible endpoint.
+
+Written for the dgx pair (one 300B-class model at a time on :8888), but nothing
+here is specific to a deployment: the model name is read from /v1/models unless
+given, and only the standard library is used, so it runs from the Mac, either
+node, or inside a container.
+
+  bin/llm-quickbench                                  # sweep 1,2,4,8 on the pair
+  bin/llm-quickbench --api http://host:8888/v1 -c 1,4 --max-tokens 512
+  bin/llm-quickbench --no-thinking --json out.json    # comparable across models
+  bin/llm-quickbench --api http://127.0.0.1:8888/v1,http://192.168.100.40:8888/v1
+
+Several endpoints, comma-separated, are treated as one pool: requests go round-robin and the
+aggregate is the pool's. That is how a single-node recipe is measured on this pair — two
+independent servers, one per node, rather than one model spanning both. Run the sweep from a host
+with an equal path to each endpoint, or the slower link is what you measure.
+
+What it reports per concurrency level: aggregate output tok/s (the number that
+says how much work the pair does), per-stream decode tok/s (what one caller
+feels), TTFT percentiles, and the queueing ratio. A server with MAX_NUM_SEQS=n
+stops scaling past n — the sweep is how you find that rather than assume it.
+
+Prompts are made unique per request by default, because a shared prefix would be
+served from the prefix cache and report a throughput the server cannot sustain
+on real traffic (--shared-prefix measures that cached path deliberately).
+"""
+import argparse
+import functools
+import json
+import os
+import statistics
+import sys
+import threading
+import time
+import urllib.error
+import urllib.request
+
+DEFAULT_API = "http://192.168.0.100:8888/v1"
+
+# Named workloads. These recipes swap engines (MTP, DSpark, DFlash2) that change *rank* depending
+# on what is being generated — the READMEs are explicit that DSpark wins on code and loses on prose
+# — so a single prompt shape measures one corner and reads like a verdict. Each scenario fixes its
+# own prompt and output length; the sweep runs every selected scenario at every concurrency level.
+SCENARIOS = {
+    "chat": {
+        "max_tokens": 256,
+        "prompt": "A colleague asks why their HTTP service got slower after moving to a new host. "
+                  "Answer conversationally in a short paragraph, then list two things to check first.",
+    },
+    "code": {
+        "max_tokens": 512,
+        "prompt": "Write a Python function `merge_ranges(ranges)` that merges overlapping closed "
+                  "integer intervals and returns them sorted. Handle empty input and single "
+                  "intervals. Include a short docstring and three assert-based examples.",
+    },
+    "essay": {
+        "max_tokens": 900,
+        "prompt": "Write a continuous essay of about 700 words on why distributed systems favour "
+                  "idempotent operations. No lists, no headings — prose only.",
+    },
+    # The pair's main job is code review, so the preflight has to contain review-shaped work rather
+    # than only chat and prose. Each request gets one of the cases in bench/review_cases/cases.json —
+    # a short file with exactly one planted defect (plain logic mistake, check-then-act race, or
+    # unvalidated input reaching a sink) — and is asked for the finding and a fix. Cases rotate by
+    # seed so requests stay unique, which keeps the prefix cache out of the numbers.
+    "review": {
+        # A reasoning model spends hundreds of tokens before it writes anything: at 700 GLM-5.3
+        # returned empty content on all five cases. This has to leave room for both.
+        "max_tokens": 1600,
+        "prompt": "REVIEW_CASE",   # replaced per request by build_prompt
+    },
+    "structured": {
+        "max_tokens": 400,
+        "prompt": "Describe the Unix operating system: its name, the year it first appeared, and "
+                  "three languages it has been written in.",
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {"name": "os", "strict": True, "schema": {
+                "type": "object",
+                "properties": {"name": {"type": "string"}, "year": {"type": "integer"},
+                               "languages": {"type": "array", "items": {"type": "string"}}},
+                "required": ["name", "year", "languages"], "additionalProperties": False}},
+        },
+    },
+}
+
+# A level takes tens of seconds; buffered stdout would hide every row until the end,
+# which matters when the run is watched through a log file or a pipe.
+print = functools.partial(print, flush=True)  # noqa: A001
+
+
+def http_json(url, payload=None, timeout=60):
+    data = json.dumps(payload).encode() if payload is not None else None
+    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read())
+
+
+def split_apis(api):
+    return [a.strip() for a in api.split(",") if a.strip()]
+
+
+def discover_model(apis, timeout=15):
+    """First endpoint names the model; the rest must agree, or the pool is not one pool."""
+    served = {}
+    for a in apis:
+        d = http_json(a.rstrip("/") + "/models", timeout=timeout)
+        ids = [m["id"] for m in d.get("data", [])]
+        if not ids:
+            raise SystemExit("no model served at %s" % a)
+        served[a] = ids[0]
+    first = served[apis[0]]
+    odd = {a: m for a, m in served.items() if m != first}
+    if odd:
+        raise SystemExit("endpoints serve different models: %s" % json.dumps(served))
+    return first
+
+
+REVIEW_CASES_PATH = os.environ.get(
+    "REVIEW_CASES",
+    str(__import__("pathlib").Path(__file__).resolve().parent.parent / "bench/review_cases/cases.json"))
+_REVIEW_CASES = None
+
+
+def review_cases():
+    global _REVIEW_CASES
+    if _REVIEW_CASES is None:
+        with open(REVIEW_CASES_PATH) as f:
+            _REVIEW_CASES = json.load(f)["cases"]
+    return _REVIEW_CASES
+
+
+# Everything about a case except its language and its code is an answer key: the id names the
+# defect ("balance-race"), `defect` is its category, `expected` is the finding itself. None of it
+# may reach the model, and neither may a prompt that lists the categories to choose from — that
+# turns "find the problem" into "pick one of three".
+CASE_ANSWER_KEYS = ("id", "defect", "expected")
+
+
+def review_prompt(seed):
+    """One case, asked the way a reviewer is asked: here is a file, tell me what is wrong with it."""
+    cases = review_cases()
+    case = cases[seed % len(cases)]
+    prompt = ("Review this %s file as you would in a pull request.\n\n"
+              "If something is wrong, say what it is and why it matters, in two or three sentences, "
+              "then give the corrected code. If nothing is wrong, say so.\n\n```\n%s```\n"
+              % (case["language"], case["code"]))
+    leaked = case_leak(prompt, case)
+    if leaked:
+        raise SystemExit("review prompt leaks the answer key (%s); fix review_prompt" % leaked)
+    return prompt
+
+
+def case_leak(prompt, case):
+    """Which answer-key field, if any, shows through in what we are about to send."""
+    low = prompt.lower()
+    for key in CASE_ANSWER_KEYS:
+        value = str(case.get(key, ""))
+        if not value:
+            continue
+        if key == "id":
+            # ids are hyphenated hints ("balance-race"), so any word of one showing through is a
+            # give-away — unless the code or the language line legitimately contains it, which is
+            # true of the stack names ("laravel") and of identifiers in the file itself.
+            benign = (case["code"] + " " + case.get("language", "")).lower()
+            for word in value.split("-"):
+                if len(word) > 3 and word.lower() in low and word.lower() not in benign:
+                    return "id word %r" % word
+        elif value.lower() in low:
+            return key
+        else:
+            # A distinctive phrase from the expected finding is as bad as the whole sentence.
+            for phrase in (value.lower().split(". ")[0], ):
+                if len(phrase) > 24 and phrase in low:
+                    return "%s phrase" % key
+    return None
+
+
+def build_prompt(approx_tokens, seed, scenario="chat"):
+    """Context filler sized in tokens, unique per seed, plus the scenario's instruction.
+
+    The filler keeps the prefill comparable across scenarios; the instruction is what makes the
+    decode side of each scenario different work.
+    """
+    unit = "record %d: telemetry sample, no anomalies detected; "
+    n = max(1, approx_tokens // 12)
+    body = "".join(unit % (seed * 100000 + i) for i in range(n))
+    if scenario == "review":
+        # No filler: a review prompt is the file, and padding it would measure something else.
+        return review_prompt(seed)
+    task = SCENARIOS.get(scenario, SCENARIOS["chat"])["prompt"]
+    return "Run %d. Context follows.\n%s\n\n%s" % (seed, body, task)
+
+
+class Result:
+    __slots__ = ("ok", "err", "ttft", "wall", "completion", "reasoning", "prompt",
+                 "cached", "finish", "text", "think_text")
+
+    def __init__(self):
+        self.ok = False
+        self.err = None
+        self.ttft = None
+        self.wall = None
+        self.completion = 0
+        self.reasoning = 0
+        self.prompt = 0
+        self.cached = 0
+        self.finish = None
+        self.text = ""
+        self.think_text = ""
+
+
+THINKING_UNSUPPORTED = []  # one-element flag: set once a model rejects the kwarg
+
+
+def one_request(api, model, prompt, max_tokens, thinking, timeout, response_format=None,
+                keep_text=False):
+    """Streamed, so time-to-first-token and decode time are separable.
+
+    `thinking=False` is sent as chat_template_kwargs, which a template that does not define the
+    variable rejects with a 400. Models differ here, and the sweep is meant to be comparable across
+    them, so the first rejection drops the kwarg for the rest of the run instead of failing.
+    """
+    if thinking is False and THINKING_UNSUPPORTED:
+        thinking = None
+    res = Result()
+    payload = {
+        "model": model,
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": max_tokens,
+        "temperature": 0,
+        "stream": True,
+        "stream_options": {"include_usage": True},
+    }
+    if response_format:
+        payload["response_format"] = response_format
+    if thinking is False:
+        payload["chat_template_kwargs"] = {"thinking": False}
+    req = urllib.request.Request(api.rstrip("/") + "/chat/completions",
+                                 data=json.dumps(payload).encode(),
+                                 headers={"Content-Type": "application/json"})
+    t0 = time.time()
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            for raw in r:
+                line = raw.decode("utf-8", "replace").strip()
+                if not line.startswith("data: "):
+                    continue
+                body = line[6:]
+                if body == "[DONE]":
+                    break
+                ev = json.loads(body)
+                for ch in ev.get("choices") or []:
+                    delta = ch.get("delta") or {}
+                    # Reasoning tokens arrive before content on thinking models;
+                    # both count as "first token" for the caller's latency.
+                    if (delta.get("content") or delta.get("reasoning")) and res.ttft is None:
+                        res.ttft = time.time() - t0
+                    if keep_text:
+                        # Only for scored scenarios: a review number means nothing without the
+                        # answer it came from, and keeping every chat completion is just weight.
+                        # Reasoning is kept separately — some models spend the whole budget there
+                        # and return empty content, and a scorer needs to see that rather than
+                        # record five silent misses.
+                        if delta.get("content"):
+                            res.text += delta["content"]
+                        elif delta.get("reasoning"):
+                            res.think_text += delta["reasoning"]
+                    if ch.get("finish_reason"):
+                        res.finish = ch["finish_reason"]
+                u = ev.get("usage")
+                if u:
+                    res.completion = u.get("completion_tokens", 0)
+                    res.prompt = u.get("prompt_tokens", 0)
+                    det = u.get("completion_tokens_details") or {}
+                    res.reasoning = det.get("reasoning_tokens", 0) or 0
+                    pdet = u.get("prompt_tokens_details") or {}
+                    res.cached = pdet.get("cached_tokens", 0) or 0
+        res.wall = time.time() - t0
+        res.ok = True
+    except urllib.error.HTTPError as e:
+        if e.code == 400 and thinking is False and not THINKING_UNSUPPORTED:
+            THINKING_UNSUPPORTED.append(True)
+            print("# this model rejects chat_template_kwargs={'thinking': false}; continuing without it")
+            return one_request(api, model, prompt, max_tokens, None, timeout, response_format,
+                               keep_text)
+        res.wall = time.time() - t0
+        res.err = "HTTP %s %s" % (e.code, str(e)[:160])
+    except (urllib.error.URLError, OSError, ValueError) as e:
+        res.wall = time.time() - t0
+        res.err = str(e)[:200]
+    return res
+
+
+def run_level(apis, model, level, args, seed_base, scenario="chat"):
+    results = [None] * level
+    endpoints = [None] * level
+    answers = [None] * level
+    threads = []
+
+    spec = SCENARIOS.get(scenario, SCENARIOS["chat"])
+    max_tokens = args.max_tokens or spec["max_tokens"]
+
+    def work(i):
+        prompt = build_prompt(args.prompt_tokens,
+                              0 if args.shared_prefix else seed_base + i, scenario)
+        api = apis[i % len(apis)]          # round-robin: with one endpoint this is the old behaviour
+        endpoints[i] = api
+        results[i] = one_request(api, model, prompt, max_tokens,
+                                 None if args.thinking else False, args.timeout,
+                                 spec.get("response_format"), keep_text=(scenario == "review"))
+        if scenario == "review" and results[i].ok:
+            cases = review_cases()
+            answers[i] = {"case": cases[(seed_base + i) % len(cases)]["id"],
+                          "text": results[i].text[:6000],
+                          "reasoning": results[i].think_text[:6000],
+                          "finish": results[i].finish}
+
+    t0 = time.time()
+    for i in range(level):
+        t = threading.Thread(target=work, args=(i,))
+        t.start()
+        threads.append(t)
+    for t in threads:
+        t.join()
+    wall = time.time() - t0
+
+    ok = [r for r in results if r and r.ok]
+    failed = [r for r in results if r and not r.ok]
+    if not ok:
+        return {"concurrency": level, "wall_s": wall, "failed": len(failed),
+                "error": failed[0].err if failed else "no results"}
+
+    ttfts = sorted(r.ttft for r in ok if r.ttft is not None)
+    total_out = sum(r.completion for r in ok)
+    # Per-stream decode rate excludes the prefill the caller waited through.
+    decode_rates = [r.completion / (r.wall - r.ttft)
+                    for r in ok if r.ttft is not None and r.wall - r.ttft > 0.05 and r.completion]
+
+    def pct(xs, p):
+        if not xs:
+            return None
+        k = min(len(xs) - 1, int(round((p / 100.0) * (len(xs) - 1))))
+        return xs[k]
+
+    per_endpoint = {}
+    for i, r in enumerate(results):
+        if r and r.ok:
+            per_endpoint[endpoints[i]] = per_endpoint.get(endpoints[i], 0) + r.completion
+    return {
+        "scenario": scenario,
+        "answers": [a for a in answers if a],
+        "concurrency": level,
+        "endpoints": per_endpoint,
+        "requests": len(ok),
+        "failed": len(failed),
+        "wall_s": round(wall, 2),
+        "output_tokens": total_out,
+        "aggregate_tok_s": round(total_out / wall, 1) if wall else None,
+        "per_stream_tok_s": round(statistics.median(decode_rates), 1) if decode_rates else None,
+        "ttft_p50_s": round(pct(ttfts, 50), 2) if ttfts else None,
+        "ttft_p95_s": round(pct(ttfts, 95), 2) if ttfts else None,
+        "latency_p50_s": round(statistics.median([r.wall for r in ok]), 2),
+        "prompt_tokens": ok[0].prompt,
+        "cached_tokens_p50": int(statistics.median([r.cached for r in ok])),
+        "reasoning_tokens_p50": int(statistics.median([r.reasoning for r in ok])),
+        "finish_reasons": sorted({r.finish for r in ok if r.finish}),
+    }
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Concurrency sweep for an OpenAI-compatible server")
+    ap.add_argument("--api", default=DEFAULT_API, help="base URL ending in /v1 (default: %(default)s)")
+    ap.add_argument("--model", help="served model id (default: first from /v1/models)")
+    ap.add_argument("-c", "--concurrency", default="1,2,4,8",
+                    help="comma-separated levels (default: %(default)s)")
+    ap.add_argument("--max-tokens", type=int, default=0,
+                    help="override the scenario's output length (0 = per-scenario default)")
+    ap.add_argument("--scenario", default="chat",
+                    help="comma-separated: %s, or 'all'" % ",".join(SCENARIOS))
+    ap.add_argument("--prompt-tokens", type=int, default=512, help="approximate prompt size")
+    ap.add_argument("--repeat", type=int, default=1, help="passes per level, results averaged by rerun")
+    ap.add_argument("--no-thinking", dest="thinking", action="store_false",
+                    help="send chat_template_kwargs={'thinking': false} (comparable across models)")
+    ap.add_argument("--shared-prefix", action="store_true",
+                    help="send every request the same prompt (measures the prefix-cache path)")
+    ap.add_argument("--warmup", type=int, default=1, help="throwaway requests before measuring")
+    ap.add_argument("--timeout", type=int, default=900)
+    ap.add_argument("--json", dest="json_out", help="also write the rows to this file")
+    ap.add_argument("--note", default="",
+                    help="condition to record with the run (e.g. 'taken during a weight download')")
+    args = ap.parse_args()
+
+    levels = [int(x) for x in args.concurrency.split(",") if x.strip()]
+    apis = split_apis(args.api)
+    model = args.model or discover_model(apis)
+    print("api:    %s" % (", ".join(apis) if len(apis) > 1 else apis[0]))
+    print("model:  %s" % model)
+    print("params: max_tokens=%s prompt~%d tok thinking=%s prompts=%s scenarios=%s"
+          % (args.max_tokens or "per-scenario", args.prompt_tokens, args.thinking,
+             "shared" if args.shared_prefix else "unique", args.scenario))
+    print()
+
+    for i in range(args.warmup):
+        for a in apis:                      # every endpoint gets its own warm-up
+            one_request(a, model, build_prompt(args.prompt_tokens, 90000 + i, "chat"),
+                        64, None if args.thinking else False, args.timeout)
+
+    scenarios = list(SCENARIOS) if args.scenario == "all" else [
+        x.strip() for x in args.scenario.split(",") if x.strip()]
+    unknown = [x for x in scenarios if x not in SCENARIOS]
+    if unknown:
+        raise SystemExit("unknown scenario(s): %s (have: %s)" % (",".join(unknown), ",".join(SCENARIOS)))
+
+    header = ("scenario", "conc", "reqs", "wall_s", "out_tok", "aggregate", "per-stream",
+              "ttft_p50", "ttft_p95", "lat_p50", "reason_p50")
+    print("%-11s %4s %5s %8s %8s %10s %11s %9s %9s %8s %11s" % header)
+    rows = []
+    seed = int(time.time()) % 10000
+    for scen in scenarios:
+        for lvl in levels:
+            for rep in range(args.repeat):
+                row = run_level(apis, model, lvl, args, seed_base=seed, scenario=scen)
+                seed += lvl
+                rows.append(row)
+                if row.get("error"):
+                    print("%-11s %4d  FAILED: %s" % (scen, lvl, row["error"]))
+                    continue
+                print("%-11s %4d %5d %8.2f %8d %10s %11s %9s %9s %8s %11s" % (
+                    scen, row["concurrency"], row["requests"], row["wall_s"], row["output_tokens"],
+                    row["aggregate_tok_s"], row["per_stream_tok_s"], row["ttft_p50_s"],
+                    row["ttft_p95_s"], row["latency_p50_s"], row["reasoning_tokens_p50"]))
+                if row["failed"]:
+                    print("     (%d request(s) failed)" % row["failed"])
+                if len(apis) > 1:
+                    print("     per endpoint: %s" % ", ".join(
+                        "%s %d tok" % (a.split("//")[-1].split("/")[0], n)
+                        for a, n in sorted(row["endpoints"].items())))
+
+    print()
+    for scen in scenarios:
+        good = [r for r in rows if r.get("aggregate_tok_s") and r["scenario"] == scen]
+        if len(good) > 1:
+            best = max(good, key=lambda r: r["aggregate_tok_s"])
+            base = good[0]["aggregate_tok_s"]
+            print("%-11s peak %.1f tok/s at concurrency %d (%.2fx single), per-stream %s -> %s"
+                  % (scen, best["aggregate_tok_s"], best["concurrency"],
+                     best["aggregate_tok_s"] / base, good[0]["per_stream_tok_s"],
+                     good[-1]["per_stream_tok_s"]))
+
+    if args.json_out:
+        with open(args.json_out, "w") as f:
+            json.dump({"api": args.api, "endpoints": apis, "model": model, "note": args.note,
+                       "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                       "params": {"max_tokens": args.max_tokens, "scenarios": scenarios,
+                                  "prompt_tokens": args.prompt_tokens,
+                                  "thinking": args.thinking,
+                                  "shared_prefix": args.shared_prefix},
+                       "rows": rows}, f, indent=2)
+        print("wrote %s" % args.json_out)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

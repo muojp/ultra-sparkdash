@@ -1,0 +1,157 @@
+"""dgx-model: the deployment files themselves, and the logic that reads them.
+
+The container-detection test exists because a single-node deployment with `worker = []` once made
+every command that calls status() raise KeyError('compose_project').
+"""
+import pytest
+
+
+def test_every_deployment_file_has_what_the_tool_reads(dgx_model):
+    deps = dgx_model.load_deployments()
+    assert deps, "no deployments found"
+    for name, d in deps.items():
+        for key in ("name", "served_model", "api_url", "boot_timeout_s", "host"):
+            assert key in d, f"{name} is missing {key}"
+        assert d["name"] == name
+        assert d["host"].get("recipe_dir"), f"{name} has no recipe_dir"
+        for step in ("start", "stop"):
+            assert d["host"].get(step), f"{name} has no {step} command"
+            assert all(isinstance(c, list) for c in d["host"][step]), f"{name}: {step} must be argv lists"
+        # Detection needs one of the two, and deployment_containers refuses the rest.
+        assert d.get("compose_project") or d.get("containers"), f"{name} has neither compose_project nor containers"
+
+
+def test_file_name_matches_the_deployment_name(dgx_model):
+    """`dgx-model switch <name>` takes the name, people look for the file: a mismatch hides one."""
+    import pathlib
+    root = pathlib.Path(dgx_model.__file__).resolve().parent.parent / "deployments"
+    for f in sorted(root.glob("*.toml")):
+        import tomllib
+        assert tomllib.load(f.open("rb"))["name"] == f.stem, f
+
+
+def test_deployment_names_are_unique_per_model_family(dgx_model):
+    """Three GLM-5.3 recipes coexist, so the model no longer identifies the deployment."""
+    deps = dgx_model.load_deployments()
+    glm = [n for n in deps if n.startswith("glm-5.3-flash")]
+    assert len(glm) == len(set(glm))
+    for n in glm:
+        assert n != "glm-5.3-flash", "bare model name is ambiguous; qualify it with whose recipe it is"
+
+
+def test_pool_deployments_declare_where_the_client_runs(dgx_model):
+    """api_urls without bench_from would be measured from wherever the operator happens to be."""
+    for name, d in dgx_model.load_deployments().items():
+        if len(d.get("api_urls") or []) > 1:
+            assert d.get("bench_from") in ("head", "local"), f"{name}: api_urls needs bench_from"
+
+
+def test_empty_worker_list_means_nothing_runs_there(dgx_model, monkeypatch):
+    calls = []
+    monkeypatch.setattr(dgx_model, "sh", lambda *a, **k: calls.append(a) or _R())
+    d = {"name": "single", "host": {"worker": "dgx02"}, "containers": {"head": ["x"], "worker": []}}
+    assert dgx_model.deployment_containers(d, "worker") == []
+    assert not calls, "an empty side must not shell out at all"
+
+
+def test_named_containers_are_filtered_by_exact_name(dgx_model, monkeypatch):
+    seen = {}
+
+    def fake_sh(argv, **kw):
+        seen["argv"] = argv
+        return _R()
+
+    monkeypatch.setattr(dgx_model, "sh", fake_sh)
+    monkeypatch.setattr(dgx_model.socket, "gethostname", lambda: dgx_model.HEAD_HOSTNAME)
+    d = {"name": "x", "host": {}, "containers": {"head": ["alpha", "beta"]}}
+    dgx_model.deployment_containers(d, "head")
+    assert "name=^alpha$" in seen["argv"] and "name=^beta$" in seen["argv"]
+
+
+def test_compose_project_is_used_when_there_is_no_containers_table(dgx_model, monkeypatch):
+    seen = {}
+    monkeypatch.setattr(dgx_model, "sh", lambda argv, **kw: (seen.update(argv=argv), _R())[1])
+    monkeypatch.setattr(dgx_model.socket, "gethostname", lambda: dgx_model.HEAD_HOSTNAME)
+    d = {"name": "x", "host": {}, "compose_project": "proj"}
+    dgx_model.deployment_containers(d, "head")
+    assert "label=com.docker.compose.project=proj" in seen["argv"]
+
+
+def test_a_deployment_with_neither_key_is_refused_clearly(dgx_model):
+    with pytest.raises(SystemExit) as e:
+        dgx_model.deployment_containers({"name": "broken", "host": {}}, "head")
+    assert "broken" in str(e.value)
+
+
+class _R:
+    returncode = 0
+    stdout = ""
+    stderr = ""
+
+
+def test_serving_requires_this_deployments_own_containers(dgx_model, monkeypatch):
+    """Two deployments can answer with the same model id; only the one with containers is serving."""
+    deps = {
+        "up": {"name": "up", "served_model": "same-id", "api_url": "http://x", "host": {},
+               "containers": {"head": ["c"], "worker": []}},
+        "down": {"name": "down", "served_model": "same-id", "api_url": "http://x", "host": {},
+                 "containers": {"head": ["d"], "worker": []}},
+    }
+    monkeypatch.setattr(dgx_model, "served_models", lambda url, **k: ["same-id"])
+    monkeypatch.setattr(dgx_model, "deployment_containers",
+                        lambda d, side: [{"Names": "c"}] if d["name"] == "up" and side == "head" else [])
+    monkeypatch.setattr(dgx_model, "read_state", lambda: None)
+    rep = dgx_model.status(deps)
+    assert rep["deployments"]["up"]["serving"] is True
+    assert rep["deployments"]["down"]["serving"] is False
+    assert rep["active"] == "up"
+
+
+def test_served_models_retries_a_busy_api(dgx_model, monkeypatch):
+    """A single slow reply from a loaded pair must not read as "nothing is serving"."""
+    calls = {"n": 0}
+
+    class Resp:
+        def read(self):
+            return b'{"data": [{"id": "m"}]}'
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    def flaky(url, timeout=None):
+        calls["n"] += 1
+        if calls["n"] < 3:
+            raise TimeoutError("busy")
+        return Resp()
+
+    monkeypatch.setattr(dgx_model.urllib.request, "urlopen", flaky)
+    monkeypatch.setattr(dgx_model.time, "sleep", lambda s: None)
+    assert dgx_model.served_models("http://x") == ["m"]
+    assert calls["n"] == 3
+
+
+def test_served_models_gives_up_and_says_nothing_rather_than_guessing(dgx_model, monkeypatch):
+    monkeypatch.setattr(dgx_model.urllib.request, "urlopen",
+                        lambda *a, **k: (_ for _ in ()).throw(TimeoutError("busy")))
+    monkeypatch.setattr(dgx_model.time, "sleep", lambda s: None)
+    assert dgx_model.served_models("http://x") is None
+
+
+def test_head_containers_are_looked_up_over_ssh_when_not_on_the_head(dgx_model, monkeypatch):
+    """bench and longctx run on the operator's machine; `docker ps` there finds nothing."""
+    seen = {}
+    monkeypatch.setattr(dgx_model, "sh", lambda argv, **kw: (seen.update(argv=argv), _R())[1])
+    monkeypatch.setattr(dgx_model.socket, "gethostname", lambda: "some-laptop")
+    dgx_model.deployment_containers({"name": "x", "host": {}, "containers": {"head": ["c"]}}, "head")
+    assert seen["argv"][0] == "ssh", seen["argv"]
+
+
+def test_head_containers_are_local_when_running_on_the_head(dgx_model, monkeypatch):
+    seen = {}
+    monkeypatch.setattr(dgx_model, "sh", lambda argv, **kw: (seen.update(argv=argv), _R())[1])
+    monkeypatch.setattr(dgx_model.socket, "gethostname", lambda: dgx_model.HEAD_HOSTNAME + ".local")
+    dgx_model.deployment_containers({"name": "x", "host": {}, "containers": {"head": ["c"]}}, "head")
+    assert seen["argv"][0] == "docker", seen["argv"]

@@ -4,3 +4,23 @@
 [submodule "deepseek-v4-flash"]
 	path = DeepSeek-v4-Flash-DSpark-2x-DGX-Spark
 	url = https://github.com/muojp/DeepSeek-v4-Flash-DSpark-2x-DGX-Spark.git
+[submodule "glm53-flash"]
+	path = glm53-flash-2x-dgx-spark-recipe
+	url = https://github.com/muojp/glm53-flash-2x-dgx-spark-recipe.git
+	branch = feat/dgx-spark-pair-ops
+[submodule "DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks"]
+	path = DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks
+	url = https://github.com/muojp/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks.git
+	branch = feat/dgx-spark-pair-ops
+[submodule "Qwen3.8-27B-SGLang-DGX-Spark"]
+	path = Qwen3.8-27B-SGLang-DGX-Spark
+	url = https://github.com/muojp/Qwen3.8-27B-SGLang-DGX-Spark.git
+[submodule "Qwen3.8-Flash-Next-Dual-DGX-Sparks"]
+	path = Qwen3.8-Flash-Next-Dual-DGX-Sparks
+	url = https://github.com/muojp/Qwen3.8-Flash-Next-Dual-DGX-Sparks.git
+[submodule "GLM-5.3-Flash-NVFP4-2x-DGX-Sparks-BIZ"]
+	path = GLM-5.3-Flash-NVFP4-2x-DGX-Sparks-BIZ
+	url = https://github.com/muojp/GLM-5.3-Flash-NVFP4-2x-DGX-Sparks-BIZ.git
+[submodule "GLM-5.3-Flash-EXL3-2x-DGX-Sparks"]
+	path = GLM-5.3-Flash-EXL3-2x-DGX-Sparks
+	url = https://github.com/muojp/GLM-5.3-Flash-EXL3-2x-DGX-Sparks.git

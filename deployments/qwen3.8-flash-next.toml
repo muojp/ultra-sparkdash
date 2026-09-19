@@ -1,0 +1,56 @@
+# Qwen3.8-Flash-Next NVFP4 on the pair — recipe submodule Qwen3.8-Flash-Next-Dual-DGX-Sparks
+# (MiaAI-Lab, mirrored to muojp). vLLM, TP=2 + EP + MTP 3, 262k native context, fp8 KV.
+#
+# PROVISIONED on the head (2026-09-19): recipe checked out at the pinned revision, .env written for
+# this kit, and the ~133 GiB checkpoint fetched into /home/muo/hf-home. The worker copy is made by
+# `./start.sh` itself (rsync, NFS_SHARE=false) — there is no second download.
+#
+# This kit's .env differs from the sample in exactly four places, and they are the ones that matter:
+# HEAD_IP/WORKER_IP are the CX7 addresses (192.168.100.30/.40, not the sample's 10.0.0.x),
+# WORKER_USER=muo, and HF_HOME=/home/muo/hf-home because this head's ~/.cache/huggingface/hub is
+# root-owned. IFACE, IB_HCA and IB_GID_INDEX=3 already matched.
+name = "qwen3.8-flash-next"
+served_model = "qwen3.8-flash-next"          # .env SERVED_MODEL_NAME
+served_aliases = []
+api_url = "http://192.168.0.100:8888"
+boot_timeout_s = 2400                         # first boot also rsyncs ~133 GiB to the worker
+
+[containers]
+head = ["vllm-fn"]                            # start.sh: docker run -d --name vllm-fn
+worker = ["vllm-fn"]
+
+[host]
+recipe_dir = "/home/muo/Qwen3.8-Flash-Next-Dual-DGX-Sparks"
+worker = "dgx02"
+start = [["./start.sh", "--no-download"]]     # weights are already staged; let start.sh do the rsync
+stop = [["./stop.sh"]]
+
+[lane]
+# Unmeasured here. Do not seed from the recipe's README until `dgx-model bench` has run.
+model = "dgx-spark/qwen3.8-flash-next"
+timeout_s = 3600
+sessions = 2
+price_input = 0.0
+price_output = 0.0
+price_cache_read = 0.0
+
+[prerequisites]
+notes = [
+  "recipe cloned on the head at host.recipe_dir on the pinned branch — DONE",
+  ".env for this kit (CX7 IPs, WORKER_USER, HF_HOME) — DONE",
+  "checkpoint ~133 GiB into HF_HOME on the head — DONE (check-weights.sh reports HEAD ok)",
+  "worker copy: ./start.sh rsyncs it at launch; ./start.sh --no-launch does it without serving",
+  "PORT=8888 is shared, so the first start has to follow a stop",
+]
+
+[observability]
+telemetry = """vLLM reports a hardware fingerprint to stats.vllm.ai on every engine start unless
+told not to. Upstream set nothing, so this deployment's mirror adds VLLM_NO_USAGE_STATS,
+DO_NOT_TRACK and HF_HUB_DISABLE_TELEMETRY to both ranks' docker run (5d3b29d), matching the other
+vLLM deployments here. Verify at runtime with `docker inspect vllm-fn` rather than trusting the
+file — the sibling GLM recipe sets them in start.sh but not in start-tp3/tp4, so which script runs
+decides."""
+
+[prerequisites.traps]
+sample_ips_are_not_this_kit = """.env.sample ships HEAD_IP=10.0.0.1 / WORKER_IP=10.0.0.2. Left alone they point at nothing here and the rendezvous hangs rather than failing."""
+hf_home_must_be_user_owned = """download.sh, start.sh and check-weights.sh all derive their cache from HF_HOME. The default lands on ~/.cache/huggingface, whose hub/ is root-owned on this head, and the download dies with PermissionError after the preflight has passed."""

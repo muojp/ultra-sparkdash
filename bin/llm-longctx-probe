@@ -140,6 +140,8 @@ def main():
     ap.add_argument("--no-thinking", dest="thinking", action="store_false")
     ap.add_argument("--timeout", type=int, default=2400)
     ap.add_argument("--json", dest="json_out")
+    ap.add_argument("--note", default="",
+                    help="condition to record with the run, shown in the report")
     args = ap.parse_args()
 
     apis = [a.strip() for a in args.api.split(",") if a.strip()]
@@ -159,7 +161,7 @@ def main():
             leg("concurrent", apis, model, tokens, args.concurrency, args, cpt)]
     if args.json_out:
         with open(args.json_out, "w") as f:
-            json.dump({"api": args.api, "endpoints": apis, "model": model, "max_model_len": limit,
+            json.dump({"api": args.api, "endpoints": apis, "model": model, "note": args.note, "max_model_len": limit,
                        "requested_tokens": tokens, "rows": rows}, f, indent=2)
         print("wrote %s" % args.json_out)
     return 0

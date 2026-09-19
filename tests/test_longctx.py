@@ -59,3 +59,10 @@ def test_memory_floor_is_read_per_node(longctx):
 def test_unreachable_prometheus_returns_an_error_not_an_exception(longctx):
     floor = longctx.mem_floor("http://127.0.0.1:1", 0, 10)
     assert "error" in floor
+
+
+def test_the_probe_accepts_a_note(longctx):
+    """The sweep and the probe are driven by the same pass, so both take --note."""
+    import argparse, inspect
+    src = inspect.getsource(longctx.main)
+    assert "--note" in src, "a run's conditions must be recordable here too"

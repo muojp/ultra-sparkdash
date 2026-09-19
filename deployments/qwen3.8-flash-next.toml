@@ -49,7 +49,10 @@ told not to. Upstream set nothing, so this deployment's mirror adds VLLM_NO_USAG
 DO_NOT_TRACK and HF_HUB_DISABLE_TELEMETRY to both ranks' docker run (5d3b29d), matching the other
 vLLM deployments here. Verify at runtime with `docker inspect vllm-fn` rather than trusting the
 file — the sibling GLM recipe sets them in start.sh but not in start-tp3/tp4, so which script runs
-decides."""
+decides. This recipe proved the point from the inside: start.sh launches one node from a DOCKER_ARGS
+array and the other from a literal docker run, the opt-out went into the array only, and the running
+head still carried VLLM_USAGE_SOURCE with none of the opt-outs. Fixed in 3032406; the 2026-09-19
+measurement run happened before it, so that run reported."""
 
 [prerequisites.traps]
 sample_ips_are_not_this_kit = """.env.sample ships HEAD_IP=10.0.0.1 / WORKER_IP=10.0.0.2. Left alone they point at nothing here and the rendezvous hangs rather than failing."""

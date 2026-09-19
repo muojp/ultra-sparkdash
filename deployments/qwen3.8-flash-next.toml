@@ -33,14 +33,13 @@ sessions = 2
 price_input = 0.0
 price_output = 0.0
 price_cache_read = 0.0
-# Empty because the right spelling has not been probed on THIS deployment yet, not because none
-# works. The sweep sent `thinking` false — the GLM spelling — on 22 rows and got reasoning anyway
-# (16,376 reasoning tokens, 12 of 20 review answers with an empty body at the 1600-token budget),
-# which read as "the server ignores it". The sibling Qwen deployment then took
-# `enable_thinking` false and returned no trace at all, so the likely reading is that this
-# template never saw a variable it defines. Probe it on the next switch and set it then;
-# llm-quickbench now sends both spellings, so a re-measured row is the real off.
-extra = {}
+# From `dgx-model thinking` on 2026-09-19 (recorded run: state/thinking/20260919T092444+0000).
+# The Qwen spelling: `enable_thinking` false takes the answer from 198 reasoning tokens to 0 and
+# leaves the body intact, while `thinking` false — the GLM spelling the sweep sent on 22 rows — is
+# accepted and ignored. This server reports its trace ONLY as usage.reasoning_tokens on a
+# non-streamed response, with reasoning_content empty, which is why it first read as a model that
+# never reasons. Rows measured before this are thinking ON whatever their label says.
+extra = { chat_template_kwargs = { enable_thinking = false } }
 
 [prerequisites]
 notes = [

@@ -33,6 +33,23 @@ def test_the_qwen_spelling_is_found_even_though_the_other_one_is_accepted(thinki
     assert r["lane_extra_toml"] == "extra = { chat_template_kwargs = { enable_thinking = false } }"
 
 
+def test_a_trace_reported_only_as_usage_tokens_still_counts(thinking_probe):
+    """Flash-Next: `reasoning_content` is empty and the 198 reasoning tokens are in usage.
+
+    Counting characters alone called this deployment one that never reasons, and then called every
+    switch pointless — while it was spending most of a review budget on a trace the lane cannot
+    read.
+    """
+    srv = make_server(reasons=True, honours="enable_thinking", reasoning_in_usage_only=True)
+    try:
+        r = thinking_probe.probe(url(srv), "stub-model", max_tokens=8, timeout=30, log=lambda *a: None)
+    finally:
+        srv.shutdown()
+    assert r["baseline"]["reasoning_chars"] == 0 and r["baseline"]["reasoning_tokens"] == 198
+    assert r["candidates"]["thinking"]["verdict"] == "ignored"
+    assert r["recommended"] == "enable_thinking"
+
+
 def test_reasoning_effort_counts_when_no_template_variable_does(thinking_probe):
     srv = make_server(reasons=True, honours="reasoning_effort")
     try:

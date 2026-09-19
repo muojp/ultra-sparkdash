@@ -64,16 +64,28 @@ def ask(api, model, extra, max_tokens, timeout):
             "sample": (message.get("content") or "").strip()[:160]}
 
 
+def reasoning_amount(result):
+    """How much reasoning this answer carries, by whichever signal the server offers.
+
+    Two shapes seen on this pair. Most servers fill `reasoning_content`, so the trace can be
+    counted in characters. Qwen3.8-Flash-Next leaves that field empty on a non-streamed response
+    and reports the trace only as `usage.completion_tokens_details.reasoning_tokens` — 198 tokens
+    against an empty string. Reading one signal therefore said "this model never reasons" about a
+    deployment that spent most of its budget reasoning, and every switch looked equally pointless.
+    """
+    return max(result.get("reasoning_chars") or 0, result.get("reasoning_tokens") or 0)
+
+
 def classify(baseline, result):
     """honoured / ignored / rejected / failed, judged against the no-kwarg answer."""
     if "http_status" in result:
         return "rejected"
     if "error" in result:
         return "failed"
-    if not baseline.get("reasoning_chars"):
-        # Nothing to suppress: this deployment does not return a trace even left alone.
+    if not reasoning_amount(baseline):
+        # Nothing to suppress: this deployment does not reason even left alone.
         return "no reasoning to suppress"
-    return "honoured" if result["reasoning_chars"] == 0 else "ignored"
+    return "honoured" if reasoning_amount(result) == 0 else "ignored"
 
 
 def toml_extra(winner):
@@ -127,7 +139,7 @@ def main(argv=None):
     print()
     if result["recommended"]:
         print(f"honoured: {', '.join(result['honoured'])}  ->  {result['lane_extra_toml']}")
-    elif not result["baseline"].get("reasoning_chars"):
+    elif not reasoning_amount(result["baseline"]):
         print("this deployment returns no reasoning trace at all; nothing to switch off")
         print(result["lane_extra_toml"])
     else:

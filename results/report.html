@@ -28,7 +28,7 @@
         padding: 1px 5px; border-radius: 4px; }
 </style></head><body>
 <h1>dgx pair — measured deployments</h1>
-<p class="sub">Generated 2026-09-19 08:45 UTC from 20 decode run(s) and 10 long-context run(s). Regenerate with <code>bin/llm-bench-report</code>; runs accumulate, the layout does not change.</p>
+<p class="sub">Generated 2026-09-19 09:11 UTC from 21 decode run(s) and 10 long-context run(s). Regenerate with <code>bin/llm-bench-report</code>; runs accumulate, the layout does not change.</p>
 <h2>Decode throughput — latest run per cell</h2>
 <p class="sub">Aggregate tok/s across all streams. Each cell is the most recent run for that deployment, scenario and concurrency; the history below keeps the rest.</p>
 <h3 class="scen">chat</h3>
@@ -342,6 +342,14 @@
 <td>23.8 → 12.3</td>
 <td>0.58 s</td>
 <td class='when'>2026-09-19 04:36 … 2026-09-19 04:50</td></tr>
+<tr><td class='dep'>qwen3.8-27b-sglang (pool of 2)</td>
+<td class='' title='2026-09-19 09:06 — re-measure: llm-quickbench now sends both thinking spellings (enable_thinking is the one this template reads)'>35.5 *</td>
+<td class='na'>&mdash;</td>
+<td class='best' title='2026-09-19 09:06 — re-measure: llm-quickbench now sends both thinking spellings (enable_thinking is the one this template reads)'>89.3 *</td>
+<td class='na'>&mdash;</td>
+<td>36.8 → 30.0</td>
+<td>0.27 s</td>
+<td class='when'>2026-09-19 09:06</td></tr>
 <tr><td class='dep'>qwen3.8-flash-next</td>
 <td class='' title='2026-09-19 05:29 — reasoning sweep'>47.9 *</td>
 <td class='' title='2026-09-19 05:21 — measurement pass'>71.3 *</td>
@@ -374,6 +382,14 @@
 <td>21.2 → 11.9</td>
 <td>0.58 s</td>
 <td class='when'>2026-09-19 04:50</td></tr>
+<tr><td class='dep'>qwen3.8-27b-sglang (pool of 2)</td>
+<td class='' title='2026-09-19 09:06 — re-measure: llm-quickbench now sends both thinking spellings (enable_thinking is the one this template reads)'>27.2 *</td>
+<td class='na'>&mdash;</td>
+<td class='best' title='2026-09-19 09:06 — re-measure: llm-quickbench now sends both thinking spellings (enable_thinking is the one this template reads)'>92.5 *</td>
+<td class='na'>&mdash;</td>
+<td>27.3 → 26.9</td>
+<td>0.28 s</td>
+<td class='when'>2026-09-19 09:06</td></tr>
 <tr><td class='dep'>qwen3.8-flash-next</td>
 <td class='' title='2026-09-19 05:29 — reasoning sweep'>46.2 *</td>
 <td class='na'>&mdash;</td>
@@ -549,6 +565,20 @@
 <td class='best'>found<br><span class='mode'>in reasoning</span></td>
 <td class='best'>found</td>
 <td class='dep'>5/5</td></tr>
+<tr><td class='dep'>qwen3.8-27b-sglang (pool of 2) · nothink</td>
+<td class='na'>missed</td>
+<td class='best'>found</td>
+<td class='best'>found</td>
+<td class='best'>found</td>
+<td class='best'>found</td>
+<td class='dep'>4/5</td></tr>
+<tr><td class='dep'>qwen3.8-27b-sglang (pool of 2) · think</td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found</td>
+<td class='dep'>5/5</td></tr>
 <tr><td class='dep'>qwen3.8-flash-next · nothink</td>
 <td class='best'>found<br><span class='mode'>in reasoning</span></td>
 <td class='best'>found<br><span class='mode'>in reasoning</span></td>
@@ -574,6 +604,10 @@
 <h2>Every run, in order</h2>
 <p class="sub">Nothing is averaged or dropped. A run taken under load keeps its note, so it can be read as what it is rather than compared as if conditions matched.</p>
 <table><thead><tr><th>taken</th><th>deployment</th><th>model</th><th>scenario</th><th>conc</th><th>aggregate</th><th>per-stream</th><th>ttft p50</th><th>note</th></tr></thead><tbody>
+<tr><td class='when'>2026-09-19 09:06</td><td class='dep'>qwen3.8-27b-sglang (pool of 2)</td><td class='model'>qwen3.8-27b-sglang (recorded as qwen3.8-27b-sglang)</td><td>review</td><td>×1</td><td>27.2</td><td>27.3</td><td>0.28 s</td><td class='note'>re-measure: llm-quickbench now sends both thinking spellings (enable_thinking is the one this template reads)</td></tr>
+<tr><td class='when'>2026-09-19 09:06</td><td class='dep'>qwen3.8-27b-sglang (pool of 2)</td><td class='model'>qwen3.8-27b-sglang (recorded as qwen3.8-27b-sglang)</td><td>review</td><td>×4</td><td>92.5</td><td>26.9</td><td>0.46 s</td><td class='note'>re-measure: llm-quickbench now sends both thinking spellings (enable_thinking is the one this template reads)</td></tr>
+<tr><td class='when'>2026-09-19 09:06</td><td class='dep'>qwen3.8-27b-sglang (pool of 2)</td><td class='model'>qwen3.8-27b-sglang (recorded as qwen3.8-27b-sglang)</td><td>review</td><td>×1</td><td>35.5</td><td>36.8</td><td>0.27 s</td><td class='note'>re-measure: llm-quickbench now sends both thinking spellings (enable_thinking is the one this template reads)</td></tr>
+<tr><td class='when'>2026-09-19 09:06</td><td class='dep'>qwen3.8-27b-sglang (pool of 2)</td><td class='model'>qwen3.8-27b-sglang (recorded as qwen3.8-27b-sglang)</td><td>review</td><td>×4</td><td>89.3</td><td>30.0</td><td>0.29 s</td><td class='note'>re-measure: llm-quickbench now sends both thinking spellings (enable_thinking is the one this template reads)</td></tr>
 <tr><td class='when'>2026-09-19 07:19</td><td class='dep'>glm-5.3-flash-bizuayeu</td><td class='model'>glm-5.3-flash-nvidia</td><td>review</td><td>×1</td><td>25.0</td><td>25.2</td><td>0.72 s</td><td class='note'>reasoning sweep</td></tr>
 <tr><td class='when'>2026-09-19 07:19</td><td class='dep'>glm-5.3-flash-bizuayeu</td><td class='model'>glm-5.3-flash-nvidia</td><td>review</td><td>×4</td><td>25.4</td><td>25.9</td><td>125.79 s</td><td class='note'>reasoning sweep</td></tr>
 <tr><td class='when'>2026-09-19 07:19</td><td class='dep'>glm-5.3-flash-bizuayeu</td><td class='model'>glm-5.3-flash-nvidia</td><td>review</td><td>×1</td><td>24.6</td><td>24.8</td><td>0.61 s</td><td class='note'>reasoning sweep</td></tr>

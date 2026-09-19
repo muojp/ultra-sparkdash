@@ -80,12 +80,18 @@ class StubHandler(BaseHTTPRequestHandler):
             self.wfile.write(b"data: [DONE]\n\n")
         else:
             message = {"content": "ok"}
+            reasoning_tokens = 0
             if self.server.reasons and not self._switched_off(body):
-                # A model that thinks unless the right variable reaches its template.
-                message["reasoning_content"] = "let me think about it"
+                # A model that thinks unless the right variable reaches its template. Where it
+                # says so differs: most fill reasoning_content, Flash-Next reports the tokens in
+                # usage and leaves the field empty (`reasoning_in_usage_only`).
+                if self.server.reasoning_in_usage_only:
+                    reasoning_tokens = 198
+                else:
+                    message["reasoning_content"] = "let me think about it"
             self._json({"choices": [{"message": message, "finish_reason": "stop"}],
                         "usage": {"completion_tokens": n, "prompt_tokens": prompt_tokens,
-                                  "completion_tokens_details": {"reasoning_tokens": 0},
+                                  "completion_tokens_details": {"reasoning_tokens": reasoning_tokens},
                                   "prompt_tokens_details": {"cached_tokens": 0}}})
 
     def _switched_off(self, body):
@@ -116,14 +122,19 @@ class StubHandler(BaseHTTPRequestHandler):
 
 
 def make_server(model_id="stub-model", reject_thinking=False, reasoning_key=False,
-                reasons=False, honours=None):
-    """`reasons` makes the stub emit a reasoning trace; `honours` is the one spelling that stops it."""
+                reasons=False, honours=None, reasoning_in_usage_only=False):
+    """`reasons` makes the stub emit a reasoning trace; `honours` is the one spelling that stops it.
+
+    `reasoning_in_usage_only` reports that trace as usage tokens with an empty reasoning_content,
+    which is what Qwen3.8-Flash-Next does on a non-streamed response.
+    """
     srv = HTTPServer(("127.0.0.1", 0), StubHandler)
     srv.model_id = model_id
     srv.reject_thinking = reject_thinking
     srv.reasoning_key = reasoning_key
     srv.reasons = reasons
     srv.honours = honours
+    srv.reasoning_in_usage_only = reasoning_in_usage_only
     srv.requests = []
     t = threading.Thread(target=srv.serve_forever, daemon=True)
     t.start()

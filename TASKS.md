@@ -4,7 +4,7 @@ Working state for the dgx pair, kept here rather than in a chat log or anyone's 
 `deployments/README.md`: if a step is missing here, it is missing. Numbers live in the deployment
 files; this file only says what is done, what is running, and what is next.
 
-_Last updated: 2026-09-19 08:45Z_
+_Last updated: 2026-09-19 10:05Z_
 
 ## The gate
 
@@ -51,10 +51,21 @@ worker. Thinking off is honoured (`reason_p50` 1600 with it on, 0 with it off), 
       `thinking`, Qwen templates read `enable_thinking`, and a template ignores a name it does not
       define — so both Qwen deployments were measured with thinking ON under rows labelled off.
       Probed and recorded with the new `dgx-model thinking`; `llm-quickbench` now sends both.
-- [ ] **Re-measure the Qwen review legs with the switch that works.** `qwen3.8-flash-next` still
-      has to be probed (it has never been sent `enable_thinking`), and its review rows — 12 of 20
-      answers with an empty body — were taken with thinking effectively on. The 27B's rows have the
-      same problem. Until then those `nothink` rows are think rows.
+- [x] **Every deployment's reasoning switch is probed and recorded**, and `[lane].extra` is set
+      from the probe rather than the model family: `thinking` for glm-5.3-flash-miaai and
+      -bizuayeu, `enable_thinking` for both Qwen deployments, nothing for the DeepSeeks (they do
+      not reason) and nothing for glm-5.3-flash-himorishige — where all four candidates are
+      accepted and ignored. Runs now record the kwargs they sent, and the report marks a row from
+      a run that cannot say as `nothink?`.
+- [x] **Qwen review legs re-measured with the switch that works.** Flash-Next answers a review in
+      4.3 s instead of 32 s, 54 tok/s single and 181 at eight streams, with every finding in the
+      body instead of behind an empty one — and loses the tier-boundary case doing it. The 27B
+      makes the same trade.
+- [ ] **The 27B's re-measured review rows are still `nothink?`**: they were taken before the run
+      recorded its kwargs. One review leg on the next switch fixes the label.
+- [ ] **himorishige's rows are unlabelled too**, and re-measuring them cannot say anything new
+      about the mode — nothing switches its thinking off. What would be worth measuring there is a
+      much larger budget: 1,600 tokens is not enough for it to finish thinking and answer.
 - [ ] **Probe `glm-5.3-flash-himorishige` with thinking off.** It finds all five defects and puts
       every one of them in a reasoning trace behind an empty body, and nobody has ever asked it for
       thinking off. Whether the kwarg moves those findings into the body decides whether the lane
@@ -63,6 +74,15 @@ worker. Thinking off is honoured (`reason_p50` 1600 with it on, 0 with it off), 
       answers also exposed a bug in the cases: the discount case matched a bare `>=`, which every
       answer that pasted a corrected `DiscountService` repeated, so four deployments scored a
       boundary they had never mentioned.
+
+## The dashboard shows both engines now
+
+`sparkDash` (separate repo) grew two fixes while the 27B was serving: Prometheus records both
+engines under `llm:*` so a panel asks for a quantity rather than for vLLM (the 27B's token
+counters were in Prometheus all along, behind `sglang:` names nothing queried), and dgx02 runs the
+same metrics proxy — a deployment with one server per node had half its tokens unscraped. The
+accumulated-token panel also holds a switched-out model's last value in its total, so the port's
+lifetime no longer drops and comes back with every gap in a scrape.
 
 ## Improvements noticed while measuring
 

@@ -31,7 +31,7 @@ inference is a result to record rather than a condition to control away.
 | 3 | `deepseek-v4-flash` | — | chat only | uncalibrated | both legs need redoing |
 | 4 | `deepseek-v4.1-flash` | — | chat only | uncalibrated | both legs need redoing |
 | 5 | `qwen3.8-flash-next` | — | — | — | provisioned; first boot rsyncs ~133 GiB to the worker |
-| 6 | `glm-5.3-flash-miaai` | — | — | — | needs image + weights; `SPEC_METHOD=mtp` (DFlash2 is licence-blocked) |
+| 6 | `glm-5.3-flash-miaai` | — | — | — | image + weights staged (120/120 shards, DFlash2 skipped by SPEC_METHOD=mtp) |
 | 7 | `glm-5.3-flash-bizuayeu` | — | — | — | needs a settings profile; does not fit the switch pattern yet |
 
 ## Improvements noticed while measuring

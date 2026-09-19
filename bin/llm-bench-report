@@ -133,8 +133,13 @@ def review_section(bench_runs, cases):
     for run in bench_runs:
         for row in run.get("rows", []):
             mode = row.get("thinking")
-            label = run["_deployment"] if mode is None else (
-                f"{run['_deployment']} · {'think' if mode else 'nothink'}")
+            # A `nothink` row is only as good as the spelling that reached the template. Runs from
+            # before llm-quickbench recorded what it sent cannot say, and some of them were
+            # thinking ON under an off label, so they are marked rather than merged.
+            sent = ((run.get("params") or {}).get("thinking_off_kwargs")
+                    if mode is False else True)
+            name = "think" if mode else ("nothink" if sent else "nothink?")
+            label = run["_deployment"] if mode is None else f"{run['_deployment']} · {name}"
             for ans in row.get("answers", []):
                 case = cases.get(ans.get("case"))
                 if not case:

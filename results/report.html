@@ -28,7 +28,7 @@
         padding: 1px 5px; border-radius: 4px; }
 </style></head><body>
 <h1>dgx pair — measured deployments</h1>
-<p class="sub">Generated 2026-09-19 09:11 UTC from 21 decode run(s) and 10 long-context run(s). Regenerate with <code>bin/llm-bench-report</code>; runs accumulate, the layout does not change.</p>
+<p class="sub">Generated 2026-09-19 09:30 UTC from 23 decode run(s) and 10 long-context run(s). Regenerate with <code>bin/llm-bench-report</code>; runs accumulate, the layout does not change.</p>
 <h2>Decode throughput — latest run per cell</h2>
 <p class="sub">Aggregate tok/s across all streams. Each cell is the most recent run for that deployment, scenario and concurrency; the history below keeps the rest.</p>
 <h3 class="scen">chat</h3>
@@ -351,13 +351,13 @@
 <td>0.27 s</td>
 <td class='when'>2026-09-19 09:06</td></tr>
 <tr><td class='dep'>qwen3.8-flash-next</td>
-<td class='' title='2026-09-19 05:29 — reasoning sweep'>47.9 *</td>
+<td class='' title='2026-09-19 09:28 — verified off: run records the kwargs it sent'>54.1 *</td>
 <td class='' title='2026-09-19 05:21 — measurement pass'>71.3 *</td>
-<td class='' title='2026-09-19 05:29 — reasoning sweep'>124.6 *</td>
+<td class='' title='2026-09-19 09:28 — verified off: run records the kwargs it sent'>95.4 *</td>
 <td class='best' title='2026-09-19 05:21 — measurement pass'>181.3 *</td>
-<td>48.6 → 25.4</td>
-<td>0.28 s</td>
-<td class='when'>2026-09-19 05:21 … 2026-09-19 05:29</td></tr>
+<td>57.6 → 25.4</td>
+<td>0.26 s</td>
+<td class='when'>2026-09-19 05:21 … 2026-09-19 09:28</td></tr>
 </tbody></table>
 <h3 class="scen">review/think</h3>
 <table><thead><tr><th>deployment</th>
@@ -391,13 +391,13 @@
 <td>0.28 s</td>
 <td class='when'>2026-09-19 09:06</td></tr>
 <tr><td class='dep'>qwen3.8-flash-next</td>
-<td class='' title='2026-09-19 05:29 — reasoning sweep'>46.2 *</td>
+<td class='' title='2026-09-19 09:28 — verified off: run records the kwargs it sent'>49.3 *</td>
 <td class='na'>&mdash;</td>
-<td class='best' title='2026-09-19 05:29 — reasoning sweep'>115.3 *</td>
+<td class='best' title='2026-09-19 09:28 — verified off: run records the kwargs it sent'>120.9 *</td>
 <td class='na'>&mdash;</td>
-<td>46.8 → 34.5</td>
-<td>0.32 s</td>
-<td class='when'>2026-09-19 05:29</td></tr>
+<td>49.8 → 31.0</td>
+<td>0.33 s</td>
+<td class='when'>2026-09-19 09:28</td></tr>
 </tbody></table>
 <h3 class="scen">structured</h3>
 <table><thead><tr><th>deployment</th>
@@ -516,7 +516,7 @@
 <td class='best'>found</td>
 <td class='best'>found</td>
 <td class='dep'>4/5<br><span class='mode'>+1 partial</span></td></tr>
-<tr><td class='dep'>glm-5.3-flash-bizuayeu · nothink</td>
+<tr><td class='dep'>glm-5.3-flash-bizuayeu · nothink?</td>
 <td class=''>partial 1/2</td>
 <td class='best'>found</td>
 <td class='best'>found</td>
@@ -537,7 +537,7 @@
 <td class='best'>found<br><span class='mode'>in reasoning</span></td>
 <td class='best'>found<br><span class='mode'>in reasoning</span></td>
 <td class='dep'>5/5</td></tr>
-<tr><td class='dep'>glm-5.3-flash-miaai · nothink</td>
+<tr><td class='dep'>glm-5.3-flash-miaai · nothink?</td>
 <td class='best'>found</td>
 <td class='best'>found</td>
 <td class='best'>found</td>
@@ -565,7 +565,7 @@
 <td class='best'>found<br><span class='mode'>in reasoning</span></td>
 <td class='best'>found</td>
 <td class='dep'>5/5</td></tr>
-<tr><td class='dep'>qwen3.8-27b-sglang (pool of 2) · nothink</td>
+<tr><td class='dep'>qwen3.8-27b-sglang (pool of 2) · nothink?</td>
 <td class='na'>missed</td>
 <td class='best'>found</td>
 <td class='best'>found</td>
@@ -580,19 +580,26 @@
 <td class='best'>found</td>
 <td class='dep'>5/5</td></tr>
 <tr><td class='dep'>qwen3.8-flash-next · nothink</td>
+<td class='na'>missed</td>
+<td class='best'>found</td>
+<td class='best'>found</td>
+<td class='best'>found</td>
+<td class='best'>found</td>
+<td class='dep'>4/5</td></tr>
+<tr><td class='dep'>qwen3.8-flash-next · nothink?</td>
 <td class='best'>found<br><span class='mode'>in reasoning</span></td>
 <td class='best'>found<br><span class='mode'>in reasoning</span></td>
-<td class='best'>found<br><span class='mode'>in reasoning</span></td>
-<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found</td>
+<td class='best'>found</td>
 <td class='best'>found</td>
 <td class='dep'>5/5</td></tr>
 <tr><td class='dep'>qwen3.8-flash-next · think</td>
 <td class='na'>missed</td>
 <td class='best'>found<br><span class='mode'>in reasoning</span></td>
-<td class=''>partial 1/2</td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
 <td class='best'>found<br><span class='mode'>in reasoning</span></td>
 <td class='best'>found</td>
-<td class='dep'>3/5<br><span class='mode'>+1 partial</span></td></tr>
+<td class='dep'>4/5</td></tr>
 </tbody></table>
 <h3 class="scen">what each case plants</h3><table><thead><tr><th>case</th><th>expected finding</th></tr></thead><tbody>
 <tr><td class='dep'>php-discount-logic</td><td class='note'>The tiered discount uses &gt;= on the lower bound of the next tier, so an order of exactly 10000 gets the 5% tier instead of 10%; the boundary case is off by one tier. Also returns a float where money should stay integer minor units.</td></tr>
@@ -604,6 +611,14 @@
 <h2>Every run, in order</h2>
 <p class="sub">Nothing is averaged or dropped. A run taken under load keeps its note, so it can be read as what it is rather than compared as if conditions matched.</p>
 <table><thead><tr><th>taken</th><th>deployment</th><th>model</th><th>scenario</th><th>conc</th><th>aggregate</th><th>per-stream</th><th>ttft p50</th><th>note</th></tr></thead><tbody>
+<tr><td class='when'>2026-09-19 09:28</td><td class='dep'>qwen3.8-flash-next</td><td class='model'>qwen3.8-flash-next</td><td>review</td><td>×1</td><td>49.3</td><td>49.8</td><td>0.33 s</td><td class='note'>verified off: run records the kwargs it sent</td></tr>
+<tr><td class='when'>2026-09-19 09:28</td><td class='dep'>qwen3.8-flash-next</td><td class='model'>qwen3.8-flash-next</td><td>review</td><td>×4</td><td>120.9</td><td>31.0</td><td>0.79 s</td><td class='note'>verified off: run records the kwargs it sent</td></tr>
+<tr><td class='when'>2026-09-19 09:28</td><td class='dep'>qwen3.8-flash-next</td><td class='model'>qwen3.8-flash-next</td><td>review</td><td>×1</td><td>54.1</td><td>57.6</td><td>0.26 s</td><td class='note'>verified off: run records the kwargs it sent</td></tr>
+<tr><td class='when'>2026-09-19 09:28</td><td class='dep'>qwen3.8-flash-next</td><td class='model'>qwen3.8-flash-next</td><td>review</td><td>×4</td><td>95.4</td><td>35.2</td><td>2.4 s</td><td class='note'>verified off: run records the kwargs it sent</td></tr>
+<tr><td class='when'>2026-09-19 09:25</td><td class='dep'>qwen3.8-flash-next</td><td class='model'>qwen3.8-flash-next</td><td>review</td><td>×1</td><td>45.7</td><td>46.3</td><td>0.42 s</td><td class='note'>re-measure with enable_thinking: the earlier nothink rows were thinking on</td></tr>
+<tr><td class='when'>2026-09-19 09:25</td><td class='dep'>qwen3.8-flash-next</td><td class='model'>qwen3.8-flash-next</td><td>review</td><td>×4</td><td>111.4</td><td>32.8</td><td>1.54 s</td><td class='note'>re-measure with enable_thinking: the earlier nothink rows were thinking on</td></tr>
+<tr><td class='when'>2026-09-19 09:25</td><td class='dep'>qwen3.8-flash-next</td><td class='model'>qwen3.8-flash-next</td><td>review</td><td>×1</td><td>49.3</td><td>52.7</td><td>0.3 s</td><td class='note'>re-measure with enable_thinking: the earlier nothink rows were thinking on</td></tr>
+<tr><td class='when'>2026-09-19 09:25</td><td class='dep'>qwen3.8-flash-next</td><td class='model'>qwen3.8-flash-next</td><td>review</td><td>×4</td><td>123.0</td><td>38.6</td><td>0.47 s</td><td class='note'>re-measure with enable_thinking: the earlier nothink rows were thinking on</td></tr>
 <tr><td class='when'>2026-09-19 09:06</td><td class='dep'>qwen3.8-27b-sglang (pool of 2)</td><td class='model'>qwen3.8-27b-sglang (recorded as qwen3.8-27b-sglang)</td><td>review</td><td>×1</td><td>27.2</td><td>27.3</td><td>0.28 s</td><td class='note'>re-measure: llm-quickbench now sends both thinking spellings (enable_thinking is the one this template reads)</td></tr>
 <tr><td class='when'>2026-09-19 09:06</td><td class='dep'>qwen3.8-27b-sglang (pool of 2)</td><td class='model'>qwen3.8-27b-sglang (recorded as qwen3.8-27b-sglang)</td><td>review</td><td>×4</td><td>92.5</td><td>26.9</td><td>0.46 s</td><td class='note'>re-measure: llm-quickbench now sends both thinking spellings (enable_thinking is the one this template reads)</td></tr>
 <tr><td class='when'>2026-09-19 09:06</td><td class='dep'>qwen3.8-27b-sglang (pool of 2)</td><td class='model'>qwen3.8-27b-sglang (recorded as qwen3.8-27b-sglang)</td><td>review</td><td>×1</td><td>35.5</td><td>36.8</td><td>0.27 s</td><td class='note'>re-measure: llm-quickbench now sends both thinking spellings (enable_thinking is the one this template reads)</td></tr>

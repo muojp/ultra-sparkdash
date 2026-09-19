@@ -521,6 +521,12 @@ def main():
                                   "reasoning_efforts": args.reasoning_effort or None,
                                   "prompt_tokens": args.prompt_tokens,
                                   "thinking": args.thinking,
+                                  # What "off" actually meant in this run. A row saying nothink is
+                                  # only as good as the spelling that reached the template, and the
+                                  # rows taken before both were sent cannot say which it was.
+                                  "thinking_off_kwargs": (
+                                      None if THINKING_UNSUPPORTED
+                                      else THINKING_OFF_KWARGS[THINKING_OFF_CHOICE[0]]),
                                   "shared_prefix": args.shared_prefix},
                        "rows": rows}, f, indent=2)
         print("wrote %s" % args.json_out)

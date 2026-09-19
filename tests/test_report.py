@@ -123,16 +123,35 @@ def test_thinking_modes_are_separate_rows_in_the_review_table(report, tmp_path):
     ans = {"case": "csharp-expiry-logic",
            "text": "Any() should be All(); also DateTime.Now vs UtcNow"}
     write_run(state, "bench", "20260101T000000+0000", "alpha",
-              {"model": "m", "rows": [{"scenario": "review", "concurrency": 1, "aggregate_tok_s": 5,
-                                       "thinking": True, "answers": [ans]},
-                                      {"scenario": "review", "concurrency": 1, "aggregate_tok_s": 5,
-                                       "thinking": False, "answers": [ans]}]})
+              {"model": "m",
+               "params": {"thinking_off_kwargs": {"thinking": False, "enable_thinking": False}},
+               "rows": [{"scenario": "review", "concurrency": 1, "aggregate_tok_s": 5,
+                         "thinking": True, "answers": [ans]},
+                        {"scenario": "review", "concurrency": 1, "aggregate_tok_s": 5,
+                         "thinking": False, "answers": [ans]}]})
     runs = report.load_runs(state, "bench")
     scored = report.review_section(runs, report.load_cases())
     labels = {k[0] for k in scored}
     assert labels == {"alpha \u00b7 think", "alpha \u00b7 nothink"}, labels
     page = report.render(runs, [], tmp_path / "r.html").read_text()
     assert "alpha \u00b7 nothink" in page
+
+
+def test_a_nothink_row_that_cannot_say_what_it_sent_is_marked(report, tmp_path):
+    """Rows taken before the run recorded its kwargs may have been thinking ON.
+
+    Both Qwen deployments were measured that way: the sweep sent the GLM spelling, the Qwen
+    template ignored it, and the rows say off. Merging them with a re-measured off would hide
+    exactly the difference the re-measurement was for.
+    """
+    state = tmp_path / "state"
+    ans = {"case": "csharp-expiry-logic", "text": "Any() should be All(); also UtcNow"}
+    write_run(state, "bench", "20260101T000000+0000", "alpha",
+              {"model": "m", "rows": [{"scenario": "review", "concurrency": 1,
+                                       "aggregate_tok_s": 5, "thinking": False, "answers": [ans]}]})
+    runs = report.load_runs(state, "bench")
+    labels = {k[0] for k in report.review_section(runs, report.load_cases())}
+    assert labels == {"alpha \u00b7 nothink?"}, labels
 
 
 def test_review_table_renders_even_with_no_answers(report, tmp_path):

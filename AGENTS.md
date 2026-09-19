@@ -120,6 +120,23 @@ done | sort -u > /tmp/blobs.txt
 rsync -a --files-from=/tmp/blobs.txt "$HUB/" "worker:$HUB/"
 ```
 
+**Boot budgets, measured 2026-09-18/19.** A switch is stop + start + wait-until-serving; the first
+boot of a deployment also pays for an image pull and, where the engine compiles, for that too.
+
+| deployment | warm switch | first boot |
+|---|---|---|
+| `deepseek-v4-flash` | 7m03s | — |
+| `deepseek-v4.1-flash` | 8m58s (9m31s on another run) | +33 min of image pull before it |
+| `glm-5.3-flash-himorishige` | 11m49s | — |
+| `glm-5.3-flash-miaai` | 7m59s | — |
+| `qwen3.8-27b-sglang` | — | 27m12s: ~20 min on the head (torch.compile) then the worker, because the two servers start in sequence |
+
+Two things those numbers hide. The image pull is the long pole on a cold host — the EXL3 deployment
+spent 33 minutes there before the engine started, one layer of it 11 minutes behind registry
+retries — so pull images while something else is measuring. And a pair deployment's *first* boot
+also copies weights to the worker; budget that separately (123 GiB took 6 minutes over CX7 at
+355 MB/s, against hours from Hugging Face).
+
 Expect the first boot of a new deployment to fail on something. Both EXL3 failures were recipe
 defects that only appear on a kit other than the author's, and each surfaced minutes after the step
 that caused it. Budget for it, fix it on the mirror, write the trap down.

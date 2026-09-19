@@ -48,7 +48,7 @@ empty body and the findings in the trace. That contrast is what `[lane].extra` i
 **But every `nothink` row for a Qwen deployment above is mislabelled.** Templates spell the switch
 differently: GLM reads `thinking`, Qwen reads `enable_thinking`, and a template silently ignores a
 variable it does not define. The sweep sent only the GLM spelling, so `qwen3.8-27b-sglang` and
-`qwen3.8-flash-next` were measured with thinking ON while the rows say off. Probed directly on the
+`qwen3.8-flash-next` were measured with thinking ON while the rows say off. Probed with `dgx-model thinking` on the
 27B on 2026-09-19 while it was serving: `enable_thinking` false returns an empty trace and the same
 answer, `thinking` false returns 729 characters of trace, and `reasoning_effort: "none"` also
 works. `llm-quickbench` now sends both spellings in one object, and the Qwen rows here should be

@@ -1,0 +1,144 @@
+#!/usr/bin/env python3
+"""Find the reasoning switch a serving deployment actually honours.
+
+Chat templates disagree about the name — GLM reads `thinking`, Qwen reads `enable_thinking` — and a
+template ignores a variable it does not define rather than complaining. Sending one spelling to a
+fleet that uses both therefore measures thinking ON while the row says off, silently. That is not a
+thing to remember: it is a thing to run.
+
+The probe sends the same short review prompt once per candidate and compares what comes back
+against the no-kwarg baseline. A candidate that empties the reasoning trace is honoured, one that
+changes nothing is ignored, one that answers 400 is rejected. The result is the value for
+`[lane].extra` in the deployment file, printed as TOML ready to paste.
+
+    bin/llm-thinking-probe --api http://192.168.0.100:8888/v1 --model glm-5.3-flash-nvidia
+    bin/dgx-model thinking            # resolves both from whatever is serving, and records the run
+"""
+import argparse
+import json
+import pathlib
+import sys
+import urllib.error
+import urllib.request
+
+# The order is the order a lane should prefer: the narrowest switch first, and `reasoning_effort`
+# last because it is a request field rather than a template variable and servers read it loosely.
+CANDIDATES = [
+    ("thinking", {"chat_template_kwargs": {"thinking": False}}),
+    ("enable_thinking", {"chat_template_kwargs": {"enable_thinking": False}}),
+    ("both", {"chat_template_kwargs": {"thinking": False, "enable_thinking": False}}),
+    ("reasoning_effort", {"reasoning_effort": "none"}),
+]
+
+# Short, and the kind of question that makes a reasoning model think: a documented intent that the
+# code contradicts. A prompt with nothing to reason about proves nothing about the switch.
+PROMPT = ("Review this C# and say what is wrong, in two sentences:\n"
+          "public bool IsStillValid() => Items.Any(i => i.ExpiresAtUtc > DateTime.Now);\n"
+          "// doc: true when EVERY reservation is still valid")
+
+
+def ask(api, model, extra, max_tokens, timeout):
+    """One non-streamed request. Returns what came back, or how it failed."""
+    body = {"model": model, "messages": [{"role": "user", "content": PROMPT}],
+            "max_tokens": max_tokens, "temperature": 0}
+    body.update(extra or {})
+    req = urllib.request.Request(api.rstrip("/") + "/chat/completions",
+                                 data=json.dumps(body).encode(),
+                                 headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            payload = json.load(r)
+    except urllib.error.HTTPError as e:
+        return {"http_status": e.code,
+                "detail": e.read()[:200].decode("utf-8", "replace").strip()}
+    except (urllib.error.URLError, OSError, ValueError) as e:
+        return {"error": str(e)[:200]}
+    choice = payload["choices"][0]
+    message = choice.get("message") or {}
+    usage = payload.get("usage") or {}
+    details = usage.get("completion_tokens_details") or {}
+    return {"body_chars": len((message.get("content") or "").strip()),
+            "reasoning_chars": len((message.get("reasoning_content") or "").strip()),
+            "reasoning_tokens": details.get("reasoning_tokens"),
+            "finish": choice.get("finish_reason"),
+            "sample": (message.get("content") or "").strip()[:160]}
+
+
+def classify(baseline, result):
+    """honoured / ignored / rejected / failed, judged against the no-kwarg answer."""
+    if "http_status" in result:
+        return "rejected"
+    if "error" in result:
+        return "failed"
+    if not baseline.get("reasoning_chars"):
+        # Nothing to suppress: this deployment does not return a trace even left alone.
+        return "no reasoning to suppress"
+    return "honoured" if result["reasoning_chars"] == 0 else "ignored"
+
+
+def toml_extra(winner):
+    """The `[lane].extra` line for the winning candidate, or an empty table."""
+    if winner is None:
+        return "extra = {}"
+    body = dict(CANDIDATES_BY_NAME[winner])
+    if "chat_template_kwargs" in body:
+        inner = ", ".join(f"{k} = {str(v).lower()}" for k, v in body["chat_template_kwargs"].items())
+        return "extra = { chat_template_kwargs = { %s } }" % inner
+    return 'extra = { reasoning_effort = "none" }'
+
+
+CANDIDATES_BY_NAME = {name: extra for name, extra in CANDIDATES}
+
+
+def probe(api, model, max_tokens=400, timeout=300, log=print):
+    baseline = ask(api, model, None, max_tokens, timeout)
+    log(f"{'no kwarg (server default)':28s} -> {json.dumps(baseline)}")
+    results, honoured = {}, []
+    for name, extra in CANDIDATES:
+        got = ask(api, model, extra, max_tokens, timeout)
+        verdict = classify(baseline, got)
+        results[name] = {**got, "verdict": verdict, "sent": extra}
+        if verdict == "honoured":
+            honoured.append(name)
+        log(f"{name:28s} -> {verdict}: {json.dumps(got)}")
+    # `both` is a superset, so it wins only when neither single spelling does — a lane should send
+    # the narrowest thing that works, and a server that takes both singly takes the pair anyway.
+    winner = next((n for n in ("thinking", "enable_thinking", "both", "reasoning_effort")
+                   if n in honoured), None)
+    return {"api": api, "model": model, "prompt": PROMPT, "baseline": baseline,
+            "candidates": results, "honoured": honoured, "recommended": winner,
+            "lane_extra_toml": toml_extra(winner)}
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--api", required=True, help="OpenAI-compatible base URL ending in /v1")
+    ap.add_argument("--model", required=True)
+    ap.add_argument("--max-tokens", type=int, default=400)
+    ap.add_argument("--timeout", type=float, default=300)
+    ap.add_argument("--json", type=pathlib.Path, help="write the full result here")
+    ap.add_argument("--note", default="", help="recorded with the run, as in the other probes")
+    args = ap.parse_args(argv)
+
+    api = args.api.split(",")[0]           # a pool answers the same way on either endpoint
+    result = probe(api, args.model, args.max_tokens, args.timeout)
+    result["note"] = args.note
+    print()
+    if result["recommended"]:
+        print(f"honoured: {', '.join(result['honoured'])}  ->  {result['lane_extra_toml']}")
+    elif not result["baseline"].get("reasoning_chars"):
+        print("this deployment returns no reasoning trace at all; nothing to switch off")
+        print(result["lane_extra_toml"])
+    else:
+        print("no candidate suppressed the trace; the lane has to read reasoning_content")
+        print(result["lane_extra_toml"])
+    if args.json:
+        args.json.parent.mkdir(parents=True, exist_ok=True)
+        args.json.write_text(json.dumps(result, indent=2) + "\n")
+        print(f"wrote {args.json}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

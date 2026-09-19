@@ -19,6 +19,10 @@ it never composes vLLM flags itself.
   dgx-model longctx [-- ARGS]          long-prompt prefill + memory floor, with llm-longctx-probe;
                                        the floor is the number that says whether a setting is safe,
                                        and a smoke test never shows it. Same output directory.
+  dgx-model thinking [-- ARGS]         which reasoning switch this deployment honours, with
+                                       llm-thinking-probe. Templates spell it differently and
+                                       ignore a name they do not define, so the answer is measured
+                                       rather than assumed, and it is what [lane].extra sends.
   dgx-model sync                       copy bin/ and deployments/ to the head's ~/dgx-model. The head
                                        runs its own copy (list/status/switch re-execute there), so a
                                        new deployment file is invisible until this is run.
@@ -446,10 +450,13 @@ def main() -> int:
     lc = sub.add_parser("longctx")
     lc.add_argument("--deployment", help="default: whatever is serving now")
     lc.add_argument("rest", nargs=argparse.REMAINDER, help="arguments for llm-longctx-probe, after --")
+    th = sub.add_parser("thinking")
+    th.add_argument("--deployment", help="default: whatever is serving now")
+    th.add_argument("rest", nargs=argparse.REMAINDER, help="arguments for llm-thinking-probe, after --")
     ap.add_argument("--local", action="store_true", help="never re-execute over ssh")
     args = ap.parse_args()
     # bench talks to the API over the network and writes its rows where it runs, so it stays local.
-    if not args.local and args.cmd not in ("bench", "longctx", "sync"):
+    if not args.local and args.cmd not in ("bench", "longctx", "thinking", "sync"):
         maybe_remote([a for a in sys.argv[1:] if a != "--local"])
     if args.cmd == "sync":
         return sync_to_head()
@@ -477,6 +484,9 @@ def main() -> int:
     if args.cmd == "longctx":
         return probe(deps, args.deployment, [a for a in args.rest if a != "--"],
                      "llm-longctx-probe", "longctx")
+    if args.cmd == "thinking":
+        return probe(deps, args.deployment, [a for a in args.rest if a != "--"],
+                     "llm-thinking-probe", "thinking")
     if args.cmd == "history":
         h = STATE_DIR / "history"
         for p in sorted(h.glob("*")) if h.exists() else []:

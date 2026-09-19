@@ -4,7 +4,7 @@ Working state for the dgx pair, kept here rather than in a chat log or anyone's 
 `deployments/README.md`: if a step is missing here, it is missing. Numbers live in the deployment
 files; this file only says what is done, what is running, and what is next.
 
-_Last updated: 2026-09-19 07:55Z_
+_Last updated: 2026-09-19 08:45Z_
 
 ## The gate
 
@@ -19,7 +19,7 @@ change is committed, and before a measurement taken with a changed tool is trust
 | `glm-5.3-flash-himorishige` | done | done | 5/5, every finding in the reasoning trace |
 | `deepseek-v4-flash` | done | done | 4/5 + 1 partial, all in the body |
 | `deepseek-v4.1-flash` | done | done | 4/5 + 1 partial, all in the body |
-| `qwen3.8-27b-sglang` | done (pool and single node) | **redo** | 5/5, three of five only in the trace |
+| `qwen3.8-27b-sglang` | done (pool and single node) | done (re-run 08:25Z) | 5/5, three of five only in the trace |
 | `glm-5.3-flash-miaai` | done | done (2 of 4 long requests dropped) | 5/5 in the body — the only row that is both |
 | `qwen3.8-flash-next` | done — fastest everywhere | done | 5/5, four of five only in the trace |
 | `glm-5.3-flash-bizuayeu` | done | done | 4/5 + 1 partial, all in the body |
@@ -43,11 +43,18 @@ worker. Thinking off is honoured (`reason_p50` 1600 with it on, 0 with it off), 
       image store and the worker on the containerd snapshotter, so one image is two IDs), and the
       start steps' redirection moved onto the subshell so a detached rank does not hold the ssh
       session open. Traps are in `deployments/glm-5.3-flash-bizuayeu.toml`.
-- [ ] **Re-run the Qwen 27B long-context leg.** Its two attempts are void: one replayed a cached
-      prompt (fixed seeds — 140k tokens "in" 3.2 s), the other reported an empty memory floor
-      (Prometheus is not reachable from the head). Both causes are fixed; the leg just needs
-      running again. Probe the thinking kwarg on the same switch — `[lane].extra` for it is still
-      empty because nothing has ever sent it one.
+- [x] **Qwen 27B long context re-run** (08:25Z), and this time it is a measurement: 162,699 prompt
+      tokens, 838 tok/s prefill single and 1,653 at four streams (193, 195, 392, 394 s — two
+      servers taking two each), memory floor 4.95 GiB head / 7.82 GiB worker single, 4.93 / 4.80 at
+      four. The void attempts had reported 43,933 and 116,694 tok/s from a replayed prompt.
+- [x] **The reasoning switch has two spellings, and the sweep only sent one.** GLM templates read
+      `thinking`, Qwen templates read `enable_thinking`, and a template ignores a name it does not
+      define — so both Qwen deployments were measured with thinking ON under rows labelled off.
+      Probed and recorded with the new `dgx-model thinking`; `llm-quickbench` now sends both.
+- [ ] **Re-measure the Qwen review legs with the switch that works.** `qwen3.8-flash-next` still
+      has to be probed (it has never been sent `enable_thinking`), and its review rows — 12 of 20
+      answers with an empty body — were taken with thinking effectively on. The 27B's rows have the
+      same problem. Until then those `nothink` rows are think rows.
 - [ ] **Probe `glm-5.3-flash-himorishige` with thinking off.** It finds all five defects and puts
       every one of them in a reasoning trace behind an empty body, and nobody has ever asked it for
       thinking off. Whether the kwarg moves those findings into the body decides whether the lane

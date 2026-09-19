@@ -41,6 +41,11 @@ def dgx_model():
     return _load("dgx-model")
 
 
+@pytest.fixture(scope="session")
+def thinking_probe():
+    return _load("llm-thinking-probe")
+
+
 class StubHandler(BaseHTTPRequestHandler):
     """Minimal OpenAI-compatible server: /v1/models and a streaming /v1/chat/completions."""
 
@@ -74,10 +79,28 @@ class StubHandler(BaseHTTPRequestHandler):
                                  "prompt_tokens_details": {"cached_tokens": 0}}})
             self.wfile.write(b"data: [DONE]\n\n")
         else:
-            self._json({"choices": [{"message": {"content": "ok"}, "finish_reason": "stop"}],
+            message = {"content": "ok"}
+            if self.server.reasons and not self._switched_off(body):
+                # A model that thinks unless the right variable reaches its template.
+                message["reasoning_content"] = "let me think about it"
+            self._json({"choices": [{"message": message, "finish_reason": "stop"}],
                         "usage": {"completion_tokens": n, "prompt_tokens": prompt_tokens,
                                   "completion_tokens_details": {"reasoning_tokens": 0},
                                   "prompt_tokens_details": {"cached_tokens": 0}}})
+
+    def _switched_off(self, body):
+        """True when the request carries the one spelling this stub's template defines.
+
+        The point of the stub: every other spelling is *ignored*, exactly as a chat template
+        ignores a variable it does not define, so a probe that only tries one name sees a model
+        that "always thinks" instead of a name it never sent.
+        """
+        key = self.server.honours
+        if key is None:
+            return False
+        if key == "reasoning_effort":
+            return body.get("reasoning_effort") == "none"
+        return (body.get("chat_template_kwargs") or {}).get(key) is False
 
     def _json(self, obj):
         raw = json.dumps(obj).encode()
@@ -92,11 +115,15 @@ class StubHandler(BaseHTTPRequestHandler):
         self.wfile.flush()
 
 
-def make_server(model_id="stub-model", reject_thinking=False, reasoning_key=False):
+def make_server(model_id="stub-model", reject_thinking=False, reasoning_key=False,
+                reasons=False, honours=None):
+    """`reasons` makes the stub emit a reasoning trace; `honours` is the one spelling that stops it."""
     srv = HTTPServer(("127.0.0.1", 0), StubHandler)
     srv.model_id = model_id
     srv.reject_thinking = reject_thinking
     srv.reasoning_key = reasoning_key
+    srv.reasons = reasons
+    srv.honours = honours
     srv.requests = []
     t = threading.Thread(target=srv.serve_forever, daemon=True)
     t.start()

@@ -54,10 +54,12 @@ sessions = 8                                  # MAX_RUNNING_REQUESTS=8; knee NOT
 price_input = 0.0
 price_output = 0.0
 price_cache_read = 0.0
-# Smoke 2026-09-22: chat_template_kwargs.enable_thinking is honoured both ways (true: 18 reasoning
-# tokens on a short prose prompt; false: 0). `thinking` (the GLM spelling llm-quickbench sends) is
-# ignored: 0 reasoning either way, i.e. the template default is non-thinking. Stated explicitly
-# with the spelling that works, so the lane does not depend on the template default.
+# Measured 2026-09-22: the default (no chat_template_kwargs) THINKS; enable_thinking=false turns it
+# off (0 reasoning chars), enable_thinking=true and thinking=true give the same trace as the default.
+# REPORTING TRAP: usage.reasoning_tokens is filled only when enable_thinking=true is sent explicitly;
+# with no kwargs (or `thinking`) it is null although reasoning_content is there — so tools that read
+# reasoning from usage (llm-quickbench's reason_p50) report 0 for a thinking call. Count
+# reasoning_content instead. The review lane sends enable_thinking=false, like the qwen lanes.
 extra = { chat_template_kwargs = { enable_thinking = false } }
 
 [observability]
@@ -85,5 +87,5 @@ boots = [
   "b3 15:40Z pin 1048576 DFLASH: weights 80.34 / 80.97 GB (load 111 s / 222 s NFS), draft 1.78 / 1.65 GB; main KV 7.1 GB (full 1,048,576 + SWA 31,424 tok) + draft KV 5.0 GB -> 18.78 / 19.09 GB free; graphs 1.47 / 2.23 GB; available_gpu_mem 14.19 GB; MemAvailable after boot 14 GiB each. SERVING, DONE 15:48:09Z.",
 ]
 pin_rule = """The DFlash drafter keeps a second KV pool sized to the pin, so the pin costs ~11.3 GB per 1M tokens per node (7.1 main + 5.0 draft at 1,048,576). 2,299,968 does not fit next to FlashInfer autotune at MEM_FRACTION_STATIC 0.93 / guard 4 GiB. If a boot dies at the same step again: lower the pin (262144, then 131072) BEFORE switching the drafter to EAGLE (host 2026-09-22)."""
-smoke_20260922 = """enable_thinking true: TTFT 0.36 s, 23.9 tok/s decode (short prose); false: 0.27 s, 24.4 tok/s. llm-quickbench code c=1 (3211-token prompt): TTFT 1.5-1.6 s, 48.6-50.2 tok/s per stream. streamed usage has prompt_tokens_details = null (cached_tokens not reported there) despite ENABLE_CACHE_REPORT=1 — check non-streamed. Evidence: /Users/muo/bench/bb2-scratch/mimo-boot/."""
+smoke_20260922 = """enable_thinking true: TTFT 0.36 s, 23.9 tok/s decode (short prose); false: 0.27 s, 24.4 tok/s. llm-quickbench code c=1 (3211-token prompt, template default = thinking ON; its reason_p50 0 is the usage trap above): TTFT 1.5-1.6 s, 48.6-50.2 tok/s per stream. streamed usage has prompt_tokens_details = null (cached_tokens not reported there) despite ENABLE_CACHE_REPORT=1 — check non-streamed. Evidence: /Users/muo/bench/bb2-scratch/mimo-boot/."""
 env_diff = """Head .env vs .env.example (uncommitted, kit not mirrored): cluster/fabric/NFS values of the pair, MODEL_DIR ~/models/MiMo-V2.6-Flash-RL, HF_HUB_CACHE user-owned, NCCL_IB_GID_INDEX 3, SPEC_ALGO DFLASH, SPEC_DRAFT_TOKENS 8, CUDA_GRAPH_MAX_BS_DECODE 8, MAX_TOTAL_TOKENS 1048576."""

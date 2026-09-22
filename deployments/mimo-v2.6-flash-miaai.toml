@@ -1,0 +1,89 @@
+# MiMo-V2.6-Flash-RL on the pair — MiaAI-Lab/MiMo-V2.6-Flash-2x-DGX-Sparks, SGLang, TP=2/EP=2.
+# Added 2026-09-22 for OPERATOR-INSTRUCTION-20260922-2210 (MiMo on dgx as an interrupt job: the
+# cloud judges luna/Go are out, MiMo was the second lifecycle classifier and a judge candidate).
+#
+# NOT YET MIRRORED: there is no muojp fork of this kit, so the head checkout tracks upstream at
+# 201be3e7 with a local, uncommitted .env (deployments/README.md §1 asks for a muojp mirror and a
+# derived commit; do that before any fix to the kit itself). The .env values that differ from
+# .env.example are the pair's own (the EXL3 kit's): HEAD_IP 192.168.100.30, WORKER_IPS
+# 192.168.100.40, WORKER_HOSTS dgx02, WORKER_USER muo, fabric enp1s0f0np0 / rocep1s0f0, GID 3,
+# NFS server .30 -> client .40, MODEL_DIR ~/models/MiMo-V2.6-Flash-RL, HF_HUB_CACHE user-owned,
+# and the DFLASH drafter (SPEC_DRAFT_TOKENS 8, CUDA_GRAPH_MAX_BS_DECODE 8: the kit's own DFLASH
+# values; the operator's load is code) with MAX_TOTAL_TOKENS 1048576 — the kit's 2299968 was
+# killed by its memory guard, see [notes].
+name = "mimo-v2.6-flash-miaai"
+served_model = "MiMo-v2.6-Flash"             # .env SERVED_MODEL_NAME
+served_aliases = []
+api_url = "http://192.168.0.100:8888"
+boot_timeout_s = 3600                         # measured boot 3: ~8 min switch-to-DONE (worker weights over NFS 222 s)
+
+# No Compose project: start.sh runs one `docker run --network host` container per node.
+[containers]
+head = ["mimo26-tp2-head"]
+worker = ["mimo26-tp2-worker"]
+
+[host]
+recipe_dir = "/home/muo/MiMo-V2.6-Flash-2x-DGX-Sparks"
+worker = "dgx02"
+# Bare ./start.sh = doctor -> image -> share (NFSv4 export + worker volume) -> serve.
+# hf lives in ~/.local/bin, which a non-interactive ssh does not put on PATH; start.sh needs it
+# only for `download`, which is not part of a switch.
+#
+# :2049 rule (2026-09-22, first switch failed on it): every kit runs its own NFS exporter container
+# with --network host and --restart unless-stopped, and not every kit's stop removes it. The EXL3
+# kit's dsv41-exl3-nfs was still Up (3 days) and held :2049, so mimo26-nfs restart-looped and dgx02
+# mounted the EXL3 export ("dgx02 cannot read the head checkpoint"). The kit cannot see it:
+# files/nfs-share.sh nfs_live_container() knows only vllm-fn-nfs|glm53-nfs|dsv41-nfs|mimo26-nfs.
+# So: start first stops, BY NAME, any other running *-nfs exporter (by the time start runs, switch
+# has stopped the previous deployment, so they are orphans) and refuses if :2049 is still held;
+# stop releases our own exporter and the worker volume so the next kit starts clean.
+start = [
+  ["bash", "-c", "for c in $(docker ps --format '{{.Names}}' | grep -E -- '-nfs$' | grep -vx mimo26-nfs); do echo \"preflight: stopping orphan NFS exporter $c (holds :2049)\"; docker stop \"$c\" >/dev/null || exit 1; done; if ss -ltn | grep -q ':2049 ' && ! docker ps --format '{{.Names}}' | grep -qx mimo26-nfs; then echo 'preflight: :2049 is held by something that is not a container exporter; refusing' >&2; exit 1; fi"],
+  ["./start.sh"],
+]
+stop = [
+  ["./start.sh", "stop", "--unmount"],
+  ["bash", "-c", "docker stop mimo26-nfs >/dev/null 2>&1 || true"],
+]
+status = [["./start.sh", "status"]]
+
+[lane]
+model = "dgx-spark/mimo-v2.6-flash"
+timeout_s = 3600
+sessions = 8                                  # MAX_RUNNING_REQUESTS=8; knee NOT measured yet (concurrency.tsv) — placeholder
+price_input = 0.0
+price_output = 0.0
+price_cache_read = 0.0
+# Smoke 2026-09-22: chat_template_kwargs.enable_thinking is honoured both ways (true: 18 reasoning
+# tokens on a short prose prompt; false: 0). `thinking` (the GLM spelling llm-quickbench sends) is
+# ignored: 0 reasoning either way, i.e. the template default is non-thinking. Stated explicitly
+# with the spelling that works, so the lane does not depend on the template default.
+extra = { chat_template_kwargs = { enable_thinking = false } }
+
+[observability]
+metrics = """SGLang (`sglang:*` metrics with ENABLE_METRICS=1), so the dashboard's vLLM row stays
+empty while this is up, as with qwen3.8-27b-sglang."""
+
+[prerequisites]
+notes = [
+  "clone the kit at host.recipe_dir on the head only; start.sh syncs it to dgx02:/home/muo/mimo26-tp2",
+  "./start.sh download on the head (~171 GiB, pinned revision 3b38d063; ~15-20 MiB/s on this WAN, ~2.5 h)",
+  "./start.sh build: pulls lmsysorg/sglang:nightly-dev-cu13-20260921-0f6761b5, builds mimo26-spark:local, sends it to dgx02",
+  "PORT=8888 is shared with every other deployment; the first start has to follow a stop — `dgx-model switch` does that",
+]
+
+[prerequisites.traps]
+hf_not_on_path = """start.sh download falls back to python3 + huggingface_hub when `hf` is not on PATH; the host python has no huggingface_hub, so it dies at once. Put ~/.local/bin on PATH first."""
+xet_cache_root_owned = """~/.cache/huggingface/xet is root-owned (from 2026-09-09); Xet runs without its chunk cache and logs to the console. Harmless for a single download."""
+eagle_needs_no_decode_graphs = """If SPEC_ALGO is switched back to EAGLE, CUDA_GRAPH_MAX_BS_DECODE must be 0 (the kit: decode graph capture crashes under multi-layer EAGLE)."""
+
+[notes]
+# Per-boot record (host 2026-09-22: pin / drafter / resident / MemAvailable). Per node, head / worker.
+boots = [
+  "b1 15:31Z pin 2299968 DFLASH: never reached sglang — share failed, :2049 held by dsv41-exl3-nfs (see start).",
+  "b2 15:33Z pin 2299968 DFLASH: weights 80.36 / 81.41 GB (load 114 s / 214 s NFS), draft 2.0 / 1.35 GB; pin clamped to profiled 1,946,880; main KV 13.16 GB + DFlash draft KV 9.28 GB -> 8.27 / 8.50 GB free; MEMORY GUARD (floor 4 GiB) killed sglang on both at FlashInfer autotune (MemAvailable 3.9 GiB). Nodes did not wedge.",
+  "b3 15:40Z pin 1048576 DFLASH: weights 80.34 / 80.97 GB (load 111 s / 222 s NFS), draft 1.78 / 1.65 GB; main KV 7.1 GB (full 1,048,576 + SWA 31,424 tok) + draft KV 5.0 GB -> 18.78 / 19.09 GB free; graphs 1.47 / 2.23 GB; available_gpu_mem 14.19 GB; MemAvailable after boot 14 GiB each. SERVING, DONE 15:48:09Z.",
+]
+pin_rule = """The DFlash drafter keeps a second KV pool sized to the pin, so the pin costs ~11.3 GB per 1M tokens per node (7.1 main + 5.0 draft at 1,048,576). 2,299,968 does not fit next to FlashInfer autotune at MEM_FRACTION_STATIC 0.93 / guard 4 GiB. If a boot dies at the same step again: lower the pin (262144, then 131072) BEFORE switching the drafter to EAGLE (host 2026-09-22)."""
+smoke_20260922 = """enable_thinking true: TTFT 0.36 s, 23.9 tok/s decode (short prose); false: 0.27 s, 24.4 tok/s. llm-quickbench code c=1 (3211-token prompt): TTFT 1.5-1.6 s, 48.6-50.2 tok/s per stream. streamed usage has prompt_tokens_details = null (cached_tokens not reported there) despite ENABLE_CACHE_REPORT=1 — check non-streamed. Evidence: /Users/muo/bench/bb2-scratch/mimo-boot/."""
+env_diff = """Head .env vs .env.example (uncommitted, kit not mirrored): cluster/fabric/NFS values of the pair, MODEL_DIR ~/models/MiMo-V2.6-Flash-RL, HF_HUB_CACHE user-owned, NCCL_IB_GID_INDEX 3, SPEC_ALGO DFLASH, SPEC_DRAFT_TOKENS 8, CUDA_GRAPH_MAX_BS_DECODE 8, MAX_TOTAL_TOKENS 1048576."""

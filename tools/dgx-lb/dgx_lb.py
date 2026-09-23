@@ -617,6 +617,11 @@ def make_handler(lb: "LB", profile: dict):
 
 
 # ------------------------------------------------------------------------------------------- LB
+class _Server(ThreadingHTTPServer):
+    request_queue_size = 128   # the stdlib default of 5 drops SYNs when several lanes burst at once
+    daemon_threads = True
+
+
 class LB:
     def __init__(self, cfg: dict, allow_short: bool = False):
         self.cfg = cfg
@@ -688,7 +693,7 @@ class LB:
     def start(self) -> None:
         self.pool.probe_all()
         for prof in self.cfg["profile"]:
-            srv = ThreadingHTTPServer((self.cfg["listen_host"], int(prof["port"])), make_handler(self, prof))
+            srv = _Server((self.cfg["listen_host"], int(prof["port"])), make_handler(self, prof))
             srv.daemon_threads = True
             self.servers.append(srv)
             self.ports[prof["name"]] = srv.server_address[1]

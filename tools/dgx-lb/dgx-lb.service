@@ -1,0 +1,18 @@
+# systemd --user unit for dgx-lb on dgx01 (linger is on for muo).
+#   install: mkdir -p ~/.config/systemd/user ~/dgx-lb && cp dgx_lb.py ~/dgx-lb/ && cp config.qs-x2.toml ~/dgx-lb/config.toml
+#            cp dgx-lb.service ~/.config/systemd/user/ && systemctl --user daemon-reload && systemctl --user enable --now dgx-lb
+[Unit]
+Description=dgx-lb: load balancer over the dgx replicas (profiles 8890/8891/8892)
+After=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+ExecStart=/usr/bin/python3 -u %h/dgx-lb/dgx_lb.py --config %h/dgx-lb/config.toml
+Restart=on-failure
+RestartSec=2
+KillSignal=SIGTERM
+TimeoutStopSec=10
+
+[Install]
+WantedBy=default.target

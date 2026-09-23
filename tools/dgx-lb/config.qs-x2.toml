@@ -1,0 +1,49 @@
+# dgx-lb config for deployment qwen3.8-flash-next-single-x2 (two qs-single replicas). Installed on dgx01 as
+# ~/dgx-lb/config.toml. Caps = the per-replica knee measured 2026-09-24 (concurrency.tsv
+# qwen3.8-flash-next-single/{dgx01,dgx02}/think@20260924 = 4 = MAX_NUM_SEQS).
+served_model = "qwen3.8-flash-next-single"
+listen_host = "0.0.0.0"          # same interfaces as vLLM's 8888; VPN/LAN only, no auth (see README)
+ledger_dir = "~/dgx-lb/ledger"
+
+[timeouts]                       # seconds; startup refuses total < 600 or first_byte < 60 (BP-60)
+connect = 5
+first_byte = 900
+idle = 300
+total = 3900                     # = the lanes' hard stop, budget 3600 + 300
+
+[queue]
+max_depth = 64
+
+[health]
+interval = 5
+probe_timeout = 3
+eject_after = 2
+readmit_after = 2
+
+[retry]
+max_attempts = 3
+backoff = [0.5, 1.0, 2.0]
+
+[[upstream]]
+name = "dgx01"
+url = "http://127.0.0.1:8888"
+cap = 4
+
+[[upstream]]
+name = "dgx02"
+url = "http://192.168.100.40:8888"   # CX7
+cap = 4
+
+[[profile]]
+name = "plain"                    # body passed through unchanged
+port = 8890
+
+[[profile]]
+name = "think"                    # chat_template_kwargs.enable_thinking = true merged in (other kwargs kept)
+port = 8891
+inject = { chat_template_kwargs = { enable_thinking = true } }
+
+[[profile]]
+name = "nothink"
+port = 8892
+inject = { chat_template_kwargs = { enable_thinking = false } }

@@ -315,6 +315,7 @@ def test_timeouts_each_have_their_outcome(tmp_path):
         lb.pool.probe_all(); lb.pool.probe_all()
         r, _ = req(lb, mode="slow_idle=1.2", body={"stream": True})
         assert ledger(lb)[-1]["outcome"] == "timeout_idle"
+        assert ledger(lb)[-1]["ttft_s"] is not None  # the first event arrived before the stall
         lb.pool.probe_all(); lb.pool.probe_all()
         r, _ = req(lb, mode="drip=3", body={"stream": True})
         assert ledger(lb)[-1]["outcome"] == "timeout_total"
@@ -386,6 +387,7 @@ def test_usage_parsed_from_json_chat_sse_and_responses_sse(two):
     assert (rows[1]["prompt_tokens"], rows[1]["completion_tokens"], rows[1]["reasoning_tokens"]) == (5, 3, 2)
     assert (rows[2]["prompt_tokens"], rows[2]["completion_tokens"], rows[2]["reasoning_tokens"]) == (20, 9, 4)
     assert rows[3]["reasoning_tokens"] is None and rows[3]["completion_tokens"] == 7
+    assert all(r["headers_s"] is not None and r["ttft_s"] >= r["headers_s"] for r in rows)
     fleet = lb.metrics.get("lb_reasoning_tokens_total", served_model=SERVED, node="fleet", profile="plain")
     assert fleet == 11  # 5 + 2 + 4; the null row adds nothing
 

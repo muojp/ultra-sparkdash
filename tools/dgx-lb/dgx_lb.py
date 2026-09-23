@@ -462,7 +462,7 @@ def make_handler(lb: "LB", profile: dict):
                     pass
             row = {"ts": round(t0, 3), "rid": rid, "profile": pname, "dispatch_id": dispatch_id,
                    "method": self.command, "path": path, "stream": stream, "node": None, "attempts": 0,
-                   "status": None, "outcome": None, "queue_wait_s": 0.0, "ttft_s": None, "wall_s": None,
+                   "status": None, "outcome": None, "queue_wait_s": 0.0, "headers_s": None, "ttft_s": None, "wall_s": None,
                    "bytes": 0, "prompt_tokens": None, "completion_tokens": None, "reasoning_tokens": None,
                    "errors": []}
             fwd_headers = {k: v for k, v in self.headers.items() if k.lower() not in HOP_BY_HOP}
@@ -547,9 +547,7 @@ def make_handler(lb: "LB", profile: dict):
                 # From here the client gets this response, whatever happens.
                 lb.pool.passive_success(node)
                 row["status"] = resp.status
-                ttft = time.time() - t0
-                row["ttft_s"] = round(ttft, 3)
-                lb.metrics.observe("lb_ttft_seconds", {"served_model": lb.served, "node": node.name}, ttft)
+                row["headers_s"] = round(time.time() - t0, 3)  # vLLM sends SSE headers at once: not a TTFT
                 tap = UsageTap(resp.getheader("Content-Type", ""))
                 clen = resp.getheader("Content-Length")
                 self.send_response(resp.status)
@@ -583,6 +581,10 @@ def make_handler(lb: "LB", profile: dict):
                             break
                         if not chunk:
                             break
+                        if row["ttft_s"] is None:  # first body bytes: the closest proxy-side TTFT
+                            ttft = time.time() - t0
+                            row["ttft_s"] = round(ttft, 3)
+                            lb.metrics.observe("lb_ttft_seconds", {"served_model": lb.served, "node": node.name}, ttft)
                         tap.feed(chunk)
                         row["bytes"] += len(chunk)
                         try:

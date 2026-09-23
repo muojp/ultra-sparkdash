@@ -1,0 +1,64 @@
+# qwen3.8-flash-next-single on BOTH Sparks: two independent replicas of the single-node recipe
+# (Qwen3.8-Flash-Next-Single-DGX-Spark @ad8dec9, Mia-AiLab checkpoint), one per node. Added 2026-09-24
+# for the bench's dgx lane (operator: "Qwen38fns を2台にデプロイ"; plan
+# .meta/bench/bench2-20260922/PLAN-A-qs-2node-20260924.md in fondi-workspace).
+#
+# Not a cluster: no TP, no NFS, no NCCL — the qwen3.8-27b-sglang pattern. Each node runs the same
+# recipe with a byte-identical .env and the same served name, so a client cannot tell them apart
+# and the calibration done on qwen3.8-flash-next-single carries over. It is NOT the TP2
+# qwen3.8-flash-next deployment, which serves the nvidia checkpoint (a different model).
+#
+# dgx02 was provisioned from dgx01 over CX7 (recipe incl .env, image vllm/vllm-openai:qwen38-flash-next,
+# the dereferenced snapshot and the packed PLE table under ~/.cache/vllm/ple_cache) — no download.
+name = "qwen3.8-flash-next-single-x2"
+served_model = "qwen3.8-flash-next-single"
+served_aliases = []
+api_url = "http://192.168.0.100:8888"         # dgx01's replica; `status` and the switch readiness wait use this one only
+# Both replicas. dgx02 is reachable only over CX7, so the client belongs on the head.
+api_urls = ["http://127.0.0.1:8888", "http://192.168.100.40:8888"]
+bench_from = "head"
+boot_timeout_s = 2400
+
+[containers]
+head = ["vllm-fn-single"]
+worker = ["vllm-fn-single"]                   # its own server, not a TP worker
+
+[host]
+recipe_dir = "/home/muo/Qwen3.8-Flash-Next-Single-DGX-Spark"
+worker = "dgx02"
+# dgx02 gets IMAGE by tag on purpose: its image was docker-loaded into the containerd store, where the
+# .env's registry digest (vllm/vllm-openai@sha256:fc120ece...) does not resolve and start.sh would try
+# to pull. Same content (RootFS diff_ids identical to the head's); start.sh gives the environment
+# precedence over .env, so .env stays byte-identical on both nodes.
+start = [
+  ["env", "MEMWATCH_ENABLED=0", "./start.sh"],
+  ["ssh", "-o", "BatchMode=yes", "dgx02", "cd /home/muo/Qwen3.8-Flash-Next-Single-DGX-Spark && env MEMWATCH_ENABLED=0 IMAGE=vllm/vllm-openai:qwen38-flash-next ./start.sh"],
+]
+stop = [
+  ["./stop.sh"],
+  ["ssh", "-o", "BatchMode=yes", "dgx02", "cd /home/muo/Qwen3.8-Flash-Next-Single-DGX-Spark && ./stop.sh"],
+]
+status = [["docker", "ps", "--filter", "name=vllm-fn-single", "--format", "{{.Names}} {{.Status}}"]]
+
+[lane]
+model = "dgx-spark/qwen3.8-flash-next-single"
+timeout_s = 3600
+sessions = 8                                  # MAX_NUM_SEQS=4 per node x 2; the knee probe decides the lane value
+price_input = 0.0
+price_output = 0.0
+price_cache_read = 0.0
+extra = { chat_template_kwargs = { enable_thinking = false } }
+
+[prerequisites]
+notes = [
+  "dgx02: recipe copied from the head with .git and .env (sha256 identical), logs/ excluded",
+  "dgx02: image loaded via docker save | docker load (containerd store): the .env digest fc120ece... does NOT resolve there, so dgx02 starts with IMAGE=vllm/vllm-openai:qwen38-flash-next (start.sh: environment > .env). RootFS layer list identical to the head's (sha256 29977d09... of the diff_ids JSON, 2026-09-24)",
+  "dgx02: snapshot copied with rsync -L (dereferenced; see qwen3.8-flash-next.toml shared_blob_store trap), verified by stat -L + sha256 against the head",
+  "dgx02: packed PLE table copied, so its first boot does not rebuild it",
+  "PORT=8888 on both nodes; the first start has to follow a stop",
+]
+
+[prerequisites.traps]
+readiness_head_only = """`dgx-model switch` waits on api_url (the head) only. Check dgx02's /v1/models (http://192.168.100.40:8888 from the head) before treating the pair as up."""
+mac_cannot_reach_dgx02 = """192.168.100.40 is the CX7 link. Lanes on the Mac need a single entrypoint on dgx01 that spreads over both replicas (the bench's proxy work), or they see the head's replica only."""
+sparkdash_head_only = """sparkDash probes 192.168.0.100, so its throughput and served-model rows show the head replica only."""

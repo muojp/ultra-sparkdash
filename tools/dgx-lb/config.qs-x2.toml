@@ -1,6 +1,6 @@
 # dgx-lb config for deployment qwen3.8-flash-next-single-x2 (two qs-single replicas). Installed on dgx01 as
 # ~/dgx-lb/config.toml. Caps = the per-replica knee measured 2026-09-24 (concurrency.tsv
-# qwen3.8-flash-next-single/{dgx01,dgx02}/think@20260924 = 4 = MAX_NUM_SEQS).
+# qwen3.8-flash-next-single/{dgx01,dgx02}/think@20260924 = 4 = MAX_NUM_SEQS) with short prompts; 3 since 2026-09-24 22:0xZ: long prompts admit ~3 per replica (KNEE addendum f8c99f41, host ruling).
 served_model = "qwen3.8-flash-next-single"
 listen_host = "0.0.0.0"          # same interfaces as vLLM's 8888; VPN/LAN only, no auth (see README)
 ledger_dir = "~/dgx-lb/ledger"
@@ -27,12 +27,12 @@ backoff = [0.5, 1.0, 2.0]
 [[upstream]]
 name = "dgx01"
 url = "http://127.0.0.1:8888"
-cap = 4
+cap = 3
 
 [[upstream]]
 name = "dgx02"
 url = "http://192.168.100.40:8888"   # CX7
-cap = 4
+cap = 3
 
 [[profile]]
 name = "plain"                    # body passed through unchanged

@@ -413,6 +413,16 @@ def run_level(apis, model, level, args, seed_base, scenario="chat", thinking=Non
         "cached_tokens_p50": int(statistics.median([r.cached for r in ok])),
         "reasoning_tokens_p50": int(statistics.median([r.reasoning for r in ok])),
         "finish_reasons": sorted({r.finish for r in ok if r.finish}),
+        # Per session, so a level can be read as "what one stream got" as well as the aggregate
+        # (operator 2026-09-24: a setting pays only if the total rises a lot for a modest per-session loss).
+        "per_stream_tok_s_p5": round(pct(decode_rates, 5), 1) if decode_rates else None,
+        "latency_p95_s": round(pct([r.wall for r in ok], 95), 2),
+        "per_request": [{"endpoint": endpoints[i], "wall_s": round(r.wall, 2),
+                         "ttft_s": round(r.ttft, 2) if r.ttft is not None else None,
+                         "completion": r.completion, "prompt": r.prompt,
+                         "decode_tok_s": round(r.completion / (r.wall - r.ttft), 1)
+                         if r.ttft is not None and r.wall and r.wall > r.ttft else None}
+                        for i, r in enumerate(results) if r and r.ok],
     }
 
 

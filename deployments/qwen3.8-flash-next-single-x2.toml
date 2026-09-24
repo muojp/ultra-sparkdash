@@ -33,9 +33,11 @@ worker = "dgx02"
 # MAX_NUM_BATCHED_TOKENS=8192 on both (2026-09-24, probe v2 P2, host ack): +7-13% aggregate on long prompts with a
 # slightly better per-session wall, neutral on short; the KV pool shrinks ~10% (1,082,259 -> 976,815 tokens). An env
 # override, so .env stays byte-identical. KNEE-PROBE-qs-x2-v2-P2-20260924.md in fondi-workspace .meta/bench/bench2-20260922.
+# MAX_NUM_SEQS=8 on both (probe v2 P1, host ack 04:04Z): +48% aggregate for decode-heavy work at no per-session cost, no
+# regression on long prompts (KNEE-PROBE-qs-x2-v2-P1-dgx02-20260924.md). cudagraph sizes follow ((1+MTP) x S up to 32).
 start = [
-  ["env", "MEMWATCH_ENABLED=0", "MAX_NUM_BATCHED_TOKENS=8192", "./start.sh"],
-  ["ssh", "-o", "BatchMode=yes", "dgx02", "cd /home/muo/Qwen3.8-Flash-Next-Single-DGX-Spark && env MEMWATCH_ENABLED=0 IMAGE=vllm/vllm-openai:qwen38-flash-next MAX_NUM_BATCHED_TOKENS=8192 ./start.sh"],
+  ["env", "MEMWATCH_ENABLED=0", "MAX_NUM_BATCHED_TOKENS=8192", "MAX_NUM_SEQS=8", "./start.sh"],
+  ["ssh", "-o", "BatchMode=yes", "dgx02", "cd /home/muo/Qwen3.8-Flash-Next-Single-DGX-Spark && env MEMWATCH_ENABLED=0 IMAGE=vllm/vllm-openai:qwen38-flash-next MAX_NUM_BATCHED_TOKENS=8192 MAX_NUM_SEQS=8 ./start.sh"],
 ]
 stop = [
   ["./stop.sh"],
@@ -46,7 +48,7 @@ status = [["docker", "ps", "--filter", "name=vllm-fn-single", "--format", "{{.Na
 [lane]
 model = "dgx-spark/qwen3.8-flash-next-single"
 timeout_s = 3600
-sessions = 8                                  # MAX_NUM_SEQS=4 per node x 2; the knee probe decides the lane value
+sessions = 8                                  # decided by the probe; see concurrency.tsv qwen3.8-flash-next-single-x2 rows
 price_input = 0.0
 price_output = 0.0
 price_cache_read = 0.0

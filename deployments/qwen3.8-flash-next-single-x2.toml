@@ -66,4 +66,5 @@ notes = [
 [prerequisites.traps]
 readiness_head_only = """`dgx-model switch` waits on api_url (the head) only. Check dgx02's /v1/models (http://192.168.100.40:8888 from the head) before treating the pair as up."""
 mac_cannot_reach_dgx02 = """192.168.100.40 is the CX7 link. Lanes on the Mac need a single entrypoint on dgx01 that spreads over both replicas (the bench's proxy work), or they see the head's replica only."""
-sparkdash_head_only = """sparkDash probes 192.168.0.100, so its throughput and served-model rows show the head replica only."""
+sparkdash_per_node = """Corrected 2026-09-24: sparkDash probes BOTH replicas (its sparks.json has dgx02 at 192.168.100.40:8888), so panel 22 draws one series per node; target C adds the fleet sum (sparkDash 11ec8c8)."""
+port_8888_is_dgx01_direct = """:8888 on 192.168.0.100 is dgx01's own vLLM, not the pair. Clients that should use both replicas go through dgx-lb (:8890 plain, :8891 think, :8892 nothink). IFR's support router defaulted to :8888 until 2026-09-24 (repointed via IFR_DGX_BASE_URL)."""

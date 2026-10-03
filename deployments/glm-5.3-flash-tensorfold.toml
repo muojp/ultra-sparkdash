@@ -2,7 +2,7 @@
 # GLM-5.3-Flash-EXL3-2x-DGX-Sparks-TensorFold (mirror muojp, branch feat/dgx-spark-pair-ops, at
 # upstream cf28cc4f = v1.4, 2026-10-03). Not vLLM: TensorFold's own server in NVIDIA's PyTorch
 # container, one container per rank (`glm53-flash-tf` on both nodes), started by ./start.sh on the head.
-# Added and provisioned 2026-10-03 (prepare.sh done, not yet booted) on the operator's instruction; GLM-5.3-Flash is now this + glm-5.3-flash-miaai,
+# Added, provisioned and first booted 2026-10-03 on the operator's instruction; GLM-5.3-Flash is now this + glm-5.3-flash-miaai,
 # the other two are [deprecated].
 #
 # Checkpoint Mia-AiLab/GLM-5.3-Flash-EXL3-4bpw-TensorFold @078455ff (~176 GB, a different
@@ -38,9 +38,17 @@ sessions = 1
 price_input = 0.0
 price_output = 0.0
 price_cache_read = 0.0
-# Provisional, not probed: patch 0057 reads chat_template_kwargs.thinking as enable_thinking and
-# the recipe thinks by default (THINKING=1). Confirm with `dgx-model thinking` after the first boot.
+# Probed 2026-10-03 (state/thinking/20261003T035338+0000): thinking, enable_thinking, both and
+# reasoning_effort are all honoured (full body, no trace). With no kwarg the server thinks by default
+# and spent the whole 1,600-token budget on the trace (empty body, finish=length).
 extra = { chat_template_kwargs = { thinking = false } }
+
+[measured]
+# First boot 2026-10-03: switch 4m24s end to end (weights 254.6 s, kernels compiled on this start).
+# Bench state/bench/20261003T035523+0000, c=1 (the only level: PARALLEL=1), thinking off, 3 passes.
+# Per-stream decode tok/s: chat 44.7-47.8, code 56.7-57.2, essay 43.9-78.2, review 47.8-54.6,
+# structured 62.9-66.8; TTFT ~0.5-0.7 s. Review single-stream is ~2.2-2.5x miaai (22.2) on the
+# same model family.
 
 [prerequisites]
 notes = [

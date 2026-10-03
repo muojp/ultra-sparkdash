@@ -1,0 +1,679 @@
+[2026-09-20T08:39:22+00:00] switch -> qwen3.8-flash-next-single (dry_run=False); active now: None; api serves None
+[2026-09-20T08:39:22+00:00] $ /home/muo/glm53-cluster/scripts/cache-flusher.sh once
+[2026-09-20T08:39:23+00:00] [2026-09-20T08:39:23+00:00] flushed via container; Mem:             121           3         118           0           0         117
+[2026-09-20T08:39:23+00:00] $ ssh -o BatchMode=yes dgx02 '/home/muo/glm53-cluster/scripts/cache-flusher.sh once'
+[2026-09-20T08:39:24+00:00] [2026-09-20T08:39:24+00:00] flushed via container; Mem:             121           3         118           0           0         117
+[2026-09-20T08:39:24+00:00] starting qwen3.8-flash-next-single
+[2026-09-20T08:39:24+00:00] $ (cd /home/muo/Qwen3.8-Flash-Next-Single-DGX-Spark;  env MEMWATCH_ENABLED=0 ./start.sh)
+[2026-09-20T08:39:24+00:00] [1;33m[WARN][0m  KV_CACHE_DTYPE=fp8: FP8 KV is a CAPACITY TRADE, not a free win.
+[2026-09-20T08:39:24+00:00] [1;33m[WARN][0m       ~1.7x more KV tokens (1M context becomes reachable). The speed cost is
+[2026-09-20T08:39:24+00:00] [1;33m[WARN][0m       now small here (see README), but the reference implementation measured a
+[2026-09-20T08:39:24+00:00] [1;33m[WARN][0m       long-reasoning benchmark falling from 6/6 to 2/6. This is sparse
+[2026-09-20T08:39:24+00:00] [1;33m[WARN][0m       attention: quantised keys perturb which blocks the indexer selects.
+[2026-09-20T08:39:24+00:00] [1;33m[WARN][0m       Re-validate quality on your own workload before trusting it.
+[2026-09-20T08:39:24+00:00] [1;34m[INFO][0m  === Step 1: Resolve checkpoint ===
+[2026-09-20T08:39:24+00:00] [1;32m[ OK ][0m  Mia-AiLab/Qwen3.8-Flash-Next-NVFP4  (99G)
+[2026-09-20T08:39:24+00:00] [1;34m[INFO][0m  === Step 2: Memory budget ===
+[2026-09-20T08:39:24+00:00] [1;34m[INFO][0m    unified pool ............. 121 GiB total, 117 GiB available now
+[2026-09-20T08:39:24+00:00] [1;34m[INFO][0m    weights on GPU ........... 71.84 GiB  (checkpoint minus 26.82 GiB PLE table)
+[2026-09-20T08:39:24+00:00] [1;34m[INFO][0m    PLE table ................ 26.82 GiB  memory-mapped in the CPU offload worker
+[2026-09-20T08:39:24+00:00] [1;34m[INFO][0m    runtime overhead ......... 5.6 GiB
+[2026-09-20T08:39:24+00:00] [1;34m[INFO][0m    MTP draft model .......... 1.49 GiB
+[2026-09-20T08:39:24+00:00] [1;34m[INFO][0m    KV needed for 262144 ...... 4.17 GiB  (kv dtype fp8)
+[2026-09-20T08:39:24+00:00] [1;34m[INFO][0m    host reserve ............. 26 GiB  (HOST_RESERVE_GIB) => GPU budget cap 95.69 GiB
+[2026-09-20T08:39:24+00:00] [1;33m[WARN][0m    KV target 20 reduced to 16.72 by HOST_RESERVE_GIB=26
+[2026-09-20T08:39:24+00:00] [1;34m[INFO][0m    GPU budget (GMU 0.786) ... 95.65 GiB  => ~16.72 GiB KV (~1049761 tokens)
+[2026-09-20T08:39:24+00:00] [1;34m[INFO][0m    container cgroup cap ..... 100 GiB  (hard ceiling 105; bounds host-side memory only)
+[2026-09-20T08:39:24+00:00] [1;34m[INFO][0m    host footprint now ....... 4.1 GiB used by everything else (MemTotal - MemAvailable) + 0.7 GiB swapped
+[2026-09-20T08:39:24+00:00] [1;32m[ OK ][0m    budget fits.
+[2026-09-20T08:39:24+00:00] [1;33m[WARN][0m    kernel VM tunables at defaults (vm.min_free_kbytes=45167, vm.watermark_scale_factor=10): no free-page reserve for the NVIDIA driver. Not applied by this script (sudo). See files/sysctl-spark3.conf, then: sudo sysctl -p files/sysctl-spark3.conf
+[2026-09-20T08:39:24+00:00] [1;34m[INFO][0m  === Step 3: GPU preflight ===
+[2026-09-20T08:39:24+00:00] [1;32m[ OK ][0m  GPU idle.
+[2026-09-20T08:39:24+00:00] [1;34m[INFO][0m  === Step 4: Prepare patches ===
+[2026-09-20T08:39:24+00:00] patched ple_layer_patched
+[2026-09-20T08:39:24+00:00] ok
+[2026-09-20T08:39:24+00:00] ok /home/muo/Qwen3.8-Flash-Next-Single-DGX-Spark/files/modelopt_patched.py
+[2026-09-20T08:39:24+00:00] patched qsa_ops_patched.py
+[2026-09-20T08:39:24+00:00] patched qsa_nvidia_patched.py
+[2026-09-20T08:39:24+00:00] ok
+[2026-09-20T08:39:25+00:00] patched mtp_patched
+[2026-09-20T08:39:25+00:00] ok
+[2026-09-20T08:39:25+00:00] patched protocol.py
+[2026-09-20T08:39:25+00:00] patched ple_offload_layer.py
+[2026-09-20T08:39:25+00:00] patched connector.py
+[2026-09-20T08:39:25+00:00] patched worker.py
+[2026-09-20T08:39:25+00:00] ok
+[2026-09-20T08:39:25+00:00] [1;32m[ OK ][0m  Patches ready.
+[2026-09-20T08:39:46+00:00] [1;34m[INFO][0m  quant_algo pre-flight: checkpoint algos (MXFP8 NVFP4 W4A16_NVFP4) dispatched by this image.
+[2026-09-20T08:39:46+00:00] [1;32m[ OK ][0m  Packed PLE table: /home/muo/.cache/vllm/ple_cache/Mia-AiLab--Qwen3.8-Flash-Next-NVFP4/language_model.model.layers.1.ple.ple_embedding.ngram_embedding.packed_u8 (27G)
+[2026-09-20T08:40:01+00:00] ./start.sh: 行 917: `min_frames` is part of Qwen3VLVideoProcessorInitKwargs, but not documented. Make sure to add it to the docstring of the function in /usr/local/lib/python3.12/dist-packages/transformers/models/qwen3_vl/video_processing_qwen3_vl.py.: 構文エラー: オペランドが予期されます (エラーのあるトークンは "`min_frames` is part of Qwen3VLVideoProcessorInitKwargs, but not documented. Make sure to add it to the docstring of the function in /usr/local/lib/python3.12/dist-packages/transformers/models/qwen3_vl/video_processing_qwen3_vl.py.")
+[2026-09-20T08:40:01+00:00] [1;33m[WARN][0m  BIND=0.0.0.0 is not loopback and no API_KEY / --api-key is set:
+[2026-09-20T08:40:01+00:00] [1;33m[WARN][0m       the API is reachable on every interface this box has:
+[2026-09-20T08:40:01+00:00] [1;33m[WARN][0m       192.168.0.100 192.168.100.30 192.168.101.30 10.10.10.21 172.17.0.1 2409:11:c0c0:b00:9065:dfeb:8e8b:21bd 2409:11:c0c0:b00:c552:12fb:bef0:5686 2409:11:c0c0:b00:1206:ff45:842d:6410 2409:11:c0c0:b00:1b7d:ff35:8516:ab73 2409:11:c0c0:b00:ebbc:475c:b239:9649 2409:11:c0c0:b00:12bd:451f:3d49:b42 2409:11:c0c0:b00:449:c22a:1027:1cbc 2409:11:c0c0:b00:b735:94da:84fd:6591 
+[2026-09-20T08:40:01+00:00] [1;33m[WARN][0m       Serve with API_KEY (or --api-key), or use an ssh tunnel.
+[2026-09-20T08:40:01+00:00] [1;34m[INFO][0m  
+[2026-09-20T08:40:01+00:00] [1;34m[INFO][0m  Config (single Spark, TP=1):
+[2026-09-20T08:40:01+00:00] [1;34m[INFO][0m    Model:      Mia-AiLab/Qwen3.8-Flash-Next-NVFP4
+[2026-09-20T08:40:01+00:00] [1;34m[INFO][0m    Ablit:      0
+[2026-09-20T08:40:01+00:00] [1;34m[INFO][0m    Image:      vllm/vllm-openai@sha256:fc120ece0a388cc0aa1caad4a9f1cd92113484ab7ec2fd0efadd62585be05bf8
+[2026-09-20T08:40:01+00:00] [1;34m[INFO][0m    Context:    262144 tokens (native rope, no YaRN)
+[2026-09-20T08:40:01+00:00] [1;34m[INFO][0m    GMU:        0.786  (budget 95.65 GiB, cgroup cap 100 GiB)
+[2026-09-20T08:40:01+00:00] [1;34m[INFO][0m    Max seqs:   4   Batched tokens: 2048   KV dtype: fp8
+[2026-09-20T08:40:01+00:00] [1;34m[INFO][0m    SSM state:  bfloat16
+[2026-09-20T08:40:01+00:00] [1;34m[INFO][0m    MTP:        3 
+[2026-09-20T08:40:01+00:00] [1;34m[INFO][0m    Draft vocab: /home/muo/Qwen3.8-Flash-Next-Single-DGX-Spark/files/draft_vocab_en_code_47k.txt
+[2026-09-20T08:40:01+00:00] [1;34m[INFO][0m    Graphs:     FULL_DECODE_ONLY  capture=4,8,12,16  compile-mode=0
+[2026-09-20T08:40:01+00:00] [1;34m[INFO][0m    Port:       8888  (bind 0.0.0.0)
+[2026-09-20T08:40:01+00:00] [1;34m[INFO][0m  
+[2026-09-20T08:40:01+00:00] [1;34m[INFO][0m  === Step 6: Launch ===
+[2026-09-20T08:40:02+00:00] bd10f110766f514b00ddb2dd929794ce85fb7cd6f3fa9d40e23f44de186bc079
+[2026-09-20T08:40:02+00:00] [1;32m[ OK ][0m  Container vllm-fn-single started.
+[2026-09-20T08:40:02+00:00] [1;34m[INFO][0m  Plain vLLM: no background watchdog; dgx-model owns lifecycle.
+[2026-09-20T08:40:02+00:00] [1;34m[INFO][0m  Loading weights (~3-4 min). Following logs until ready...
+[2026-09-20T08:40:12+00:00]   ...waiting for readiness: 10s elapsed, last /health code 000000
+[2026-09-20T08:40:17+00:00] (APIServer pid=1) INFO 09-20 08:40:17 [api_utils.py:333] 
+[2026-09-20T08:40:17+00:00] (APIServer pid=1) INFO 09-20 08:40:17 [api_utils.py:333]        █     █     █▄   ▄█
+[2026-09-20T08:40:17+00:00] (APIServer pid=1) INFO 09-20 08:40:17 [api_utils.py:333]  ▄▄ ▄█ █     █     █ ▀▄▀ █  version 0.1.dev20073+g8e685d198
+[2026-09-20T08:40:17+00:00] (APIServer pid=1) INFO 09-20 08:40:17 [api_utils.py:333]   █▄█▀ █     █     █     █  model   Mia-AiLab/Qwen3.8-Flash-Next-NVFP4
+[2026-09-20T08:40:17+00:00] (APIServer pid=1) INFO 09-20 08:40:17 [api_utils.py:333]    ▀▀  ▀▀▀▀▀ ▀▀▀▀▀ ▀     ▀
+[2026-09-20T08:40:17+00:00] (APIServer pid=1) INFO 09-20 08:40:17 [api_utils.py:333] 
+[2026-09-20T08:40:17+00:00] (APIServer pid=1) INFO 09-20 08:40:17 [api_utils.py:272] non-default args: {'model_tag': 'Mia-AiLab/Qwen3.8-Flash-Next-NVFP4', 'enable_auto_tool_choice': True, 'tool_call_parser': 'qwen3_coder', 'enable_prompt_tokens_details': True, 'host': '0.0.0.0', 'port': 8888, 'model': 'Mia-AiLab/Qwen3.8-Flash-Next-NVFP4', 'max_model_len': 262144, 'served_model_name': ['qwen3.8-flash-next-single'], 'load_format': 'safetensors', 'safetensors_load_strategy': 'lazy', 'reasoning_parser': 'qwen3', 'distributed_executor_backend': 'mp', 'gpu_memory_utilization': 0.786, 'kv_cache_dtype': 'fp8', 'mamba_ssm_cache_dtype': 'bfloat16', 'max_num_batched_tokens': 2048, 'max_num_seqs': 4, 'enable_chunked_prefill': True, 'speculative_config': {'method': 'mtp', 'num_speculative_tokens': 3, 'use_local_argmax_reduction': True}, 'compilation_config': {'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': [], 'ir_enable_torch_wrap': None, 'splitting_ops': None, 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_vision_items_per_batch': 0, 'encoder_cudagraph_max_frames_per_batch': None, 'compile_sizes': None, 'compile_ranges_endpoints': None, 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.FULL_DECODE_ONLY: (2, 0)>, 'cudagraph_num_of_warmups': 0, 'cudagraph_capture_sizes': [4, 8, 12, 16], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': None, 'pass_config': {}, 'max_cudagraph_capture_size': None, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': None, 'static_all_moe_layers': []}}
+[2026-09-20T08:40:17+00:00] (APIServer pid=1) INFO 09-20 08:40:17 [arg_utils.py:813] HF_HUB_OFFLINE is True, replace model_id [Mia-AiLab/Qwen3.8-Flash-Next-NVFP4] to model_path [/root/.cache/huggingface/hub/models--Mia-AiLab--Qwen3.8-Flash-Next-NVFP4/snapshots/925d7be6c14c6c9442ef83e8f05b5a3c39304f69]
+[2026-09-20T08:40:17+00:00] (APIServer pid=1) WARNING 09-20 08:40:17 [envs.py:2224] Unknown vLLM environment variable detected: VLLM_MTP_DRAFT_VOCAB
+[2026-09-20T08:40:17+00:00] (APIServer pid=1) WARNING 09-20 08:40:17 [envs.py:2224] Unknown vLLM environment variable detected: VLLM_PLE_PACKED_TABLE_DIR
+[2026-09-20T08:40:17+00:00] (APIServer pid=1) WARNING 09-20 08:40:17 [envs.py:2224] Unknown vLLM environment variable detected: VLLM_PLE_OFFLOAD_STEP_TIMEOUT
+[2026-09-20T08:40:17+00:00] (APIServer pid=1) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:40:17+00:00] (APIServer pid=1) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:40:17+00:00] (APIServer pid=1) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:40:17+00:00] (APIServer pid=1) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:40:17+00:00] (APIServer pid=1) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:40:28+00:00] (APIServer pid=1) INFO 09-20 08:40:28 [model.py:672] Resolved architecture: Qwen3_8FlashNextForConditionalGeneration
+[2026-09-20T08:40:28+00:00] (APIServer pid=1) INFO 09-20 08:40:28 [model.py:1965] Using max model len 262144
+[2026-09-20T08:40:30+00:00] (APIServer pid=1) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:40:30+00:00] (APIServer pid=1) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:40:30+00:00] (APIServer pid=1) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:40:30+00:00] (APIServer pid=1) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:40:30+00:00] (APIServer pid=1) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:40:31+00:00] (APIServer pid=1) [ERROR] `min_frames` is part of Qwen3VLVideoProcessorInitKwargs, but not documented. Make sure to add it to the docstring of the function in /usr/local/lib/python3.12/dist-packages/transformers/models/qwen3_vl/video_processing_qwen3_vl.py.
+[2026-09-20T08:40:31+00:00] (APIServer pid=1) [ERROR] `max_frames` is part of Qwen3VLVideoProcessorInitKwargs, but not documented. Make sure to add it to the docstring of the function in /usr/local/lib/python3.12/dist-packages/transformers/models/qwen3_vl/video_processing_qwen3_vl.py.
+[2026-09-20T08:40:31+00:00] (APIServer pid=1) INFO 09-20 08:40:31 [cache.py:282] Using fp8 data type to store kv cache. It reduces the GPU memory footprint and boosts the performance. Meanwhile, it may cause accuracy drop without a proper scaling factor
+[2026-09-20T08:40:31+00:00] (APIServer pid=1) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:40:31+00:00] (APIServer pid=1) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:40:31+00:00] (APIServer pid=1) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:40:31+00:00] (APIServer pid=1) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:40:31+00:00] (APIServer pid=1) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:40:37+00:00] (APIServer pid=1) INFO 09-20 08:40:37 [model.py:672] Resolved architecture: Qwen3_8FlashNextMTP
+[2026-09-20T08:40:37+00:00] (APIServer pid=1) INFO 09-20 08:40:37 [model.py:1965] Using max model len 262144
+[2026-09-20T08:40:37+00:00] (APIServer pid=1) WARNING 09-20 08:40:37 [speculative.py:1010] Enabling num_speculative_tokens > 1 will run multiple times of forward on same MTP layer,which may result in lower acceptance rate
+[2026-09-20T08:40:37+00:00] (APIServer pid=1) WARNING 09-20 08:40:37 [config.py:799] Qwen3.5 model specifies mamba_ssm_dtype='float32' in its config, but --mamba-ssm-cache-dtype='bfloat16' was passed. Using the user-specified value.
+[2026-09-20T08:40:37+00:00] (APIServer pid=1) INFO 09-20 08:40:37 [config.py:605] Mamba cache mode is set to 'align' for Qwen3_8FlashNextForConditionalGeneration by default when prefix caching is enabled
+[2026-09-20T08:40:37+00:00] (APIServer pid=1) WARNING 09-20 08:40:37 [modelopt.py:378] Detected ModelOpt fp8 checkpoint (quant_algo=FP8). Please note that the format is experimental and could change.
+[2026-09-20T08:40:37+00:00] (APIServer pid=1) WARNING 09-20 08:40:37 [modelopt.py:1011] Detected ModelOpt NVFP4 checkpoint (quant_algo=NVFP4). Please note that the format is experimental and could change in future.
+[2026-09-20T08:40:37+00:00] (APIServer pid=1) WARNING 09-20 08:40:37 [modelopt.py:1011] Detected ModelOpt NVFP4 checkpoint (quant_algo=W4A16_NVFP4). Please note that the format is experimental and could change in future.
+[2026-09-20T08:40:37+00:00] (APIServer pid=1) WARNING 09-20 08:40:37 [modelopt.py:1675] Detected ModelOpt MXFP8 checkpoint. Please note that the format is experimental and could change in future.
+[2026-09-20T08:40:37+00:00] (APIServer pid=1) WARNING 09-20 08:40:37 [vllm.py:1341] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+[2026-09-20T08:40:37+00:00] (APIServer pid=1) INFO 09-20 08:40:37 [kernel.py:308] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['vllm_c', 'native'], fused_add_rms_norm=['vllm_c', 'native'])
+[2026-09-20T08:40:37+00:00] (APIServer pid=1) WARNING 09-20 08:40:37 [vllm.py:1849] max_num_scheduled_tokens is set to 2048 based on the speculative decoding settings. This may lead to suboptimal performance. Consider increasing max_num_batched_tokens to accommodate the additional draft token slots, or decrease num_speculative_tokens.
+[2026-09-20T08:40:37+00:00] (APIServer pid=1) INFO 09-20 08:40:37 [compilation.py:329] Enabled custom fusions: norm_quant, act_quant
+[2026-09-20T08:40:39+00:00] (APIServer pid=1) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:40:39+00:00] (APIServer pid=1) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:40:41+00:00] (APIServer pid=1) [transformers] The `use_fast` parameter is deprecated and will be removed in a future version. Use `backend="torchvision"` instead of `use_fast=True`, or `backend="pil"` instead of `use_fast=False`.
+[2026-09-20T08:40:42+00:00] (APIServer pid=1) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:40:42+00:00] (APIServer pid=1) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:40:48+00:00] (EngineCore pid=374) INFO 09-20 08:40:48 [core.py:122] Initializing a V1 LLM engine (v0.1.dev20073+g8e685d198) with config: model='/root/.cache/huggingface/hub/models--Mia-AiLab--Qwen3.8-Flash-Next-NVFP4/snapshots/925d7be6c14c6c9442ef83e8f05b5a3c39304f69', speculative_config=SpeculativeConfig(method='mtp', model='/root/.cache/huggingface/hub/models--Mia-AiLab--Qwen3.8-Flash-Next-NVFP4/snapshots/925d7be6c14c6c9442ef83e8f05b5a3c39304f69', num_spec_tokens=3), tokenizer='/root/.cache/huggingface/hub/models--Mia-AiLab--Qwen3.8-Flash-Next-NVFP4/snapshots/925d7be6c14c6c9442ef83e8f05b5a3c39304f69', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=False, dtype=torch.bfloat16, max_seq_len=262144, download_dir=None, load_format=safetensors, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=modelopt_mixed, quantization_config=None, enforce_eager=False, enable_return_routed_experts=False, kv_cache_dtype=fp8, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='qwen3', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False, jit_monitor_mode='warn', jit_monitor_verbose=False), seed=0, served_model_name=qwen3.8-flash-next-single, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all'], 'ir_enable_torch_wrap': False, 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_vision_items_per_batch': 0, 'encoder_cudagraph_max_frames_per_batch': None, 'compile_sizes': [], 'compile_ranges_endpoints': [2048], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.FULL_DECODE_ONLY: (2, 0)>, 'cudagraph_num_of_warmups': 1, 'cudagraph_capture_sizes': [4, 8, 12, 16], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False, 'enable_qk_norm_rope_fusion': False, 'fuse_rope_kvcache_cat_mla': False, 'fuse_act_padding': False, 'fuse_qk_norm_rope_kvcache': False}, 'max_cudagraph_capture_size': 16, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': False, 'static_all_moe_layers': []}, kernel_config=KernelConfig(ir_op_priority=IrOpPriorityConfig(rms_norm=['vllm_c', 'native'], fused_add_rms_norm=['vllm_c', 'native']), enable_flashinfer_autotune=True, enable_cutedsl_warmup=True, enable_jit_warmup=True, enable_bf16x3_router_gemm=False, moe_backend='auto', linear_backend='auto')
+[2026-09-20T08:40:48+00:00] (EngineCore pid=374) INFO 09-20 08:40:48 [multiproc_executor.py:150] DP group leader: node_rank=0, node_rank_within_dp=0, master_addr=127.0.0.1, mq_connect_ip=192.168.0.100 (local), world_size=1, local_world_size=1
+[2026-09-20T08:40:53+00:00] [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_section', 'mrope_interleaved'}
+[2026-09-20T08:40:53+00:00] [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_section', 'mrope_interleaved'}
+[2026-09-20T08:40:53+00:00] [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_section', 'mrope_interleaved'}
+[2026-09-20T08:40:53+00:00] [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_section', 'mrope_interleaved'}
+[2026-09-20T08:40:53+00:00] [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_section', 'mrope_interleaved'}
+[2026-09-20T08:40:54+00:00] [ERROR] `min_frames` is part of Qwen3VLVideoProcessorInitKwargs, but not documented. Make sure to add it to the docstring of the function in /usr/local/lib/python3.12/dist-packages/transformers/models/qwen3_vl/video_processing_qwen3_vl.py.
+[2026-09-20T08:40:54+00:00] [ERROR] `max_frames` is part of Qwen3VLVideoProcessorInitKwargs, but not documented. Make sure to add it to the docstring of the function in /usr/local/lib/python3.12/dist-packages/transformers/models/qwen3_vl/video_processing_qwen3_vl.py.
+[2026-09-20T08:40:54+00:00] (Worker pid=477) INFO 09-20 08:40:54 [parallel_state.py:1638] world_size=1 rank=0 local_rank=0 distributed_init_method=file:///tmp/vllm_dist_981683dd98bc4494b8bc065ff77aed60 backend=nccl
+[2026-09-20T08:40:54+00:00] (Worker pid=477) INFO 09-20 08:40:54 [parallel_state.py:1982] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank 0, EPLB rank N/A
+[2026-09-20T08:40:54+00:00] (Worker pid=477) INFO 09-20 08:40:54 [gpu_worker.py:500] Using V2 Model Runner
+[2026-09-20T08:40:54+00:00] (Worker pid=477) INFO 09-20 08:40:54 [gpu_worker.py:270] PleOffload: spawning worker (rank=0, local_rank=0, dp_size=1, tp_size=1, num_workers=1, ipc_addr=ipc:///tmp/f1250412-1f2f-4ef9-a8c0-d9285059aad5).
+[2026-09-20T08:40:58+00:00] (Worker pid=477) INFO 09-20 08:40:58 [model_runner.py:385] Loading model from scratch...
+[2026-09-20T08:40:58+00:00] (Worker pid=477) INFO 09-20 08:40:58 [cuda.py:545] Using backend AttentionBackendEnum.FLASH_ATTN for vit attention
+[2026-09-20T08:40:58+00:00] (Worker pid=477) INFO 09-20 08:40:58 [mm_encoder_attention.py:375] Using AttentionBackendEnum.FLASH_ATTN for MMEncoderAttention.
+[2026-09-20T08:40:58+00:00] (Worker pid=477) INFO 09-20 08:40:58 [__init__.py:1060] Using MarlinNvFp4LinearKernel for NVFP4 GEMM
+[2026-09-20T08:40:58+00:00] (Worker pid=477) INFO 09-20 08:40:58 [__init__.py:868] Using FlashInferCutlassMxfp8LinearKernel for MXFP8 GEMM
+[2026-09-20T08:40:58+00:00] (Worker pid=477) WARNING 09-20 08:40:58 [modelopt.py:1799] MXFP8 layer [N=96, K=2560] is not supported by FlashInferCutlassMxfp8LinearKernel (needs N,K >= 128 and divisible by 32); falling back to BF16 emulation for this shape.
+[2026-09-20T08:40:58+00:00] (Worker pid=477) INFO 09-20 08:40:58 [qwen_gdn_linear_attn.py:158] Using Triton/FLA GDN prefill kernel (requested=auto, head_k_dim=128).
+[2026-09-20T08:40:58+00:00] (Worker pid=477) INFO 09-20 08:40:58 [qwen_gdn_linear_attn.py:505] GDN decode kernel: cuda
+[2026-09-20T08:40:58+00:00] (Worker pid=477) INFO 09-20 08:40:58 [nvfp4.py:291] Using 'FLASHINFER_CUTLASS' NvFp4 MoE backend out of potential backends: ['FLASHINFER_TRTLLM', 'FLASHINFER_CUTEDSL', 'FLASHINFER_CUTEDSL_BATCHED', 'FLASHINFER_CUTLASS', 'VLLM_CUTLASS', 'MARLIN', 'HUMMING', 'EMULATION'].
+[2026-09-20T08:40:58+00:00] (Worker pid=477) INFO 09-20 08:40:58 [ple_layer.py:401] PLE embedding language_model.model.layers.1.ple.ple_embedding.ngram_embedding uses the runtime NVFP4 method (ple_embedding_dtype)
+[2026-09-20T08:40:58+00:00] (Worker pid=477) INFO 09-20 08:40:58 [flash_attn.py:911] Using FlashAttention version 2
+[2026-09-20T08:40:59+00:00] (PleOffloadWorker pid=673) INFO 09-20 08:40:59 [parallel_state.py:1638] world_size=1 rank=0 local_rank=0 distributed_init_method=file:///tmp/vllm_ple_offload_1i3qr04v/store backend=gloo
+[2026-09-20T08:40:59+00:00] (PleOffloadWorker pid=673) INFO 09-20 08:40:59 [scheduler.py:246] Chunked prefill is enabled with max_num_batched_tokens=2048.
+[2026-09-20T08:40:59+00:00] (PleOffloadWorker pid=673) INFO 09-20 08:40:59 [kernel.py:308] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+[2026-09-20T08:40:59+00:00] (PleOffloadWorker pid=673) INFO 09-20 08:40:59 [parallel_state.py:1982] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank 0, EPLB rank N/A
+[2026-09-20T08:40:59+00:00] (PleOffloadWorker pid=673) INFO 09-20 08:40:59 [worker.py:161] Distributed environment initialized (backend=gloo, rank=0, world_size=1).
+[2026-09-20T08:40:59+00:00] (PleOffloadWorker pid=673) INFO 09-20 08:40:59 [worker.py:368] Initializing model structure for PLE weight discovery ...
+[2026-09-20T08:40:59+00:00] (PleOffloadWorker pid=673) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_section', 'mrope_interleaved'}
+[2026-09-20T08:40:59+00:00] (PleOffloadWorker pid=673) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_section', 'mrope_interleaved'}
+[2026-09-20T08:40:59+00:00] (PleOffloadWorker pid=673) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_section', 'mrope_interleaved'}
+[2026-09-20T08:40:59+00:00] (PleOffloadWorker pid=673) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_section', 'mrope_interleaved'}
+[2026-09-20T08:40:59+00:00] (PleOffloadWorker pid=673) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_section', 'mrope_interleaved'}
+[2026-09-20T08:41:00+00:00] (PleOffloadWorker pid=673) [ERROR] `min_frames` is part of Qwen3VLVideoProcessorInitKwargs, but not documented. Make sure to add it to the docstring of the function in /usr/local/lib/python3.12/dist-packages/transformers/models/qwen3_vl/video_processing_qwen3_vl.py.
+[2026-09-20T08:41:00+00:00] (PleOffloadWorker pid=673) [ERROR] `max_frames` is part of Qwen3VLVideoProcessorInitKwargs, but not documented. Make sure to add it to the docstring of the function in /usr/local/lib/python3.12/dist-packages/transformers/models/qwen3_vl/video_processing_qwen3_vl.py.
+[2026-09-20T08:41:00+00:00] (PleOffloadWorker pid=673) INFO 09-20 08:41:00 [cuda.py:545] Using backend AttentionBackendEnum.FLASH_ATTN for vit attention
+[2026-09-20T08:41:00+00:00] (PleOffloadWorker pid=673) INFO 09-20 08:41:00 [mm_encoder_attention.py:375] Using AttentionBackendEnum.FLASH_ATTN for MMEncoderAttention.
+[2026-09-20T08:41:00+00:00] (PleOffloadWorker pid=673) INFO 09-20 08:41:00 [__init__.py:1060] Using MarlinNvFp4LinearKernel for NVFP4 GEMM
+[2026-09-20T08:41:00+00:00] (PleOffloadWorker pid=673) INFO 09-20 08:41:00 [__init__.py:868] Using FlashInferCutlassMxfp8LinearKernel for MXFP8 GEMM
+[2026-09-20T08:41:00+00:00] (PleOffloadWorker pid=673) WARNING 09-20 08:41:00 [modelopt.py:1799] MXFP8 layer [N=96, K=2560] is not supported by FlashInferCutlassMxfp8LinearKernel (needs N,K >= 128 and divisible by 32); falling back to BF16 emulation for this shape.
+[2026-09-20T08:41:00+00:00] (PleOffloadWorker pid=673) INFO 09-20 08:41:00 [qwen_gdn_linear_attn.py:158] Using Triton/FLA GDN prefill kernel (requested=auto, head_k_dim=128).
+[2026-09-20T08:41:00+00:00] (PleOffloadWorker pid=673) INFO 09-20 08:41:00 [qwen_gdn_linear_attn.py:505] GDN decode kernel: cuda
+[2026-09-20T08:41:00+00:00] (PleOffloadWorker pid=673) INFO 09-20 08:41:00 [nvfp4.py:291] Using 'FLASHINFER_CUTLASS' NvFp4 MoE backend out of potential backends: ['FLASHINFER_TRTLLM', 'FLASHINFER_CUTEDSL', 'FLASHINFER_CUTEDSL_BATCHED', 'FLASHINFER_CUTLASS', 'VLLM_CUTLASS', 'MARLIN', 'HUMMING', 'EMULATION'].
+[2026-09-20T08:41:00+00:00] (PleOffloadWorker pid=673) INFO 09-20 08:41:00 [ple_layer.py:401] PLE embedding language_model.model.layers.1.ple.ple_embedding.ngram_embedding uses the runtime NVFP4 method (ple_embedding_dtype)
+[2026-09-20T08:41:00+00:00] (PleOffloadWorker pid=673) INFO 09-20 08:41:00 [flash_attn.py:911] Using FlashAttention version 2
+[2026-09-20T08:41:01+00:00] (PleOffloadWorker pid=673) INFO 09-20 08:41:01 [worker.py:388] Found 1 PleOffloadLayer(s): ['language_model.model.layers.1.ple.ple_embedding']
+[2026-09-20T08:41:01+00:00] (PleOffloadWorker pid=673) INFO 09-20 08:41:01 [worker.py:403] PLE language_model.model.layers.1.ple.ple_embedding: using packed mmap table /root/.cache/vllm/ple_cache/Mia-AiLab--Qwen3.8-Flash-Next-NVFP4/language_model.model.layers.1.ple.ple_embedding.ngram_embedding.packed_u8
+[2026-09-20T08:41:01+00:00] (PleOffloadWorker pid=673) INFO 09-20 08:41:01 [weight_utils.py:866] Filesystem type for checkpoints: EXT4. Checkpoint size: 98.57 GiB. Available RAM: 42.67 GiB.
+[2026-09-20T08:41:01+00:00] (PleOffloadWorker pid=673) 
+[2026-09-20T08:41:01+00:00] Loading safetensors checkpoint shards(PLE-offload):   0% Completed | 0/35 [00:00<?, ?it/s]
+[2026-09-20T08:41:01+00:00] (Worker pid=477) INFO 09-20 08:41:01 [weight_utils.py:866] Filesystem type for checkpoints: EXT4. Checkpoint size: 98.57 GiB. Available RAM: 39.97 GiB.
+[2026-09-20T08:41:01+00:00] (Worker pid=477) 
+[2026-09-20T08:41:01+00:00] Loading safetensors checkpoint shards:   0% Completed | 0/35 [00:00<?, ?it/s]
+[2026-09-20T08:41:02+00:00] (PleOffloadWorker pid=673) 
+[2026-09-20T08:41:02+00:00] Loading safetensors checkpoint shards(PLE-offload):   3% Completed | 1/35 [00:01<00:40,  1.18s/it]
+[2026-09-20T08:41:03+00:00] (PleOffloadWorker pid=673) 
+[2026-09-20T08:41:03+00:00] Loading safetensors checkpoint shards(PLE-offload):  54% Completed | 19/35 [00:02<00:01,  9.92it/s]
+[2026-09-20T08:41:11+00:00] (PleOffloadWorker pid=673) 
+[2026-09-20T08:41:11+00:00] Loading safetensors checkpoint shards(PLE-offload):  60% Completed | 21/35 [00:09<00:08,  1.68it/s]
+[2026-09-20T08:41:12+00:00]   ...waiting for readiness: 70s elapsed, last /health code 000000
+[2026-09-20T08:41:14+00:00] (Worker pid=477) 
+[2026-09-20T08:41:14+00:00] Loading safetensors checkpoint shards:   3% Completed | 1/35 [00:12<07:19, 12.94s/it]
+[2026-09-20T08:41:14+00:00] (Worker pid=477) 
+[2026-09-20T08:41:14+00:00] Loading safetensors checkpoint shards:   6% Completed | 2/35 [00:13<03:00,  5.46s/it]
+[2026-09-20T08:41:15+00:00] (PleOffloadWorker pid=673) 
+[2026-09-20T08:41:15+00:00] Loading safetensors checkpoint shards(PLE-offload):  63% Completed | 22/35 [00:13<00:11,  1.12it/s]
+[2026-09-20T08:41:19+00:00] (PleOffloadWorker pid=673) 
+[2026-09-20T08:41:19+00:00] Loading safetensors checkpoint shards(PLE-offload):  66% Completed | 23/35 [00:18<00:15,  1.26s/it]
+[2026-09-20T08:41:24+00:00] (Worker pid=477) 
+[2026-09-20T08:41:24+00:00] Loading safetensors checkpoint shards:  54% Completed | 19/35 [00:22<00:13,  1.16it/s]
+[2026-09-20T08:41:24+00:00] (PleOffloadWorker pid=673) 
+[2026-09-20T08:41:24+00:00] Loading safetensors checkpoint shards(PLE-offload):  69% Completed | 24/35 [00:23<00:19,  1.75s/it]
+[2026-09-20T08:41:29+00:00] (PleOffloadWorker pid=673) 
+[2026-09-20T08:41:29+00:00] Loading safetensors checkpoint shards(PLE-offload):  71% Completed | 25/35 [00:27<00:22,  2.22s/it]
+[2026-09-20T08:41:33+00:00] (PleOffloadWorker pid=673) 
+[2026-09-20T08:41:33+00:00] Loading safetensors checkpoint shards(PLE-offload):  74% Completed | 26/35 [00:32<00:24,  2.73s/it]
+[2026-09-20T08:41:38+00:00] (PleOffloadWorker pid=673) 
+[2026-09-20T08:41:38+00:00] Loading safetensors checkpoint shards(PLE-offload):  77% Completed | 27/35 [00:36<00:24,  3.01s/it]
+[2026-09-20T08:41:42+00:00] (PleOffloadWorker pid=673) 
+[2026-09-20T08:41:42+00:00] Loading safetensors checkpoint shards(PLE-offload):  80% Completed | 28/35 [00:40<00:22,  3.27s/it]
+[2026-09-20T08:41:46+00:00] (PleOffloadWorker pid=673) 
+[2026-09-20T08:41:46+00:00] Loading safetensors checkpoint shards(PLE-offload):  83% Completed | 29/35 [00:44<00:20,  3.42s/it]
+[2026-09-20T08:41:49+00:00] (PleOffloadWorker pid=673) 
+[2026-09-20T08:41:49+00:00] Loading safetensors checkpoint shards(PLE-offload):  86% Completed | 30/35 [00:48<00:17,  3.56s/it]
+[2026-09-20T08:41:53+00:00] (PleOffloadWorker pid=673) 
+[2026-09-20T08:41:53+00:00] Loading safetensors checkpoint shards(PLE-offload):  89% Completed | 31/35 [00:52<00:14,  3.67s/it]
+[2026-09-20T08:41:58+00:00] (PleOffloadWorker pid=673) 
+[2026-09-20T08:41:58+00:00] Loading safetensors checkpoint shards(PLE-offload):  91% Completed | 32/35 [00:57<00:11,  3.89s/it]
+[2026-09-20T08:42:00+00:00] (PleOffloadWorker pid=673) 
+[2026-09-20T08:42:00+00:00] Loading safetensors checkpoint shards(PLE-offload):  94% Completed | 33/35 [00:59<00:06,  3.46s/it]
+[2026-09-20T08:42:01+00:00] (Worker pid=477) 
+[2026-09-20T08:42:01+00:00] Loading safetensors checkpoint shards:  57% Completed | 20/35 [01:00<00:53,  3.55s/it]
+[2026-09-20T08:42:02+00:00] (PleOffloadWorker pid=673) 
+[2026-09-20T08:42:02+00:00] Loading safetensors checkpoint shards(PLE-offload):  97% Completed | 34/35 [01:00<00:02,  2.89s/it]
+[2026-09-20T08:42:02+00:00] (PleOffloadWorker pid=673) 
+[2026-09-20T08:42:02+00:00] Loading safetensors checkpoint shards(PLE-offload): 100% Completed | 35/35 [01:01<00:00,  2.21s/it]
+[2026-09-20T08:42:02+00:00] (PleOffloadWorker pid=673) 
+[2026-09-20T08:42:02+00:00] Loading safetensors checkpoint shards(PLE-offload): 100% Completed | 35/35 [01:01<00:00,  1.76s/it]
+[2026-09-20T08:42:02+00:00] (PleOffloadWorker pid=673) 
+[2026-09-20T08:42:02+00:00] (PleOffloadWorker pid=673) INFO 09-20 08:42:02 [worker.py:481] PLE offload matched 260 checkpoint tensor(s), loaded 4 offload entries, and verified 1/1 materialized parameter(s) for layers: ['language_model.model.layers.1.ple.ple_embedding']
+[2026-09-20T08:42:02+00:00] (PleOffloadWorker pid=673) /usr/local/lib/python3.12/dist-packages/vllm/v1/ple_offload/worker.py:549: UserWarning: The given NumPy array is not writable, and PyTorch does not support non-writable tensors. This means writing to this tensor will result in undefined behavior. You may want to copy the array to protect its data or make it writable before converting it to a tensor. This type of warning will be suppressed for the rest of this program. (Triggered internally at /__w/pytorch/pytorch/torch/csrc/utils/tensor_numpy.cpp:213.)
+[2026-09-20T08:42:02+00:00] (PleOffloadWorker pid=673)   table = torch.from_numpy(mm)  # zero-copy, file-backed, evictable
+[2026-09-20T08:42:02+00:00] (PleOffloadWorker pid=673) INFO 09-20 08:42:02 [worker.py:561] PLE language_model.model.layers.1.ple.ple_embedding: mmap table attached (320001536 rows x 90 B = 26.82 GiB) [MADV_RANDOM]
+[2026-09-20T08:42:02+00:00] (PleOffloadWorker pid=673) INFO 09-20 08:42:02 [worker.py:506] PLE weight loading complete.
+[2026-09-20T08:42:02+00:00] (PleOffloadWorker pid=673) INFO 09-20 08:42:02 [worker.py:292] Bound IPC address ipc:///tmp/f1250412-1f2f-4ef9-a8c0-d9285059aad5; waiting for 1 GPU worker registration(s).
+[2026-09-20T08:42:02+00:00] (PleOffloadWorker pid=673) INFO 09-20 08:42:02 [worker.py:572] Waiting for 1 GPU worker registration(s) ...
+[2026-09-20T08:42:12+00:00]   ...waiting for readiness: 130s elapsed, last /health code 000000
+[2026-09-20T08:42:41+00:00] (Worker pid=477) 
+[2026-09-20T08:42:41+00:00] Loading safetensors checkpoint shards:  60% Completed | 21/35 [01:39<01:37,  6.96s/it]
+[2026-09-20T08:43:12+00:00]   ...waiting for readiness: 190s elapsed, last /health code 000000
+[2026-09-20T08:43:20+00:00] (Worker pid=477) 
+[2026-09-20T08:43:20+00:00] Loading safetensors checkpoint shards:  63% Completed | 22/35 [02:19<02:20, 10.80s/it]
+[2026-09-20T08:44:01+00:00] (Worker pid=477) 
+[2026-09-20T08:44:01+00:00] Loading safetensors checkpoint shards:  66% Completed | 23/35 [02:59<03:00, 15.04s/it]
+[2026-09-20T08:44:13+00:00]   ...waiting for readiness: 251s elapsed, last /health code 000000
+[2026-09-20T08:44:40+00:00] (Worker pid=477) 
+[2026-09-20T08:44:40+00:00] Loading safetensors checkpoint shards:  69% Completed | 24/35 [03:38<03:31, 19.19s/it]
+[2026-09-20T08:45:13+00:00]   ...waiting for readiness: 311s elapsed, last /health code 000000
+[2026-09-20T08:45:20+00:00] (Worker pid=477) 
+[2026-09-20T08:45:20+00:00] Loading safetensors checkpoint shards:  71% Completed | 25/35 [04:18<03:53, 23.35s/it]
+[2026-09-20T08:45:59+00:00] (Worker pid=477) 
+[2026-09-20T08:45:59+00:00] Loading safetensors checkpoint shards:  74% Completed | 26/35 [04:58<04:01, 26.86s/it]
+[2026-09-20T08:46:13+00:00]   ...waiting for readiness: 371s elapsed, last /health code 000000
+[2026-09-20T08:46:37+00:00] (Worker pid=477) 
+[2026-09-20T08:46:37+00:00] Loading safetensors checkpoint shards:  77% Completed | 27/35 [05:35<03:54, 29.32s/it]
+[2026-09-20T08:47:13+00:00]   ...waiting for readiness: 431s elapsed, last /health code 000000
+[2026-09-20T08:47:15+00:00] (Worker pid=477) 
+[2026-09-20T08:47:15+00:00] Loading safetensors checkpoint shards:  80% Completed | 28/35 [06:13<03:41, 31.69s/it]
+[2026-09-20T08:47:53+00:00] (Worker pid=477) 
+[2026-09-20T08:47:53+00:00] Loading safetensors checkpoint shards:  83% Completed | 29/35 [06:51<03:19, 33.22s/it]
+[2026-09-20T08:48:13+00:00]   ...waiting for readiness: 491s elapsed, last /health code 000000
+[2026-09-20T08:48:32+00:00] (Worker pid=477) 
+[2026-09-20T08:48:32+00:00] Loading safetensors checkpoint shards:  86% Completed | 30/35 [07:30<02:54, 34.82s/it]
+[2026-09-20T08:49:10+00:00] (Worker pid=477) 
+[2026-09-20T08:49:10+00:00] Loading safetensors checkpoint shards:  89% Completed | 31/35 [08:08<02:23, 35.88s/it]
+[2026-09-20T08:49:13+00:00]   ...waiting for readiness: 551s elapsed, last /health code 000000
+[2026-09-20T08:49:50+00:00] (Worker pid=477) 
+[2026-09-20T08:49:50+00:00] Loading safetensors checkpoint shards:  91% Completed | 32/35 [08:48<01:50, 36.85s/it]
+[2026-09-20T08:50:13+00:00]   ...waiting for readiness: 611s elapsed, last /health code 000000
+[2026-09-20T08:50:14+00:00] (Worker pid=477) 
+[2026-09-20T08:50:14+00:00] Loading safetensors checkpoint shards:  94% Completed | 33/35 [09:12<01:06, 33.11s/it]
+[2026-09-20T08:50:15+00:00] (Worker pid=477) 
+[2026-09-20T08:50:15+00:00] Loading safetensors checkpoint shards:  97% Completed | 34/35 [09:13<00:23, 23.71s/it]
+[2026-09-20T08:50:24+00:00] (Worker pid=477) 
+[2026-09-20T08:50:24+00:00] Loading safetensors checkpoint shards: 100% Completed | 35/35 [09:22<00:00, 19.51s/it]
+[2026-09-20T08:50:24+00:00] (Worker pid=477) 
+[2026-09-20T08:50:24+00:00] Loading safetensors checkpoint shards: 100% Completed | 35/35 [09:22<00:00, 16.08s/it]
+[2026-09-20T08:50:24+00:00] (Worker pid=477) 
+[2026-09-20T08:50:24+00:00] (Worker pid=477) INFO 09-20 08:50:24 [default_loader.py:430] Loading weights took 562.86 seconds
+[2026-09-20T08:50:25+00:00] (Worker pid=477) WARNING 09-20 08:50:25 [marlin.py:34] Your GPU does not have native support for FP4 computation but FP4 quantization is being used. Weight-only FP4 compression will be used leveraging the Marlin kernel. This may degrade performance for compute-heavy workloads.
+[2026-09-20T08:50:25+00:00] (Worker pid=477) WARNING 09-20 08:50:25 [marlin_utils.py:238] Marlin requires thread-tile padding for some weight shapes in this model. Activations and/or outputs of the padded layers are padded/sliced on every forward; performance may be degraded.
+[2026-09-20T08:50:25+00:00] (Worker pid=477) INFO 09-20 08:50:25 [nvfp4.py:564] Using MoEPrepareAndFinalizeNoDPEPModular
+[2026-09-20T08:50:26+00:00] (Worker pid=477) WARNING 09-20 08:50:26 [modelopt.py:378] Detected ModelOpt fp8 checkpoint (quant_algo=FP8). Please note that the format is experimental and could change.
+[2026-09-20T08:50:26+00:00] (Worker pid=477) WARNING 09-20 08:50:26 [modelopt.py:1011] Detected ModelOpt NVFP4 checkpoint (quant_algo=NVFP4). Please note that the format is experimental and could change in future.
+[2026-09-20T08:50:26+00:00] (Worker pid=477) WARNING 09-20 08:50:26 [modelopt.py:1011] Detected ModelOpt NVFP4 checkpoint (quant_algo=W4A16_NVFP4). Please note that the format is experimental and could change in future.
+[2026-09-20T08:50:26+00:00] (Worker pid=477) WARNING 09-20 08:50:26 [modelopt.py:1675] Detected ModelOpt MXFP8 checkpoint. Please note that the format is experimental and could change in future.
+[2026-09-20T08:50:26+00:00] (Worker pid=477) WARNING 09-20 08:50:26 [config.py:799] Qwen3.5 model specifies mamba_ssm_dtype='float32' in its config, but --mamba-ssm-cache-dtype='bfloat16' was passed. Using the user-specified value.
+[2026-09-20T08:50:26+00:00] (Worker pid=477) WARNING 09-20 08:50:26 [vllm.py:1341] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+[2026-09-20T08:50:26+00:00] (Worker pid=477) INFO 09-20 08:50:26 [kernel.py:308] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['vllm_c', 'native'], fused_add_rms_norm=['vllm_c', 'native'])
+[2026-09-20T08:50:26+00:00] (Worker pid=477) WARNING 09-20 08:50:26 [vllm.py:1849] max_num_scheduled_tokens is set to 2048 based on the speculative decoding settings. This may lead to suboptimal performance. Consider increasing max_num_batched_tokens to accommodate the additional draft token slots, or decrease num_speculative_tokens.
+[2026-09-20T08:50:26+00:00] (Worker pid=477) INFO 09-20 08:50:26 [compilation.py:329] Enabled custom fusions: norm_quant, act_quant
+[2026-09-20T08:50:26+00:00] (Worker pid=477) INFO 09-20 08:50:26 [nvfp4.py:291] Using 'MARLIN' NvFp4 MoE backend out of potential backends: ['FLASHINFER_TRTLLM', 'FLASHINFER_CUTEDSL', 'FLASHINFER_CUTEDSL_BATCHED', 'FLASHINFER_CUTLASS', 'VLLM_CUTLASS', 'MARLIN', 'HUMMING', 'EMULATION'].
+[2026-09-20T08:50:27+00:00] (Worker pid=477) INFO 09-20 08:50:27 [weight_utils.py:866] Filesystem type for checkpoints: EXT4. Checkpoint size: 98.57 GiB. Available RAM: 34.26 GiB.
+[2026-09-20T08:50:27+00:00] (Worker pid=477) 
+[2026-09-20T08:50:27+00:00] Loading safetensors checkpoint shards:   0% Completed | 0/35 [00:00<?, ?it/s]
+[2026-09-20T08:50:29+00:00] (Worker pid=477) 
+[2026-09-20T08:50:29+00:00] Loading safetensors checkpoint shards:   3% Completed | 1/35 [00:01<00:45,  1.34s/it]
+[2026-09-20T08:50:29+00:00] (Worker pid=477) 
+[2026-09-20T08:50:29+00:00] Loading safetensors checkpoint shards:  43% Completed | 15/35 [00:01<00:01, 14.16it/s]
+[2026-09-20T08:50:42+00:00] (Worker pid=477) 
+[2026-09-20T08:50:42+00:00] Loading safetensors checkpoint shards:  43% Completed | 15/35 [00:14<00:01, 14.16it/s]
+[2026-09-20T08:50:42+00:00] (Worker pid=477) 
+[2026-09-20T08:50:42+00:00] Loading safetensors checkpoint shards:  66% Completed | 23/35 [00:14<00:09,  1.28it/s]
+[2026-09-20T08:50:46+00:00] (Worker pid=477) 
+[2026-09-20T08:50:46+00:00] Loading safetensors checkpoint shards:  69% Completed | 24/35 [00:18<00:10,  1.01it/s]
+[2026-09-20T08:51:02+00:00] (Worker pid=477) 
+[2026-09-20T08:51:02+00:00] Loading safetensors checkpoint shards:  69% Completed | 24/35 [00:34<00:10,  1.01it/s]
+[2026-09-20T08:51:04+00:00] (Worker pid=477) 
+[2026-09-20T08:51:04+00:00] Loading safetensors checkpoint shards:  83% Completed | 29/35 [00:36<00:11,  1.88s/it]
+[2026-09-20T08:51:07+00:00] (Worker pid=477) 
+[2026-09-20T08:51:07+00:00] Loading safetensors checkpoint shards:  86% Completed | 30/35 [00:40<00:10,  2.02s/it]
+[2026-09-20T08:51:14+00:00]   ...waiting for readiness: 672s elapsed, last /health code 000000
+[2026-09-20T08:51:22+00:00] (Worker pid=477) 
+[2026-09-20T08:51:22+00:00] Loading safetensors checkpoint shards:  86% Completed | 30/35 [00:54<00:10,  2.02s/it]
+[2026-09-20T08:51:31+00:00] (Worker pid=477) 
+[2026-09-20T08:51:31+00:00] Loading safetensors checkpoint shards:  94% Completed | 33/35 [01:03<00:07,  3.65s/it]
+[2026-09-20T08:51:43+00:00] (Worker pid=477) 
+[2026-09-20T08:51:43+00:00] Loading safetensors checkpoint shards:  97% Completed | 34/35 [01:15<00:04,  4.59s/it]
+[2026-09-20T08:51:43+00:00] (Worker pid=477) 
+[2026-09-20T08:51:43+00:00] Loading safetensors checkpoint shards: 100% Completed | 35/35 [01:16<00:00,  4.01s/it]
+[2026-09-20T08:51:43+00:00] (Worker pid=477) 
+[2026-09-20T08:51:43+00:00] Loading safetensors checkpoint shards: 100% Completed | 35/35 [01:16<00:00,  2.18s/it]
+[2026-09-20T08:51:43+00:00] (Worker pid=477) 
+[2026-09-20T08:51:44+00:00] (Worker pid=477) INFO 09-20 08:51:44 [mtp.py:111] MTP draft vocab: 47172 of 248320 tokens (19.0%); draft lm_head 1.18 -> 0.22 GiB per draft step, 2.88 GiB saved per step at MTP 3
+[2026-09-20T08:51:44+00:00] (Worker pid=477) INFO 09-20 08:51:44 [default_loader.py:430] Loading weights took 76.48 seconds
+[2026-09-20T08:51:44+00:00] (Worker pid=477) WARNING 09-20 08:51:44 [marlin_utils_fp4.py:354] Your GPU does not have native support for FP4 computation but FP4 quantization is being used. Weight-only FP4 compression will be used leveraging the Marlin kernel. This may degrade performance for compute-heavy workloads.
+[2026-09-20T08:51:45+00:00] (Worker pid=477) INFO 09-20 08:51:45 [speculator.py:304] Using local argmax reduction for draft token generation (communication: O(2*tp_size) vs O(vocab_size)).
+[2026-09-20T08:51:45+00:00] (Worker pid=477) WARNING 09-20 08:51:45 [speculator.py:178] Draft model Qwen3_8FlashNextMTP does not support external multimodal embeddings. Embeddings from the target model will not be passed to the drafter; using text-only draft inputs instead.
+[2026-09-20T08:51:45+00:00] (Worker pid=477) INFO 09-20 08:51:45 [model_runner.py:407] Model loading took 72.78 GiB memory and 647.467279 seconds
+[2026-09-20T08:51:45+00:00] (Worker pid=477) INFO 09-20 08:51:45 [topk_topp_sampler.py:62] Using FlashInfer for top-p & top-k sampling.
+[2026-09-20T08:51:45+00:00] (Worker pid=477) INFO 09-20 08:51:45 [connector.py:245] PleOffload: registered 1 PleOffloadLayer(s) (dp_rank=0, tp_rank=0, ipc_addr=ipc:///tmp/f1250412-1f2f-4ef9-a8c0-d9285059aad5): ['language_model.model.layers.1.ple.ple_embedding']
+[2026-09-20T08:51:45+00:00] (PleOffloadWorker pid=673) INFO 09-20 08:51:45 [worker.py:582] GPU worker 0 registered (dp_rank=0, tp_rank=0, layers=['language_model.model.layers.1.ple.ple_embedding']).
+[2026-09-20T08:51:46+00:00] (PleOffloadWorker pid=673) INFO 09-20 08:51:46 [worker.py:670] Registrations complete (dp_size=1, tp_size=1, layers=['language_model.model.layers.1.ple.ple_embedding']).
+[2026-09-20T08:51:46+00:00] (PleOffloadWorker pid=673) INFO 09-20 08:51:46 [worker.py:684] Busy-loop started.
+[2026-09-20T08:51:46+00:00] (Worker pid=477) INFO 09-20 08:51:46 [worker.py:235] Worker ready - 1 PleOffloadLayer(s): ['language_model.model.layers.1.ple.ple_embedding']
+[2026-09-20T08:51:46+00:00] (Worker pid=477) INFO 09-20 08:51:46 [interface.py:915] Setting attention block size to 1664 tokens to ensure that attention page size is >= mamba page size.
+[2026-09-20T08:51:46+00:00] (Worker pid=477) INFO 09-20 08:51:46 [interface.py:939] Padding mamba page size by 0.48% to ensure that mamba page size and attention page size are exactly equal.
+[2026-09-20T08:51:46+00:00] (EngineCore pid=374) INFO 09-20 08:51:46 [torch_utils.py:262] Reducing Torch threads from 20 to 1 for serving. Set OMP_NUM_THREADS in the external environment to override.
+[2026-09-20T08:51:46+00:00] (Worker pid=477) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_section', 'mrope_interleaved'}
+[2026-09-20T08:51:46+00:00] (Worker pid=477) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_section', 'mrope_interleaved'}
+[2026-09-20T08:51:48+00:00] (Worker pid=477) [transformers] The `use_fast` parameter is deprecated and will be removed in a future version. Use `backend="torchvision"` instead of `use_fast=True`, or `backend="pil"` instead of `use_fast=False`.
+[2026-09-20T08:51:49+00:00] (Worker pid=477) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_section', 'mrope_interleaved'}
+[2026-09-20T08:51:49+00:00] (Worker pid=477) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_section', 'mrope_interleaved'}
+[2026-09-20T08:51:51+00:00] (Worker pid=477) INFO 09-20 08:51:51 [encoder_runner.py:120] Encoder cache will be initialized with a budget of 16384 tokens, and profiled with 1 image items of the maximum feature size.
+[2026-09-20T08:51:58+00:00] (Worker pid=477) INFO 09-20 08:51:58 [marlin_utils.py:625] Marlin kernel can achieve better performance for small size_n with experimental use_atomic_add feature. You can consider set environment variable VLLM_MARLIN_USE_ATOMIC_ADD to 1 if possible.
+[2026-09-20T08:52:08+00:00] (Worker pid=477) /usr/local/lib/python3.12/dist-packages/triton/language/core.py:2284: UserWarning: tl.make_block_ptr is deprecated. Use TensorDescriptor or tl.make_tensor_descriptor instead.
+[2026-09-20T08:52:08+00:00] (Worker pid=477)   warn("tl.make_block_ptr is deprecated. Use TensorDescriptor or tl.make_tensor_descriptor instead.")
+[2026-09-20T08:52:14+00:00]   ...waiting for readiness: 732s elapsed, last /health code 000000
+[2026-09-20T08:52:46+00:00] (Worker pid=477) INFO 09-20 08:52:46 [gpu_worker.py:693] Available KV cache memory: 16.33 GiB
+[2026-09-20T08:52:46+00:00] (EngineCore pid=374) INFO 09-20 08:52:46 [kv_cache_utils.py:2258] GPU KV cache size: 1,089,581 tokens, Maximum concurrency for 262,144 tokens per request: 4.16x
+[2026-09-20T08:52:46+00:00] (Worker pid=477) INFO 09-20 08:52:46 [speculator.py:117] Fused multi-step draft decode is not supported by attention backend(s) QWEN38_FLASH_NEXT_EXP_QSA_STATE; falling back to rebuilding attention metadata between draft steps.
+[2026-09-20T08:52:49+00:00] (Worker pid=477) INFO 09-20 08:52:49 [kernel_warmup.py:260] Using FlashInfer autotune cache file: /root/.cache/vllm/flashinfer_autotune_cache/0.6.17/121a/da5b7afde0206e9d506ff9c8086fea62d53907705e931e924e33310dbad7926a/autotune_configs.json
+[2026-09-20T08:52:49+00:00] (Worker pid=477) 2026-09-20 08:52:49,893 - INFO - autotuner.py:829 - flashinfer.jit: [Autotuner]: Autotuning process starts ...
+[2026-09-20T08:52:50+00:00] (Worker pid=477) 
+[2026-09-20T08:52:50+00:00] [AutoTuner]: Tuning mxfp8_gemm:   0%|          | 0/16 [00:00<?, ?profile/s]2026-09-20 08:52:50,283 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:50+00:00] (Worker pid=477) 2026-09-20 08:52:50,320 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:50+00:00] (Worker pid=477) 2026-09-20 08:52:50,356 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:50+00:00] (Worker pid=477) 
+[2026-09-20T08:52:50+00:00] [AutoTuner]: Tuning mxfp8_gemm:  19%|█▉        | 3/16 [00:00<00:00, 25.26profile/s]2026-09-20 08:52:50,392 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:50+00:00] (Worker pid=477) 2026-09-20 08:52:50,430 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:50+00:00] (Worker pid=477) 2026-09-20 08:52:50,465 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:50+00:00] (Worker pid=477) 
+[2026-09-20T08:52:50+00:00] [AutoTuner]: Tuning mxfp8_gemm:  38%|███▊      | 6/16 [00:00<00:00, 26.66profile/s]2026-09-20 08:52:50,497 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:50+00:00] (Worker pid=477) 2026-09-20 08:52:50,529 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:50+00:00] (Worker pid=477) 2026-09-20 08:52:50,562 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:50+00:00] (Worker pid=477) 2026-09-20 08:52:50,615 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:50+00:00] (Worker pid=477) 
+[2026-09-20T08:52:50+00:00] [AutoTuner]: Tuning mxfp8_gemm:  62%|██████▎   | 10/16 [00:00<00:00, 26.66profile/s]2026-09-20 08:52:50,716 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:50+00:00] (Worker pid=477) 2026-09-20 08:52:50,837 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:50+00:00] (Worker pid=477) 2026-09-20 08:52:50,987 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:51+00:00] (Worker pid=477) 
+[2026-09-20T08:52:51+00:00] [AutoTuner]: Tuning mxfp8_gemm:  81%|████████▏ | 13/16 [00:00<00:00, 14.52profile/s]2026-09-20 08:52:51,233 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:51+00:00] (Worker pid=477) 2026-09-20 08:52:51,535 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:51+00:00] (Worker pid=477) 
+[2026-09-20T08:52:51+00:00] [AutoTuner]: Tuning mxfp8_gemm:  94%|█████████▍| 15/16 [00:01<00:00,  8.24profile/s]2026-09-20 08:52:51,786 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:51+00:00] (Worker pid=477) 
+[2026-09-20T08:52:51+00:00] [AutoTuner]: Tuning mxfp8_gemm: 100%|██████████| 16/16 [00:01<00:00, 10.33profile/s]
+[2026-09-20T08:52:52+00:00] (Worker pid=477) 
+[2026-09-20T08:52:52+00:00] [AutoTuner]: Tuning mxfp8_gemm:   0%|          | 0/16 [00:00<?, ?profile/s]2026-09-20 08:52:52,144 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:52+00:00] (Worker pid=477) 2026-09-20 08:52:52,176 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:52+00:00] (Worker pid=477) 2026-09-20 08:52:52,208 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:52+00:00] (Worker pid=477) 2026-09-20 08:52:52,240 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:52+00:00] (Worker pid=477) 
+[2026-09-20T08:52:52+00:00] [AutoTuner]: Tuning mxfp8_gemm:  25%|██▌       | 4/16 [00:00<00:00, 31.26profile/s]2026-09-20 08:52:52,272 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:52+00:00] (Worker pid=477) 2026-09-20 08:52:52,303 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:52+00:00] (Worker pid=477) 2026-09-20 08:52:52,334 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:52+00:00] (Worker pid=477) 2026-09-20 08:52:52,366 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:52+00:00] (Worker pid=477) 
+[2026-09-20T08:52:52+00:00] [AutoTuner]: Tuning mxfp8_gemm:  50%|█████     | 8/16 [00:00<00:00, 31.58profile/s]2026-09-20 08:52:52,397 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:52+00:00] (Worker pid=477) 2026-09-20 08:52:52,429 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:52+00:00] (Worker pid=477) 2026-09-20 08:52:52,462 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:52+00:00] (Worker pid=477) 2026-09-20 08:52:52,496 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:52+00:00] (Worker pid=477) 
+[2026-09-20T08:52:52+00:00] [AutoTuner]: Tuning mxfp8_gemm:  75%|███████▌  | 12/16 [00:00<00:00, 31.19profile/s]2026-09-20 08:52:52,532 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:52+00:00] (Worker pid=477) 2026-09-20 08:52:52,570 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:52+00:00] (Worker pid=477) 2026-09-20 08:52:52,612 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:52+00:00] (Worker pid=477) 2026-09-20 08:52:52,658 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:52+00:00] (Worker pid=477) 
+[2026-09-20T08:52:52+00:00] [AutoTuner]: Tuning mxfp8_gemm: 100%|██████████| 16/16 [00:00<00:00, 28.23profile/s]
+[2026-09-20T08:52:52+00:00] [AutoTuner]: Tuning mxfp8_gemm: 100%|██████████| 16/16 [00:00<00:00, 29.30profile/s]
+[2026-09-20T08:52:52+00:00] (Worker pid=477) 
+[2026-09-20T08:52:52+00:00] [AutoTuner]: Tuning mxfp8_gemm:   0%|          | 0/16 [00:00<?, ?profile/s]2026-09-20 08:52:52,692 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:52+00:00] (Worker pid=477) 2026-09-20 08:52:52,723 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:52+00:00] (Worker pid=477) 2026-09-20 08:52:52,755 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:52+00:00] (Worker pid=477) 2026-09-20 08:52:52,786 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:52+00:00] (Worker pid=477) 
+[2026-09-20T08:52:52+00:00] [AutoTuner]: Tuning mxfp8_gemm:  25%|██▌       | 4/16 [00:00<00:00, 32.02profile/s]2026-09-20 08:52:52,817 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:52+00:00] (Worker pid=477) 2026-09-20 08:52:52,848 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:52+00:00] (Worker pid=477) 2026-09-20 08:52:52,879 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:52+00:00] (Worker pid=477) 2026-09-20 08:52:52,910 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:52+00:00] (Worker pid=477) 
+[2026-09-20T08:52:52+00:00] [AutoTuner]: Tuning mxfp8_gemm:  50%|█████     | 8/16 [00:00<00:00, 32.07profile/s]2026-09-20 08:52:52,942 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:52+00:00] (Worker pid=477) 2026-09-20 08:52:52,973 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:53+00:00] (Worker pid=477) 2026-09-20 08:52:53,005 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:53+00:00] (Worker pid=477) 2026-09-20 08:52:53,036 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:53+00:00] (Worker pid=477) 
+[2026-09-20T08:52:53+00:00] [AutoTuner]: Tuning mxfp8_gemm:  75%|███████▌  | 12/16 [00:00<00:00, 31.96profile/s]2026-09-20 08:52:53,068 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:53+00:00] (Worker pid=477) 2026-09-20 08:52:53,100 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:53+00:00] (Worker pid=477) 2026-09-20 08:52:53,132 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:53+00:00] (Worker pid=477) 2026-09-20 08:52:53,164 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:53+00:00] (Worker pid=477) 
+[2026-09-20T08:52:53+00:00] [AutoTuner]: Tuning mxfp8_gemm: 100%|██████████| 16/16 [00:00<00:00, 31.66profile/s]
+[2026-09-20T08:52:53+00:00] [AutoTuner]: Tuning mxfp8_gemm: 100%|██████████| 16/16 [00:00<00:00, 31.79profile/s]
+[2026-09-20T08:52:53+00:00] (Worker pid=477) 
+[2026-09-20T08:52:53+00:00] [AutoTuner]: Tuning mxfp8_gemm:   0%|          | 0/16 [00:00<?, ?profile/s]2026-09-20 08:52:53,208 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:53+00:00] (Worker pid=477) 2026-09-20 08:52:53,239 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:53+00:00] (Worker pid=477) 2026-09-20 08:52:53,270 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:53+00:00] (Worker pid=477) 2026-09-20 08:52:53,302 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:53+00:00] (Worker pid=477) 
+[2026-09-20T08:52:53+00:00] [AutoTuner]: Tuning mxfp8_gemm:  25%|██▌       | 4/16 [00:00<00:00, 32.00profile/s]2026-09-20 08:52:53,333 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:53+00:00] (Worker pid=477) 2026-09-20 08:52:53,364 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:53+00:00] (Worker pid=477) 2026-09-20 08:52:53,395 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:53+00:00] (Worker pid=477) 2026-09-20 08:52:53,426 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:53+00:00] (Worker pid=477) 
+[2026-09-20T08:52:53+00:00] [AutoTuner]: Tuning mxfp8_gemm:  50%|█████     | 8/16 [00:00<00:00, 32.09profile/s]2026-09-20 08:52:53,457 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:53+00:00] (Worker pid=477) 2026-09-20 08:52:53,488 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:53+00:00] (Worker pid=477) 2026-09-20 08:52:53,520 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:53+00:00] (Worker pid=477) 2026-09-20 08:52:53,551 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:53+00:00] (Worker pid=477) 
+[2026-09-20T08:52:53+00:00] [AutoTuner]: Tuning mxfp8_gemm:  75%|███████▌  | 12/16 [00:00<00:00, 32.06profile/s]2026-09-20 08:52:53,582 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:53+00:00] (Worker pid=477) 2026-09-20 08:52:53,614 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:53+00:00] (Worker pid=477) 2026-09-20 08:52:53,646 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:53+00:00] (Worker pid=477) 2026-09-20 08:52:53,678 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:52:53+00:00] (Worker pid=477) 
+[2026-09-20T08:52:53+00:00] [AutoTuner]: Tuning mxfp8_gemm: 100%|██████████| 16/16 [00:00<00:00, 31.86profile/s]
+[2026-09-20T08:52:53+00:00] [AutoTuner]: Tuning mxfp8_gemm: 100%|██████████| 16/16 [00:00<00:00, 31.93profile/s]
+[2026-09-20T08:52:53+00:00] (Worker pid=477) 
+[2026-09-20T08:52:53+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm1:   0%|          | 0/21 [00:00<?, ?profile/s]2026-09-20 08:52:53,773 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for trtllm::fused_moe::gemm1 (enable debug logs to see details)
+[2026-09-20T08:52:53+00:00] (Worker pid=477) 2026-09-20 08:52:53,855 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for trtllm::fused_moe::gemm1 (enable debug logs to see details)
+[2026-09-20T08:52:53+00:00] (Worker pid=477) 
+[2026-09-20T08:52:53+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm1:  10%|▉         | 2/21 [00:00<00:01, 11.50profile/s]2026-09-20 08:52:53,966 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for trtllm::fused_moe::gemm1 (enable debug logs to see details)
+[2026-09-20T08:52:54+00:00] (Worker pid=477) 2026-09-20 08:52:54,152 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for trtllm::fused_moe::gemm1 (enable debug logs to see details)
+[2026-09-20T08:52:54+00:00] (Worker pid=477) 
+[2026-09-20T08:52:54+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm1:  19%|█▉        | 4/21 [00:00<00:02,  8.11profile/s]2026-09-20 08:52:54,446 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for trtllm::fused_moe::gemm1 (enable debug logs to see details)
+[2026-09-20T08:52:54+00:00] (Worker pid=477) 
+[2026-09-20T08:52:54+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm1:  24%|██▍       | 5/21 [00:00<00:02,  5.75profile/s]2026-09-20 08:52:54,927 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for trtllm::fused_moe::gemm1 (enable debug logs to see details)
+[2026-09-20T08:52:55+00:00] (Worker pid=477) 
+[2026-09-20T08:52:55+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm1:  29%|██▊       | 6/21 [00:01<00:03,  3.77profile/s]2026-09-20 08:52:55,650 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for trtllm::fused_moe::gemm1 (enable debug logs to see details)
+[2026-09-20T08:52:56+00:00] (Worker pid=477) 
+[2026-09-20T08:52:56+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm1:  33%|███▎      | 7/21 [00:01<00:05,  2.49profile/s]2026-09-20 08:52:56,574 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for trtllm::fused_moe::gemm1 (enable debug logs to see details)
+[2026-09-20T08:52:57+00:00] (Worker pid=477) 
+[2026-09-20T08:52:57+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm1:  38%|███▊      | 8/21 [00:02<00:07,  1.79profile/s]2026-09-20 08:52:57,766 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for trtllm::fused_moe::gemm1 (enable debug logs to see details)
+[2026-09-20T08:52:58+00:00] (Worker pid=477) 
+[2026-09-20T08:52:58+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm1:  43%|████▎     | 9/21 [00:04<00:08,  1.34profile/s]2026-09-20 08:52:58,896 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for trtllm::fused_moe::gemm1 (enable debug logs to see details)
+[2026-09-20T08:53:00+00:00] (Worker pid=477) 
+[2026-09-20T08:53:00+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm1:  48%|████▊     | 10/21 [00:05<00:09,  1.16profile/s]2026-09-20 08:53:00,028 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for trtllm::fused_moe::gemm1 (enable debug logs to see details)
+[2026-09-20T08:53:01+00:00] (Worker pid=477) 
+[2026-09-20T08:53:01+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm1:  52%|█████▏    | 11/21 [00:06<00:09,  1.06profile/s]2026-09-20 08:53:01,196 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for trtllm::fused_moe::gemm1 (enable debug logs to see details)
+[2026-09-20T08:53:02+00:00] (Worker pid=477) 
+[2026-09-20T08:53:02+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm1:  57%|█████▋    | 12/21 [00:07<00:09,  1.01s/profile]2026-09-20 08:53:02,401 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for trtllm::fused_moe::gemm1 (enable debug logs to see details)
+[2026-09-20T08:53:03+00:00] (Worker pid=477) 
+[2026-09-20T08:53:03+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm1:  62%|██████▏   | 13/21 [00:08<00:08,  1.07s/profile]2026-09-20 08:53:03,610 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for trtllm::fused_moe::gemm1 (enable debug logs to see details)
+[2026-09-20T08:53:04+00:00] (Worker pid=477) 
+[2026-09-20T08:53:04+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm1:  67%|██████▋   | 14/21 [00:09<00:07,  1.11s/profile]2026-09-20 08:53:04,859 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for trtllm::fused_moe::gemm1 (enable debug logs to see details)
+[2026-09-20T08:53:06+00:00] (Worker pid=477) 
+[2026-09-20T08:53:06+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm1:  71%|███████▏  | 15/21 [00:11<00:06,  1.15s/profile]2026-09-20 08:53:06,153 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for trtllm::fused_moe::gemm1 (enable debug logs to see details)
+[2026-09-20T08:53:07+00:00] (Worker pid=477) 
+[2026-09-20T08:53:07+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm1:  76%|███████▌  | 16/21 [00:12<00:05,  1.19s/profile]2026-09-20 08:53:07,539 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for trtllm::fused_moe::gemm1 (enable debug logs to see details)
+[2026-09-20T08:53:09+00:00] (Worker pid=477) 
+[2026-09-20T08:53:09+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm1:  81%|████████  | 17/21 [00:13<00:05,  1.25s/profile]2026-09-20 08:53:09,212 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for trtllm::fused_moe::gemm1 (enable debug logs to see details)
+[2026-09-20T08:53:10+00:00] (Worker pid=477) 
+[2026-09-20T08:53:10+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm1:  86%|████████▌ | 18/21 [00:15<00:04,  1.38s/profile]2026-09-20 08:53:10,725 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for trtllm::fused_moe::gemm1 (enable debug logs to see details)
+[2026-09-20T08:53:12+00:00] (Worker pid=477) 
+[2026-09-20T08:53:12+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm1:  90%|█████████ | 19/21 [00:17<00:02,  1.42s/profile]2026-09-20 08:53:12,347 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for trtllm::fused_moe::gemm1 (enable debug logs to see details)
+[2026-09-20T08:53:14+00:00]   ...waiting for readiness: 792s elapsed, last /health code 000000
+[2026-09-20T08:53:14+00:00] (Worker pid=477) 
+[2026-09-20T08:53:14+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm1:  95%|█████████▌| 20/21 [00:18<00:01,  1.48s/profile]2026-09-20 08:53:14,626 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for trtllm::fused_moe::gemm1 (enable debug logs to see details)
+[2026-09-20T08:53:14+00:00] (Worker pid=477) 
+[2026-09-20T08:53:14+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm1: 100%|██████████| 21/21 [00:20<00:00,  1.72s/profile]
+[2026-09-20T08:53:14+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm1: 100%|██████████| 21/21 [00:20<00:00,  1.00profile/s]
+[2026-09-20T08:53:14+00:00] (Worker pid=477) 
+[2026-09-20T08:53:14+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm2:   0%|          | 0/21 [00:00<?, ?profile/s]2026-09-20 08:53:14,796 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 10 unsupported tactic(s) for trtllm::fused_moe::gemm2 (enable debug logs to see details)
+[2026-09-20T08:53:14+00:00] (Worker pid=477) 
+[2026-09-20T08:53:14+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm2:   5%|▍         | 1/21 [00:00<00:03,  5.94profile/s]2026-09-20 08:53:14,953 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 10 unsupported tactic(s) for trtllm::fused_moe::gemm2 (enable debug logs to see details)
+[2026-09-20T08:53:15+00:00] (Worker pid=477) 
+[2026-09-20T08:53:15+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm2:  10%|▉         | 2/21 [00:00<00:03,  6.19profile/s]2026-09-20 08:53:15,134 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 10 unsupported tactic(s) for trtllm::fused_moe::gemm2 (enable debug logs to see details)
+[2026-09-20T08:53:15+00:00] (Worker pid=477) 
+[2026-09-20T08:53:15+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm2:  14%|█▍        | 3/21 [00:00<00:03,  5.86profile/s]2026-09-20 08:53:15,375 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 10 unsupported tactic(s) for trtllm::fused_moe::gemm2 (enable debug logs to see details)
+[2026-09-20T08:53:15+00:00] (Worker pid=477) 
+[2026-09-20T08:53:15+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm2:  19%|█▉        | 4/21 [00:00<00:03,  5.04profile/s]2026-09-20 08:53:15,743 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 10 unsupported tactic(s) for trtllm::fused_moe::gemm2 (enable debug logs to see details)
+[2026-09-20T08:53:16+00:00] (Worker pid=477) 
+[2026-09-20T08:53:16+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm2:  24%|██▍       | 5/21 [00:01<00:04,  3.86profile/s]2026-09-20 08:53:16,308 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 10 unsupported tactic(s) for trtllm::fused_moe::gemm2 (enable debug logs to see details)
+[2026-09-20T08:53:17+00:00] (Worker pid=477) 
+[2026-09-20T08:53:17+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm2:  29%|██▊       | 6/21 [00:01<00:05,  2.75profile/s]2026-09-20 08:53:17,088 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 10 unsupported tactic(s) for trtllm::fused_moe::gemm2 (enable debug logs to see details)
+[2026-09-20T08:53:18+00:00] (Worker pid=477) 
+[2026-09-20T08:53:18+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm2:  33%|███▎      | 7/21 [00:02<00:06,  2.00profile/s]2026-09-20 08:53:18,027 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 10 unsupported tactic(s) for trtllm::fused_moe::gemm2 (enable debug logs to see details)
+[2026-09-20T08:53:19+00:00] (Worker pid=477) 
+[2026-09-20T08:53:19+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm2:  38%|███▊      | 8/21 [00:03<00:08,  1.56profile/s]2026-09-20 08:53:19,049 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 10 unsupported tactic(s) for trtllm::fused_moe::gemm2 (enable debug logs to see details)
+[2026-09-20T08:53:20+00:00] (Worker pid=477) 
+[2026-09-20T08:53:20+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm2:  43%|████▎     | 9/21 [00:04<00:09,  1.32profile/s]2026-09-20 08:53:20,103 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 10 unsupported tactic(s) for trtllm::fused_moe::gemm2 (enable debug logs to see details)
+[2026-09-20T08:53:21+00:00] (Worker pid=477) 
+[2026-09-20T08:53:21+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm2:  48%|████▊     | 10/21 [00:05<00:09,  1.18profile/s]2026-09-20 08:53:21,181 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 10 unsupported tactic(s) for trtllm::fused_moe::gemm2 (enable debug logs to see details)
+[2026-09-20T08:53:22+00:00] (Worker pid=477) 
+[2026-09-20T08:53:22+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm2:  52%|█████▏    | 11/21 [00:06<00:09,  1.09profile/s]2026-09-20 08:53:22,302 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 10 unsupported tactic(s) for trtllm::fused_moe::gemm2 (enable debug logs to see details)
+[2026-09-20T08:53:23+00:00] (Worker pid=477) 
+[2026-09-20T08:53:23+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm2:  57%|█████▋    | 12/21 [00:07<00:08,  1.02profile/s]2026-09-20 08:53:23,475 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 10 unsupported tactic(s) for trtllm::fused_moe::gemm2 (enable debug logs to see details)
+[2026-09-20T08:53:24+00:00] (Worker pid=477) 
+[2026-09-20T08:53:24+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm2:  62%|██████▏   | 13/21 [00:08<00:08,  1.04s/profile]2026-09-20 08:53:24,673 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 10 unsupported tactic(s) for trtllm::fused_moe::gemm2 (enable debug logs to see details)
+[2026-09-20T08:53:25+00:00] (Worker pid=477) 
+[2026-09-20T08:53:25+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm2:  67%|██████▋   | 14/21 [00:10<00:07,  1.09s/profile]2026-09-20 08:53:25,889 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 10 unsupported tactic(s) for trtllm::fused_moe::gemm2 (enable debug logs to see details)
+[2026-09-20T08:53:27+00:00] (Worker pid=477) 
+[2026-09-20T08:53:27+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm2:  71%|███████▏  | 15/21 [00:11<00:06,  1.13s/profile]2026-09-20 08:53:27,182 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 10 unsupported tactic(s) for trtllm::fused_moe::gemm2 (enable debug logs to see details)
+[2026-09-20T08:53:28+00:00] (Worker pid=477) 
+[2026-09-20T08:53:28+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm2:  76%|███████▌  | 16/21 [00:12<00:05,  1.18s/profile]2026-09-20 08:53:28,542 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 10 unsupported tactic(s) for trtllm::fused_moe::gemm2 (enable debug logs to see details)
+[2026-09-20T08:53:29+00:00] (Worker pid=477) 
+[2026-09-20T08:53:29+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm2:  81%|████████  | 17/21 [00:13<00:04,  1.23s/profile]2026-09-20 08:53:29,983 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 10 unsupported tactic(s) for trtllm::fused_moe::gemm2 (enable debug logs to see details)
+[2026-09-20T08:53:31+00:00] (Worker pid=477) 
+[2026-09-20T08:53:31+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm2:  86%|████████▌ | 18/21 [00:15<00:03,  1.29s/profile]2026-09-20 08:53:31,519 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 10 unsupported tactic(s) for trtllm::fused_moe::gemm2 (enable debug logs to see details)
+[2026-09-20T08:53:33+00:00] (Worker pid=477) 
+[2026-09-20T08:53:33+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm2:  90%|█████████ | 19/21 [00:16<00:02,  1.37s/profile]2026-09-20 08:53:33,144 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 10 unsupported tactic(s) for trtllm::fused_moe::gemm2 (enable debug logs to see details)
+[2026-09-20T08:53:36+00:00] (Worker pid=477) 
+[2026-09-20T08:53:36+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm2:  95%|█████████▌| 20/21 [00:18<00:01,  1.44s/profile]2026-09-20 08:53:36,755 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 10 unsupported tactic(s) for trtllm::fused_moe::gemm2 (enable debug logs to see details)
+[2026-09-20T08:53:36+00:00] (Worker pid=477) 
+[2026-09-20T08:53:36+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm2: 100%|██████████| 21/21 [00:22<00:00,  2.09s/profile]
+[2026-09-20T08:53:36+00:00] [AutoTuner]: Tuning trtllm::fused_moe::gemm2: 100%|██████████| 21/21 [00:22<00:00,  1.05s/profile]
+[2026-09-20T08:53:36+00:00] (Worker pid=477) 
+[2026-09-20T08:53:36+00:00] [AutoTuner]: Tuning mxfp8_gemm:   0%|          | 0/16 [00:00<?, ?profile/s]2026-09-20 08:53:36,852 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:36+00:00] (Worker pid=477) 2026-09-20 08:53:36,886 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:36+00:00] (Worker pid=477) 2026-09-20 08:53:36,920 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:36+00:00] (Worker pid=477) 
+[2026-09-20T08:53:36+00:00] [AutoTuner]: Tuning mxfp8_gemm:  19%|█▉        | 3/16 [00:00<00:00, 28.96profile/s]2026-09-20 08:53:36,955 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:36+00:00] (Worker pid=477) 2026-09-20 08:53:36,988 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:37+00:00] (Worker pid=477) 2026-09-20 08:53:37,021 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:37+00:00] (Worker pid=477) 
+[2026-09-20T08:53:37+00:00] [AutoTuner]: Tuning mxfp8_gemm:  38%|███▊      | 6/16 [00:00<00:00, 29.39profile/s]2026-09-20 08:53:37,053 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:37+00:00] (Worker pid=477) 2026-09-20 08:53:37,085 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:37+00:00] (Worker pid=477) 2026-09-20 08:53:37,117 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:37+00:00] (Worker pid=477) 2026-09-20 08:53:37,151 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:37+00:00] (Worker pid=477) 
+[2026-09-20T08:53:37+00:00] [AutoTuner]: Tuning mxfp8_gemm:  62%|██████▎   | 10/16 [00:00<00:00, 30.16profile/s]2026-09-20 08:53:37,191 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:37+00:00] (Worker pid=477) 2026-09-20 08:53:37,241 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:37+00:00] (Worker pid=477) 2026-09-20 08:53:37,300 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:37+00:00] (Worker pid=477) 2026-09-20 08:53:37,373 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:37+00:00] (Worker pid=477) 
+[2026-09-20T08:53:37+00:00] [AutoTuner]: Tuning mxfp8_gemm:  88%|████████▊ | 14/16 [00:00<00:00, 23.40profile/s]2026-09-20 08:53:37,454 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:37+00:00] (Worker pid=477) 2026-09-20 08:53:37,549 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:37+00:00] (Worker pid=477) 
+[2026-09-20T08:53:37+00:00] [AutoTuner]: Tuning mxfp8_gemm: 100%|██████████| 16/16 [00:00<00:00, 21.84profile/s]
+[2026-09-20T08:53:37+00:00] (Worker pid=477) 
+[2026-09-20T08:53:37+00:00] [AutoTuner]: Tuning mxfp8_gemm:   0%|          | 0/16 [00:00<?, ?profile/s]2026-09-20 08:53:37,600 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:37+00:00] (Worker pid=477) 2026-09-20 08:53:37,631 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:37+00:00] (Worker pid=477) 2026-09-20 08:53:37,662 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:37+00:00] (Worker pid=477) 2026-09-20 08:53:37,693 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:37+00:00] (Worker pid=477) 
+[2026-09-20T08:53:37+00:00] [AutoTuner]: Tuning mxfp8_gemm:  25%|██▌       | 4/16 [00:00<00:00, 32.07profile/s]2026-09-20 08:53:37,725 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:37+00:00] (Worker pid=477) 2026-09-20 08:53:37,756 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:37+00:00] (Worker pid=477) 2026-09-20 08:53:37,787 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:37+00:00] (Worker pid=477) 2026-09-20 08:53:37,818 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:37+00:00] (Worker pid=477) 
+[2026-09-20T08:53:37+00:00] [AutoTuner]: Tuning mxfp8_gemm:  50%|█████     | 8/16 [00:00<00:00, 32.11profile/s]2026-09-20 08:53:37,849 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:37+00:00] (Worker pid=477) 2026-09-20 08:53:37,880 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:37+00:00] (Worker pid=477) 2026-09-20 08:53:37,911 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:37+00:00] (Worker pid=477) 2026-09-20 08:53:37,943 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:37+00:00] (Worker pid=477) 
+[2026-09-20T08:53:37+00:00] [AutoTuner]: Tuning mxfp8_gemm:  75%|███████▌  | 12/16 [00:00<00:00, 32.06profile/s]2026-09-20 08:53:37,974 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:38+00:00] (Worker pid=477) 2026-09-20 08:53:38,006 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:38+00:00] (Worker pid=477) 2026-09-20 08:53:38,038 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:38+00:00] (Worker pid=477) 2026-09-20 08:53:38,070 - INFO - autotuner.py:1699 - flashinfer.jit: [Autotuner]: Skipped 4 unsupported tactic(s) for mxfp8_gemm (enable debug logs to see details)
+[2026-09-20T08:53:38+00:00] (Worker pid=477) 
+[2026-09-20T08:53:38+00:00] [AutoTuner]: Tuning mxfp8_gemm: 100%|██████████| 16/16 [00:00<00:00, 31.86profile/s]
+[2026-09-20T08:53:38+00:00] [AutoTuner]: Tuning mxfp8_gemm: 100%|██████████| 16/16 [00:00<00:00, 31.94profile/s]
+[2026-09-20T08:53:41+00:00] (Worker pid=477) 2026-09-20 08:53:41,233 - INFO - autotuner.py:852 - flashinfer.jit: [Autotuner]: Autotuning process ends
+[2026-09-20T08:53:41+00:00] (Worker pid=477) 2026-09-20 08:53:41,258 - INFO - autotuner.py:2269 - flashinfer.jit: [Autotuner]: Saved 138 configs to /root/.cache/vllm/flashinfer_autotune_cache/0.6.17/121a/da5b7afde0206e9d506ff9c8086fea62d53907705e931e924e33310dbad7926a/autotune_configs.json (138 new, 0 from previous config)
+[2026-09-20T08:53:44+00:00] (Worker pid=477) 
+[2026-09-20T08:53:44+00:00] Capturing CUDA graphs (FULL):   0%|          | 0/4 [00:00<?, ?it/s]
+[2026-09-20T08:53:44+00:00] Capturing CUDA graphs (FULL):  25%|██▌       | 1/4 [00:01<00:04,  1.60s/it]
+[2026-09-20T08:53:44+00:00] Capturing CUDA graphs (FULL):  50%|█████     | 2/4 [00:01<00:01,  1.37it/s]
+[2026-09-20T08:53:44+00:00] Capturing CUDA graphs (FULL):  75%|███████▌  | 3/4 [00:01<00:00,  2.20it/s]
+[2026-09-20T08:53:44+00:00] Capturing CUDA graphs (FULL): 100%|██████████| 4/4 [00:02<00:00,  1.74it/s]
+[2026-09-20T08:53:44+00:00] Capturing CUDA graphs (FULL): 100%|██████████| 4/4 [00:02<00:00,  1.53it/s]
+[2026-09-20T08:53:44+00:00] (Worker pid=477) INFO 09-20 08:53:44 [speculator.py:148] Capturing model for speculator...
+[2026-09-20T08:53:44+00:00] (Worker pid=477) 
+[2026-09-20T08:53:44+00:00] Capturing prefill CUDA graphs (FULL):   0%|          | 0/4 [00:00<?, ?it/s]
+[2026-09-20T08:53:44+00:00] Capturing prefill CUDA graphs (FULL): 100%|██████████| 4/4 [00:00<00:00, 87.19it/s]
+[2026-09-20T08:53:44+00:00] (Worker pid=477) 
+[2026-09-20T08:53:44+00:00] Capturing decode CUDA graphs (FULL):   0%|          | 0/1 [00:00<?, ?it/s]
+[2026-09-20T08:53:44+00:00] Capturing decode CUDA graphs (FULL): 100%|██████████| 1/1 [00:00<00:00, 92.50it/s]
+[2026-09-20T08:53:44+00:00] (Worker pid=477) INFO 09-20 08:53:44 [model_runner.py:953] Graph capturing finished in 3 secs, took 0.08 GiB
+[2026-09-20T08:53:44+00:00] (Worker pid=477) INFO 09-20 08:53:44 [gpu_worker.py:919] Free memory on device (113.89/121.69 GiB) on startup. Desired GPU memory utilization is (0.786, 95.65 GiB). Actual usage is 77.65 GiB for consumed memory (weights + non-torch), 1.67 GiB for peak activation, and 0.08 GiB for CUDAGraph memory. Replace gpu_memory_utilization config with `--kv-cache-memory=17287746573` (16.1 GiB) to fit into requested memory, or `--kv-cache-memory=36878072320` (34.35 GiB) to fully utilize gpu memory. Current kv cache memory in use is 16.33 GiB.
+[2026-09-20T08:53:49+00:00] (EngineCore pid=374) INFO 09-20 08:53:49 [shm_broadcast.py:801] No available shared memory broadcast block found in 60 seconds. This typically happens when some processes are hanging or doing some time-consuming work (e.g. compilation, weight/kv cache quantization).
+[2026-09-20T08:53:54+00:00] (Worker pid=477) INFO 09-20 08:53:54 [jit_monitor.py:85] Kernel JIT monitor activated; monitored JIT compilations during inference will use mode=warn.
+[2026-09-20T08:53:54+00:00] (Worker pid=477) INFO 09-20 08:53:54 [torch_utils.py:262] Reducing Torch threads from 20 to 1 for serving. Set OMP_NUM_THREADS in the external environment to override.
+[2026-09-20T08:53:54+00:00] (EngineCore pid=374) INFO 09-20 08:53:54 [core.py:354] init engine (profile, create kv cache, warmup model) took 128.47 s
+[2026-09-20T08:53:54+00:00] (EngineCore pid=374) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:53:54+00:00] (EngineCore pid=374) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:53:54+00:00] (EngineCore pid=374) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:53:54+00:00] (EngineCore pid=374) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:53:54+00:00] (EngineCore pid=374) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:53:55+00:00] (EngineCore pid=374) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:53:55+00:00] (EngineCore pid=374) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:53:56+00:00] (EngineCore pid=374) [transformers] The `use_fast` parameter is deprecated and will be removed in a future version. Use `backend="torchvision"` instead of `use_fast=True`, or `backend="pil"` instead of `use_fast=False`.
+[2026-09-20T08:53:57+00:00] (EngineCore pid=374) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:53:57+00:00] (EngineCore pid=374) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:53:59+00:00] (EngineCore pid=374) [ERROR] `min_frames` is part of Qwen3VLVideoProcessorInitKwargs, but not documented. Make sure to add it to the docstring of the function in /usr/local/lib/python3.12/dist-packages/transformers/models/qwen3_vl/video_processing_qwen3_vl.py.
+[2026-09-20T08:53:59+00:00] (EngineCore pid=374) [ERROR] `max_frames` is part of Qwen3VLVideoProcessorInitKwargs, but not documented. Make sure to add it to the docstring of the function in /usr/local/lib/python3.12/dist-packages/transformers/models/qwen3_vl/video_processing_qwen3_vl.py.
+[2026-09-20T08:53:59+00:00] (EngineCore pid=374) WARNING 09-20 08:53:59 [vllm.py:1341] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+[2026-09-20T08:53:59+00:00] (EngineCore pid=374) INFO 09-20 08:53:59 [kernel.py:308] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['vllm_c', 'native'], fused_add_rms_norm=['vllm_c', 'native'])
+[2026-09-20T08:53:59+00:00] (EngineCore pid=374) WARNING 09-20 08:53:59 [vllm.py:1849] max_num_scheduled_tokens is set to 2048 based on the speculative decoding settings. This may lead to suboptimal performance. Consider increasing max_num_batched_tokens to accommodate the additional draft token slots, or decrease num_speculative_tokens.
+[2026-09-20T08:53:59+00:00] (EngineCore pid=374) INFO 09-20 08:53:59 [compilation.py:329] Enabled custom fusions: norm_quant, act_quant
+[2026-09-20T08:53:59+00:00] (APIServer pid=1) INFO 09-20 08:53:59 [api_server.py:653] Supported tasks: ['generate']
+[2026-09-20T08:53:59+00:00] (APIServer pid=1) INFO 09-20 08:53:59 [parser_manager.py:58] "auto" tool choice has been enabled.
+[2026-09-20T08:53:59+00:00] (APIServer pid=1) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:53:59+00:00] (APIServer pid=1) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:54:00+00:00] (APIServer pid=1) INFO 09-20 08:54:00 [hf.py:551] Detected the chat template content format to be 'openai'. You can set `--chat-template-content-format` to override this.
+[2026-09-20T08:54:08+00:00] (APIServer pid=1) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:54:08+00:00] (APIServer pid=1) [transformers] Unrecognized keys in `rope_parameters` for 'rope_type'='default': {'mrope_interleaved', 'mrope_section'}
+[2026-09-20T08:54:14+00:00]   ...waiting for readiness: 852s elapsed, last /health code 000000
+[2026-09-20T08:54:19+00:00] (APIServer pid=1) INFO 09-20 08:54:19 [base.py:235] Multi-modal warmup completed in 19.025s
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [base.py:235] Readonly multi-modal warmup completed in 0.900s
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) WARNING 09-20 08:54:20 [model.py:1713] Default vLLM sampling parameters have been overridden by the model's `generation_config.json`: `{'temperature': 1.0, 'top_k': 20, 'top_p': 0.95}`. If this is not intended, please relaunch vLLM instance with `--generation-config vllm`.
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [api_server.py:657] Starting vLLM server on http://0.0.0.0:8888
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:51] Available routes are:
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:60] Route: /openapi.json, Methods: HEAD, GET
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:60] Route: /docs, Methods: HEAD, GET
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:60] Route: /docs/oauth2-redirect, Methods: HEAD, GET
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:60] Route: /redoc, Methods: HEAD, GET
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:60] Route: /load, Methods: GET
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:60] Route: /version, Methods: GET
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:60] Route: /health, Methods: GET
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:60] Route: /metrics, Methods: GET
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:60] Route: /tokenize, Methods: POST
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:60] Route: /detokenize, Methods: POST
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:60] Route: /v1/models, Methods: GET
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:60] Route: /ping, Methods: GET
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:60] Route: /ping, Methods: POST
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:60] Route: /invocations, Methods: POST
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:60] Route: /v1/chat/completions, Methods: POST
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:60] Route: /v1/chat/completions/batch, Methods: POST
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:60] Route: /v1/responses, Methods: POST
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:60] Route: /v1/responses/{response_id}, Methods: GET
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:60] Route: /v1/responses/{response_id}/cancel, Methods: POST
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:60] Route: /v1/completions, Methods: POST
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:60] Route: /v1/messages, Methods: POST
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:60] Route: /v1/messages/count_tokens, Methods: POST
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:60] Route: /generative_scoring, Methods: POST
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:60] Route: /scale_elastic_ep, Methods: POST
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:60] Route: /is_scaling_elastic_ep, Methods: POST
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:60] Route: /v1/chat/completions/render, Methods: POST
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:60] Route: /v1/completions/render, Methods: POST
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:60] Route: /v1/chat/completions/derender, Methods: POST
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:60] Route: /v1/completions/derender, Methods: POST
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO 09-20 08:54:20 [launcher.py:60] Route: /inference/v1/generate, Methods: POST
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO:     Started server process [1]
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO:     Waiting for application startup.
+[2026-09-20T08:54:20+00:00] (APIServer pid=1) INFO:     Application startup complete.
+[2026-09-20T08:54:21+00:00] (APIServer pid=1) INFO:     127.0.0.1:44776 - "GET /metrics HTTP/1.1" 200 OK
+[2026-09-20T08:54:22+00:00] (APIServer pid=1) INFO:     127.0.0.1:44790 - "GET /slots HTTP/1.1" 404 Not Found
+[2026-09-20T08:54:22+00:00] (APIServer pid=1) INFO:     127.0.0.1:44804 - "GET /v1/models HTTP/1.1" 200 OK
+[2026-09-20T08:54:22+00:00] (APIServer pid=1) INFO:     127.0.0.1:44790 - "GET /metrics HTTP/1.1" 200 OK
+[2026-09-20T08:54:22+00:00] (APIServer pid=1) INFO:     127.0.0.1:44804 - "GET /get_server_info HTTP/1.1" 404 Not Found
+[2026-09-20T08:54:22+00:00] (APIServer pid=1) INFO:     127.0.0.1:44790 - "GET /server_info HTTP/1.1" 404 Not Found
+[2026-09-20T08:54:22+00:00] (APIServer pid=1) INFO:     127.0.0.1:44804 - "GET /health HTTP/1.1" 200 OK
+[2026-09-20T08:54:22+00:00] (APIServer pid=1) INFO:     127.0.0.1:44790 - "GET /v1/models HTTP/1.1" 200 OK
+[2026-09-20T08:54:22+00:00] (APIServer pid=1) INFO:     127.0.0.1:44804 - "GET /metrics HTTP/1.1" 200 OK
+[2026-09-20T08:54:24+00:00] (APIServer pid=1) INFO:     127.0.0.1:44790 - "GET /v1/models HTTP/1.1" 200 OK
+[2026-09-20T08:54:24+00:00] (APIServer pid=1) INFO:     127.0.0.1:44804 - "GET /metrics HTTP/1.1" 200 OK
+[2026-09-20T08:54:24+00:00] (APIServer pid=1) INFO:     127.0.0.1:44808 - "GET /health HTTP/1.1" 200 OK
+[2026-09-20T08:54:24+00:00] 
+[2026-09-20T08:54:24+00:00] [1;32m[ OK ][0m  vLLM ready on port 8888 (TP=1, single Spark) after 862s.
+[2026-09-20T08:54:24+00:00] (Worker pid=477) INFO 09-20 08:52:46 [gpu_worker.py:693] Available KV cache memory: 16.33 GiB
+[2026-09-20T08:54:24+00:00] (EngineCore pid=374) INFO 09-20 08:52:46 [kv_cache_utils.py:2258] GPU KV cache size: 1,089,581 tokens, Maximum concurrency for 262,144 tokens per request: 4.16x
+[2026-09-20T08:54:24+00:00] [1;34m[INFO][0m  
+[2026-09-20T08:54:24+00:00] [1;34m[INFO][0m  Stop:  ./stop.sh   (graceful; --force to skip the SIGTERM wait)
+[2026-09-20T08:54:24+00:00] API serves ['qwen3.8-flash-next-single']
+[2026-09-20T08:54:24+00:00] DONE: qwen3.8-flash-next-single is serving; lane hints: {"model": "dgx-spark/qwen3.8-flash-next-single", "timeout_s": 3600, "sessions": 4, "price_input": 0.0, "price_output": 0.0, "price_cache_read": 0.0, "extra": {}}

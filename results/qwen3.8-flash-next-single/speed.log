@@ -1,0 +1,33 @@
+# qwen3.8-flash-next-single via http://192.168.0.100:8888/v1  ->  /Users/muo/.local/state/dgx-model/bench/20260920T085726+0000-qwen3.8-flash-next-single.json
+api:    http://192.168.0.100:8888/v1
+model:  qwen3.8-flash-next-single
+params: max_tokens=per-scenario prompt~512 tok thinking=False prompts=unique scenarios=all
+
+scenario    conc  reqs   wall_s  out_tok  aggregate  per-stream  ttft_p50  ttft_p95  lat_p50  reason_p50
+chat/nothink    1     1     4.06      150       37.0        43.3      0.59      0.59     4.05           0
+chat/nothink    2     2     5.31      269       50.6        32.1      0.98      0.98     5.18           0
+chat/nothink    4     4     5.80      322       55.5        26.5      2.66      2.66     5.66           0
+chat/nothink    8     8    15.01      995       66.3        22.4       5.5      11.1    10.97           0
+code/nothink    1     1     6.89      319       46.3        57.4      1.33      1.33     6.89           0
+code/nothink    2     2     7.81      661       84.6        48.6      0.98      0.98     7.78           0
+code/nothink    4     4    10.28     1261      122.6        39.6      1.84      1.85      9.7           0
+code/nothink    8     8    20.89     2603      124.6        36.3     11.33     12.49    16.14           0
+essay/nothink    1     1    24.70      900       36.4        37.4      0.67      0.67     24.7           0
+essay/nothink    2     2    27.74     1664       60.0        31.6      0.95      0.95    27.25           0
+essay/nothink    4     4    36.62     3487       95.2        25.2      1.82      1.82     36.5           0
+essay/nothink    8     8    75.17     6849       91.1        24.3     34.99     40.25    55.22           0
+review/nothink    1     1     5.65      247       43.7        47.2      0.41      0.41     5.65           0
+review/nothink    2     2     8.43      515       61.1        38.5      0.45      0.45     7.15           0
+review/nothink    4     4     9.26      921       99.4        29.2      0.66      0.66     8.81           0
+review/nothink    8     8    38.85     3182       81.9        26.4     10.07     20.01    21.97           0
+structured/nothink    1     1     1.98       48       24.2        56.8      1.13      1.13     1.98           0
+structured/nothink    2     2     1.98       96       48.5        51.3      1.01      1.01     1.94           0
+structured/nothink    4     4     2.89      192       66.3        45.2       1.8       1.8     2.85           0
+structured/nothink    8     8     6.03      384       63.7        39.9      4.62      4.87     4.57           0
+
+chat        peak 66.3 tok/s at concurrency 8 (1.79x single), per-stream 43.3 -> 22.4
+code        peak 124.6 tok/s at concurrency 8 (2.69x single), per-stream 57.4 -> 36.3
+essay       peak 95.2 tok/s at concurrency 4 (2.62x single), per-stream 37.4 -> 24.3
+review      peak 99.4 tok/s at concurrency 4 (2.27x single), per-stream 47.2 -> 26.4
+structured  peak 66.3 tok/s at concurrency 4 (2.74x single), per-stream 56.8 -> 39.9
+wrote /Users/muo/.local/state/dgx-model/bench/20260920T085726+0000-qwen3.8-flash-next-single.json

@@ -4,7 +4,7 @@ Working state for the dgx pair, kept here rather than in a chat log or anyone's 
 `deployments/README.md`: if a step is missing here, it is missing. Numbers live in the deployment
 files; this file only says what is done, what is running, and what is next.
 
-_Last updated: 2026-09-19 10:05Z_
+_Last updated: 2026-09-20 09:16Z_
 
 ## The gate
 
@@ -12,7 +12,26 @@ _Last updated: 2026-09-19 10:05Z_
 change is committed, and before a measurement taken with a changed tool is trusted.** See
 `tests/README.md` for why: every bug it has caught so far was silent in the output.
 
-## Now — seven of seven measured
+## Single-Spark Qwen addition — 2026-09-20
+
+- [x] Mirror single-Spark recipe; register `qwen3.8-flash-next-single` (head only).
+- [x] Audit restart/telemetry paths; disable watchdog by default, explicit Docker restart=no;
+      omit supervisor/systemd/heartbeat/alerts from provisioning. Retain necessary PLE/quant patches.
+- [x] Gate: 79 fleet tests + 3 recipe launcher tests pass. Image entrypoint is direct vLLM.
+- [x] Download stock Mia-AiLab checkpoint (98.66 GiB), verify all 39 LFS SHA256s, pack 26.82 GiB PLE.
+- [x] Boot via dgx-model; first-boot archive and helper snapshot mounts fixed on mirror ad8dec9.
+- [x] Live telemetry/lifecycle audit, thinking probe, standard speed/review/long-context benchmarks.
+      90/90 speed/review requests and 5/5 long requests passed; no container restart.
+      Long context: 162659 tokens, 1880 input tok/s single, 1892 input tok/s at four submissions (full request wall, not output speed); head floor 15.36 GiB.
+      Review: off 4/5 in body; on 4/5 +1 partial, 12/15 empty bodies at 1600 tokens.
+- [x] Results in `results/qwen3.8-flash-next-single/`, report regenerated. Two-server pool deferred
+      by user; head only, left serving. Peak aggregate chat/code/essay/review/structured:
+      66.3 / 124.6 / 95.2 / 99.4 / 66.3 tok/s (thinking off).
+- [x] Fix long-context probe: unique prompts across legs; both thinking-off spellings. Gate: 80 passed.
+- [ ] Older deployments' long-context concurrent legs may replay the single-leg prompt. Those
+      historical numbers are retained, not retroactively rewritten; remeasure on a future switch.
+
+## Previous seven deployments
 
 | deployment | decode (5 scenarios) | long context | review content |
 |---|---|---|---|

@@ -1,0 +1,13 @@
+# qwen3.8-flash-next-single via http://192.168.0.100:8888/v1  ->  /Users/muo/.local/state/dgx-model/bench/20260920T090340+0000-qwen3.8-flash-next-single.json
+api:    http://192.168.0.100:8888/v1
+model:  qwen3.8-flash-next-single
+params: max_tokens=per-scenario prompt~512 tok thinking=True prompts=unique scenarios=review
+
+scenario    conc  reqs   wall_s  out_tok  aggregate  per-stream  ttft_p50  ttft_p95  lat_p50  reason_p50
+review/think    1     1    38.61     1600       41.4        41.8      0.36      0.36    38.61        1600
+review/think    2     2    46.65     3200       68.6        34.9      0.53      0.54    46.43        1600
+review/think    4     4    65.89     6167       93.6        25.4      0.92      0.92    61.45        1600
+review/think    8     8   131.95    12490       94.7        25.9     52.12     67.54    87.34        1600
+
+review      peak 94.7 tok/s at concurrency 8 (2.29x single), per-stream 41.8 -> 25.9
+wrote /Users/muo/.local/state/dgx-model/bench/20260920T090340+0000-qwen3.8-flash-next-single.json

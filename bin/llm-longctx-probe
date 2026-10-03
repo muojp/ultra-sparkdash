@@ -16,6 +16,7 @@ the number that matters is `prompt_tokens` in the reply, not the request.
 """
 import argparse
 import json
+import itertools
 import subprocess
 import threading
 import statistics
@@ -30,6 +31,7 @@ DEFAULT_API = "http://192.168.0.100:8888/v1"
 # Prompts must differ between runs as well as between requests: repeating a run against the same
 # server is answered from the prefix cache, and a 140k-token prefill then "takes" three seconds.
 RUN_SEED = int(time.time()) % 1_000_000
+REQUEST_SEEDS = itertools.count(RUN_SEED)
 DEFAULT_PROM = "http://localhost:9090"
 # Starting guess only; calibrate() replaces it per model. Tokenizers disagree by a lot on this
 # filler — the same request produced 116683 tokens on one model and 324625 on another — so a fixed
@@ -76,7 +78,7 @@ def ask(api, model, tokens, seed, thinking, timeout, out, idx, chars_per_token=N
     payload = {"model": model, "messages": [{"role": "user", "content": build_prompt(tokens, seed, chars_per_token)}],
                "max_tokens": 64, "temperature": 0}
     if thinking is False and not THINKING_UNSUPPORTED:
-        payload["chat_template_kwargs"] = {"thinking": False}
+        payload["chat_template_kwargs"] = {"thinking": False, "enable_thinking": False}
     t0 = time.time()
     try:
         d = http_json(api.rstrip("/") + "/chat/completions", payload, timeout=timeout)
@@ -84,7 +86,7 @@ def ask(api, model, tokens, seed, thinking, timeout, out, idx, chars_per_token=N
     except urllib.error.HTTPError as e:
         if e.code == 400 and "chat_template_kwargs" in json.dumps(payload) and not THINKING_UNSUPPORTED:
             THINKING_UNSUPPORTED.append(True)
-            print("# this model rejects chat_template_kwargs={'thinking': false}; continuing without it")
+            print("# this model rejects chat_template_kwargs with thinking disabled; continuing without it")
             return ask(api, model, tokens, seed, None, timeout, out, idx, chars_per_token)
         out[idx] = (0, time.time() - t0, "HTTP %s %s" % (e.code, str(e)[:140]))
     except Exception as e:  # noqa: BLE001 - any failure is a result here
@@ -163,7 +165,9 @@ def leg(label, apis, model, tokens, n, args, chars_per_token=None):
         sampler.__enter__()
     t0 = time.time()
     # Round-robin, so a single-node recipe run as one server per node is measured as the pool it is.
-    ts = [threading.Thread(target=ask, args=(apis[i % len(apis)], model, tokens, RUN_SEED + i,
+    # Each leg gets fresh request seeds: c=4 must not replay c=1 from prefix cache.
+    seeds = [next(REQUEST_SEEDS) for _ in range(n)]
+    ts = [threading.Thread(target=ask, args=(apis[i % len(apis)], model, tokens, seeds[i],
                                             args.thinking, args.timeout, outs, i, chars_per_token))
           for i in range(n)]
     for t in ts:
@@ -179,7 +183,7 @@ def leg(label, apis, model, tokens, n, args, chars_per_token=None):
     floor = mem_floor(args.prometheus, t0, time.time())
     if (not floor or "error" in floor) and sampler:
         floor = sampler.result()
-    print("%s: streams=%d prompt_tokens=%s wall=%.1fs prefill_aggregate=%.0f tok/s" % (
+    print("%s: streams=%d prompt_tokens=%s wall=%.1fs input_throughput=%.0f input_tok/s (end-to-end)" % (
         label, n, ok[0][0] if ok else 0, wall, (total / wall) if wall else 0))
     if len(ok) > 1:
         lat = sorted(o[1] for o in ok)
@@ -230,7 +234,11 @@ def main():
     if args.json_out:
         with open(args.json_out, "w") as f:
             json.dump({"api": args.api, "endpoints": apis, "model": model, "note": args.note, "max_model_len": limit,
-                       "requested_tokens": tokens, "rows": rows}, f, indent=2)
+                       "requested_tokens": tokens,
+                       "params": {"thinking": args.thinking,
+                                  "chat_template_kwargs": {"thinking": False, "enable_thinking": False}
+                                  if args.thinking is False and not THINKING_UNSUPPORTED else {},
+                                  "unique_prompts_across_legs": True}, "rows": rows}, f, indent=2)
         print("wrote %s" % args.json_out)
     return 0
 

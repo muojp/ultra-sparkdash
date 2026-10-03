@@ -1,0 +1,170 @@
+{
+ "checked_at": "2026-09-20T09:17:30+00:00",
+ "head": "dgx01",
+ "active": "qwen3.8-flash-next-single",
+ "api": {
+  "url": "http://192.168.0.100:8888",
+  "served": [
+   "qwen3.8-flash-next-single"
+  ]
+ },
+ "deployments": {
+  "deepseek-v4-flash": {
+   "head_containers": [],
+   "worker_containers": [],
+   "head_created": null,
+   "serving": false,
+   "lane": {
+    "model": "dgx-spark/deepseek-v4-flash-vision-exp",
+    "timeout_s": 1800,
+    "sessions": 4,
+    "price_input": 0.44,
+    "price_output": 1.32,
+    "price_cache_read": 0.014,
+    "extra": {}
+   }
+  },
+  "deepseek-v4.1-flash": {
+   "head_containers": [],
+   "worker_containers": [],
+   "head_created": null,
+   "serving": false,
+   "lane": {
+    "model": "dgx-spark/deepseek-v4.1-flash",
+    "timeout_s": 3600,
+    "sessions": 2,
+    "price_input": 0.44,
+    "price_output": 1.32,
+    "price_cache_read": 0.014,
+    "extra": {}
+   }
+  },
+  "glm-5.3-flash-bizuayeu": {
+   "head_containers": [],
+   "worker_containers": [],
+   "head_created": null,
+   "serving": false,
+   "lane": {
+    "model": "dgx-spark/glm-5.3-flash-bizuayeu",
+    "timeout_s": 3600,
+    "sessions": 2,
+    "price_input": 0.0,
+    "price_output": 0.0,
+    "price_cache_read": 0.0,
+    "extra": {
+     "chat_template_kwargs": {
+      "thinking": false
+     }
+    }
+   }
+  },
+  "glm-5.3-flash-himorishige": {
+   "head_containers": [],
+   "worker_containers": [],
+   "head_created": null,
+   "serving": false,
+   "lane": {
+    "model": "dgx-spark/glm-5.3-flash-himorishige",
+    "timeout_s": 3600,
+    "sessions": 2,
+    "price_input": 0.15,
+    "price_output": 0.5,
+    "price_cache_read": 0.03,
+    "extra": {}
+   }
+  },
+  "glm-5.3-flash-miaai": {
+   "head_containers": [],
+   "worker_containers": [],
+   "head_created": null,
+   "serving": false,
+   "lane": {
+    "model": "dgx-spark/glm-5.3-flash-miaai",
+    "timeout_s": 3600,
+    "sessions": 2,
+    "price_input": 0.0,
+    "price_output": 0.0,
+    "price_cache_read": 0.0,
+    "extra": {
+     "chat_template_kwargs": {
+      "thinking": false
+     }
+    }
+   }
+  },
+  "qwen3.8-27b-sglang": {
+   "head_containers": [],
+   "worker_containers": [],
+   "head_created": null,
+   "serving": false,
+   "lane": {
+    "model": "dgx-spark/qwen3.8-27b-sglang",
+    "timeout_s": 1800,
+    "sessions": 20,
+    "price_input": 0.0,
+    "price_output": 0.0,
+    "price_cache_read": 0.0,
+    "extra": {
+     "chat_template_kwargs": {
+      "enable_thinking": false
+     }
+    }
+   }
+  },
+  "qwen3.8-flash-next-single": {
+   "head_containers": [
+    "vllm-fn-single"
+   ],
+   "worker_containers": [],
+   "head_created": "2026-09-20 08:40:02 +0000 UTC",
+   "serving": true,
+   "lane": {
+    "model": "dgx-spark/qwen3.8-flash-next-single",
+    "timeout_s": 3600,
+    "sessions": 4,
+    "price_input": 0.0,
+    "price_output": 0.0,
+    "price_cache_read": 0.0,
+    "extra": {
+     "chat_template_kwargs": {
+      "enable_thinking": false
+     }
+    }
+   }
+  },
+  "qwen3.8-flash-next": {
+   "head_containers": [],
+   "worker_containers": [],
+   "head_created": null,
+   "serving": false,
+   "lane": {
+    "model": "dgx-spark/qwen3.8-flash-next",
+    "timeout_s": 3600,
+    "sessions": 2,
+    "price_input": 0.0,
+    "price_output": 0.0,
+    "price_cache_read": 0.0,
+    "extra": {
+     "chat_template_kwargs": {
+      "enable_thinking": false
+     }
+    }
+   }
+  }
+ },
+ "last_switch": {
+  "active": "qwen3.8-flash-next-single",
+  "since": "2026-09-20T08:54:24+00:00",
+  "previous": null,
+  "history": "/home/muo/.local/state/dgx-model/history/20260920-083922-qwen3.8-flash-next-single",
+  "lane": {
+   "model": "dgx-spark/qwen3.8-flash-next-single",
+   "timeout_s": 3600,
+   "sessions": 4,
+   "price_input": 0.0,
+   "price_output": 0.0,
+   "price_cache_read": 0.0,
+   "extra": {}
+  }
+ }
+}

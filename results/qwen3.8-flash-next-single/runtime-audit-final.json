@@ -1,0 +1,39 @@
+{
+  "checked_at": "2026-09-20T09:17:28.799299+00:00",
+  "container": "vllm-fn-single",
+  "image_id": "sha256:d464f3b466fa9c45ddbff8a812e80564503b6879a9fd95c1a47514f3f0df5a4a",
+  "image_reference": "vllm/vllm-openai@sha256:fc120ece0a388cc0aa1caad4a9f1cd92113484ab7ec2fd0efadd62585be05bf8",
+  "entrypoint": [
+    "vllm",
+    "serve"
+  ],
+  "running": true,
+  "restart_policy": {
+    "Name": "no",
+    "MaximumRetryCount": 0
+  },
+  "restart_count": 0,
+  "memory_limit_bytes": 107374182400,
+  "memory_swap_bytes": 107374182400,
+  "network_mode": "host",
+  "env": {
+    "VLLM_USE_V2_MODEL_RUNNER": "1",
+    "VLLM_NO_USAGE_STATS": "1",
+    "DO_NOT_TRACK": "1",
+    "WANDB_DISABLED": "true",
+    "TRANSFORMERS_OFFLINE": "1",
+    "HF_HUB_DISABLE_TELEMETRY": "1",
+    "HF_HUB_OFFLINE": "1",
+    "VLLM_USAGE_SOURCE": "production-docker-image"
+  },
+  "effective": {
+    "vllm_usage_enabled": false,
+    "hf_telemetry_disabled": true,
+    "hf_offline": true
+  },
+  "recipe_commit": "ad8dec90a0f0f04ffa02ded74eafebaf8722b24c",
+  "recipe_status": "",
+  "qwen_user_units": "",
+  "lifecycle_helpers": "",
+  "worker_inference_containers": ""
+}

@@ -10,7 +10,7 @@ row is one deployment in one reasoning mode, because a model asked for thinking 
 model asked for thinking off are two systems for a lane. Scored over every answer stored under
 `~/.local/state/dgx-model/bench/` by the same `score_answer` the HTML report uses — one scorer, two
 views — keeping each deployment's best attempt per case. `(reas.)` means the message body was empty
-and the finding was in the trace. Last updated 2026-09-19.
+and the finding was in the trace. Last updated 2026-09-20.
 
 | deployment · mode | discount<br>boundary | mass<br>assignment | wallet<br>lost update | cache<br>race | expiry<br>Any/All | found |
 |---|---|---|---|---|---|---|
@@ -28,6 +28,8 @@ and the finding was in the trace. Last updated 2026-09-19.
 | `qwen3.8-flash-next · nothink` | **missed** | **found** | **found** | **found** | **found** | **4/5** |
 | `qwen3.8-flash-next · nothink?` | **found** *(reas.)* | **found** *(reas.)* | **found** | **found** | **found** | **5/5** |
 | `qwen3.8-flash-next · think` | **missed** | **found** *(reas.)* | **found** *(reas.)* | **found** *(reas.)* | **found** | **4/5** |
+| `qwen3.8-flash-next-single · nothink` | **missed** | **found** | **found** | **found** | **found** | **4/5** |
+| `qwen3.8-flash-next-single · think` | partial 1/2 *(reas.)* | **found** *(reas.)* | **found** *(reas.)* | **found** *(reas.)* | **found** *(reas.)* | **4/5** +1p |
 
 `partial n/2` is the symptom without the cause: the case's second signal hit and the first did not.
 `+1p` counts those; they are not folded into the score, because a deployment that never named the
@@ -102,3 +104,18 @@ What it is enough for: choosing what a review lane runs, and what `[lane].extra`
 deployment's value there comes from `dgx-model thinking` against that deployment while it was
 serving, not from its model family: of the three GLM kits one honours `thinking`, one ignores every
 spelling, and the fastest deployment in the fleet reports its trace only as usage tokens.
+
+## Single-Spark addition (2026-09-20)
+
+`qwen3.8-flash-next-single` was measured on dgx01 only, stock Mia-AiLab NVFP4, TP=1,
+MTP=3, max_num_seqs=4, native 262k, FP8 KV. Thinking-off uses the probed
+`enable_thinking=false` spelling; all 15 review answers have a body and finish normally.
+Thinking-on has 12/15 empty bodies and 13/15 length-limited answers at the same 1600-token budget.
+The table shows the scorer's chosen best attempt per case; it does not mean every on-mode
+answer is trace-only (two wallet answers and one expiry answer had bodies).
+
+The threshold case remains missed with thinking off and partial with thinking on. Manual
+inspection also found a false positive about a missing Controller import in an off-mode
+Laravel answer (Controller is already in that namespace), and an off-mode C# response that
+claims a namespace typo then retracts it. The signal score does not penalize these extras.
+Raw answers and the full conditions are in `results/qwen3.8-flash-next-single/`.

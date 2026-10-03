@@ -24,3 +24,7 @@
 [submodule "GLM-5.3-Flash-EXL3-2x-DGX-Sparks"]
 	path = GLM-5.3-Flash-EXL3-2x-DGX-Sparks
 	url = https://github.com/muojp/GLM-5.3-Flash-EXL3-2x-DGX-Sparks.git
+[submodule "Qwen3.8-Flash-Next-Single-DGX-Spark"]
+	path = Qwen3.8-Flash-Next-Single-DGX-Spark
+	url = https://github.com/muojp/Qwen3.8-Flash-Next-Single-DGX-Spark.git
+	branch = feat/dgx-spark-pair-ops

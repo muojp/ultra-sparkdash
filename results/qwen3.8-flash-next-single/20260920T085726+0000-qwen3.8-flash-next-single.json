@@ -1,0 +1,626 @@
+{
+  "api": "http://192.168.0.100:8888/v1",
+  "endpoints": [
+    "http://192.168.0.100:8888/v1"
+  ],
+  "model": "qwen3.8-flash-next-single",
+  "note": "Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.",
+  "finished_at": "2026-09-20T09:02:45Z",
+  "params": {
+    "max_tokens": 0,
+    "scenarios": [
+      "chat",
+      "code",
+      "essay",
+      "review",
+      "structured"
+    ],
+    "thinking_modes": null,
+    "reasoning_efforts": null,
+    "prompt_tokens": 512,
+    "thinking": false,
+    "thinking_off_kwargs": {
+      "thinking": false,
+      "enable_thinking": false
+    },
+    "shared_prefix": false
+  },
+  "rows": [
+    {
+      "scenario": "chat",
+      "thinking": false,
+      "reasoning_effort": null,
+      "answers": [],
+      "concurrency": 1,
+      "endpoints": {
+        "http://192.168.0.100:8888/v1": 150
+      },
+      "requests": 1,
+      "failed": 0,
+      "wall_s": 4.06,
+      "output_tokens": 150,
+      "aggregate_tok_s": 37.0,
+      "per_stream_tok_s": 43.3,
+      "ttft_p50_s": 0.59,
+      "ttft_p95_s": 0.59,
+      "latency_p50_s": 4.05,
+      "prompt_tokens": 854,
+      "cached_tokens_p50": 0,
+      "reasoning_tokens_p50": 0,
+      "finish_reasons": [
+        "stop"
+      ]
+    },
+    {
+      "scenario": "chat",
+      "thinking": false,
+      "reasoning_effort": null,
+      "answers": [],
+      "concurrency": 2,
+      "endpoints": {
+        "http://192.168.0.100:8888/v1": 269
+      },
+      "requests": 2,
+      "failed": 0,
+      "wall_s": 5.31,
+      "output_tokens": 269,
+      "aggregate_tok_s": 50.6,
+      "per_stream_tok_s": 32.1,
+      "ttft_p50_s": 0.98,
+      "ttft_p95_s": 0.98,
+      "latency_p50_s": 5.18,
+      "prompt_tokens": 854,
+      "cached_tokens_p50": 0,
+      "reasoning_tokens_p50": 0,
+      "finish_reasons": [
+        "stop"
+      ]
+    },
+    {
+      "scenario": "chat",
+      "thinking": false,
+      "reasoning_effort": null,
+      "answers": [],
+      "concurrency": 4,
+      "endpoints": {
+        "http://192.168.0.100:8888/v1": 322
+      },
+      "requests": 4,
+      "failed": 0,
+      "wall_s": 5.8,
+      "output_tokens": 322,
+      "aggregate_tok_s": 55.5,
+      "per_stream_tok_s": 26.5,
+      "ttft_p50_s": 2.66,
+      "ttft_p95_s": 2.66,
+      "latency_p50_s": 5.66,
+      "prompt_tokens": 854,
+      "cached_tokens_p50": 0,
+      "reasoning_tokens_p50": 0,
+      "finish_reasons": [
+        "stop"
+      ]
+    },
+    {
+      "scenario": "chat",
+      "thinking": false,
+      "reasoning_effort": null,
+      "answers": [],
+      "concurrency": 8,
+      "endpoints": {
+        "http://192.168.0.100:8888/v1": 995
+      },
+      "requests": 8,
+      "failed": 0,
+      "wall_s": 15.01,
+      "output_tokens": 995,
+      "aggregate_tok_s": 66.3,
+      "per_stream_tok_s": 22.4,
+      "ttft_p50_s": 5.5,
+      "ttft_p95_s": 11.1,
+      "latency_p50_s": 10.97,
+      "prompt_tokens": 854,
+      "cached_tokens_p50": 0,
+      "reasoning_tokens_p50": 0,
+      "finish_reasons": [
+        "stop"
+      ]
+    },
+    {
+      "scenario": "code",
+      "thinking": false,
+      "reasoning_effort": null,
+      "answers": [],
+      "concurrency": 1,
+      "endpoints": {
+        "http://192.168.0.100:8888/v1": 319
+      },
+      "requests": 1,
+      "failed": 0,
+      "wall_s": 6.89,
+      "output_tokens": 319,
+      "aggregate_tok_s": 46.3,
+      "per_stream_tok_s": 57.4,
+      "ttft_p50_s": 1.33,
+      "ttft_p95_s": 1.33,
+      "latency_p50_s": 6.89,
+      "prompt_tokens": 861,
+      "cached_tokens_p50": 0,
+      "reasoning_tokens_p50": 0,
+      "finish_reasons": [
+        "stop"
+      ]
+    },
+    {
+      "scenario": "code",
+      "thinking": false,
+      "reasoning_effort": null,
+      "answers": [],
+      "concurrency": 2,
+      "endpoints": {
+        "http://192.168.0.100:8888/v1": 661
+      },
+      "requests": 2,
+      "failed": 0,
+      "wall_s": 7.81,
+      "output_tokens": 661,
+      "aggregate_tok_s": 84.6,
+      "per_stream_tok_s": 48.6,
+      "ttft_p50_s": 0.98,
+      "ttft_p95_s": 0.98,
+      "latency_p50_s": 7.78,
+      "prompt_tokens": 861,
+      "cached_tokens_p50": 0,
+      "reasoning_tokens_p50": 0,
+      "finish_reasons": [
+        "stop"
+      ]
+    },
+    {
+      "scenario": "code",
+      "thinking": false,
+      "reasoning_effort": null,
+      "answers": [],
+      "concurrency": 4,
+      "endpoints": {
+        "http://192.168.0.100:8888/v1": 1261
+      },
+      "requests": 4,
+      "failed": 0,
+      "wall_s": 10.28,
+      "output_tokens": 1261,
+      "aggregate_tok_s": 122.6,
+      "per_stream_tok_s": 39.6,
+      "ttft_p50_s": 1.84,
+      "ttft_p95_s": 1.85,
+      "latency_p50_s": 9.7,
+      "prompt_tokens": 861,
+      "cached_tokens_p50": 0,
+      "reasoning_tokens_p50": 0,
+      "finish_reasons": [
+        "stop"
+      ]
+    },
+    {
+      "scenario": "code",
+      "thinking": false,
+      "reasoning_effort": null,
+      "answers": [],
+      "concurrency": 8,
+      "endpoints": {
+        "http://192.168.0.100:8888/v1": 2603
+      },
+      "requests": 8,
+      "failed": 0,
+      "wall_s": 20.89,
+      "output_tokens": 2603,
+      "aggregate_tok_s": 124.6,
+      "per_stream_tok_s": 36.3,
+      "ttft_p50_s": 11.33,
+      "ttft_p95_s": 12.49,
+      "latency_p50_s": 16.14,
+      "prompt_tokens": 861,
+      "cached_tokens_p50": 0,
+      "reasoning_tokens_p50": 0,
+      "finish_reasons": [
+        "stop"
+      ]
+    },
+    {
+      "scenario": "essay",
+      "thinking": false,
+      "reasoning_effort": null,
+      "answers": [],
+      "concurrency": 1,
+      "endpoints": {
+        "http://192.168.0.100:8888/v1": 900
+      },
+      "requests": 1,
+      "failed": 0,
+      "wall_s": 24.7,
+      "output_tokens": 900,
+      "aggregate_tok_s": 36.4,
+      "per_stream_tok_s": 37.4,
+      "ttft_p50_s": 0.67,
+      "ttft_p95_s": 0.67,
+      "latency_p50_s": 24.7,
+      "prompt_tokens": 852,
+      "cached_tokens_p50": 0,
+      "reasoning_tokens_p50": 0,
+      "finish_reasons": [
+        "length"
+      ]
+    },
+    {
+      "scenario": "essay",
+      "thinking": false,
+      "reasoning_effort": null,
+      "answers": [],
+      "concurrency": 2,
+      "endpoints": {
+        "http://192.168.0.100:8888/v1": 1664
+      },
+      "requests": 2,
+      "failed": 0,
+      "wall_s": 27.74,
+      "output_tokens": 1664,
+      "aggregate_tok_s": 60.0,
+      "per_stream_tok_s": 31.6,
+      "ttft_p50_s": 0.95,
+      "ttft_p95_s": 0.95,
+      "latency_p50_s": 27.25,
+      "prompt_tokens": 852,
+      "cached_tokens_p50": 0,
+      "reasoning_tokens_p50": 0,
+      "finish_reasons": [
+        "stop"
+      ]
+    },
+    {
+      "scenario": "essay",
+      "thinking": false,
+      "reasoning_effort": null,
+      "answers": [],
+      "concurrency": 4,
+      "endpoints": {
+        "http://192.168.0.100:8888/v1": 3487
+      },
+      "requests": 4,
+      "failed": 0,
+      "wall_s": 36.62,
+      "output_tokens": 3487,
+      "aggregate_tok_s": 95.2,
+      "per_stream_tok_s": 25.2,
+      "ttft_p50_s": 1.82,
+      "ttft_p95_s": 1.82,
+      "latency_p50_s": 36.5,
+      "prompt_tokens": 852,
+      "cached_tokens_p50": 0,
+      "reasoning_tokens_p50": 0,
+      "finish_reasons": [
+        "length",
+        "stop"
+      ]
+    },
+    {
+      "scenario": "essay",
+      "thinking": false,
+      "reasoning_effort": null,
+      "answers": [],
+      "concurrency": 8,
+      "endpoints": {
+        "http://192.168.0.100:8888/v1": 6849
+      },
+      "requests": 8,
+      "failed": 0,
+      "wall_s": 75.17,
+      "output_tokens": 6849,
+      "aggregate_tok_s": 91.1,
+      "per_stream_tok_s": 24.3,
+      "ttft_p50_s": 34.99,
+      "ttft_p95_s": 40.25,
+      "latency_p50_s": 55.22,
+      "prompt_tokens": 852,
+      "cached_tokens_p50": 0,
+      "reasoning_tokens_p50": 0,
+      "finish_reasons": [
+        "length",
+        "stop"
+      ]
+    },
+    {
+      "scenario": "review",
+      "thinking": false,
+      "reasoning_effort": null,
+      "answers": [
+        {
+          "case": "php-discount-logic",
+          "text": "The method returns a `float`, but since the input is an integer representing yen (which has no sub-unit precision), returning a float can lead to floating-point precision errors and type mismatches when the result is used in further integer-based calculations or stored in an integer column. You should cast the result to `int` to ensure the return type matches the domain expectation of whole yen.\n\n```php\n<?php\n\nnamespace App\\Services;\n\nclass DiscountService\n{\n    /** Order totals are in yen (integer). Returns the discounted total. */\n    public function apply(int $totalYen, bool $isMember): int\n    {\n        $rate = 0.0;\n\n        if ($totalYen > 10000) {\n            $rate = 0.10;\n        } elseif ($totalYen >= 5000) {\n            $rate = 0.05;\n        }\n\n        if ($isMember) {\n            $rate += 0.05;\n        }\n\n        return (int) ($totalYen - ($totalYen * $rate));\n    }\n}\n```",
+          "reasoning": "",
+          "finish": "stop"
+        }
+      ],
+      "concurrency": 1,
+      "endpoints": {
+        "http://192.168.0.100:8888/v1": 247
+      },
+      "requests": 1,
+      "failed": 0,
+      "wall_s": 5.65,
+      "output_tokens": 247,
+      "aggregate_tok_s": 43.7,
+      "per_stream_tok_s": 47.2,
+      "ttft_p50_s": 0.41,
+      "ttft_p95_s": 0.41,
+      "latency_p50_s": 5.65,
+      "prompt_tokens": 226,
+      "cached_tokens_p50": 0,
+      "reasoning_tokens_p50": 0,
+      "finish_reasons": [
+        "stop"
+      ]
+    },
+    {
+      "scenario": "review",
+      "thinking": false,
+      "reasoning_effort": null,
+      "answers": [
+        {
+          "case": "laravel-missing-validation",
+          "text": "The code has a critical security vulnerability because it uses `$request->all()` to fill the user model, which allows mass assignment of any field present in the request (including sensitive fields like `is_admin` or `password`) if they are not explicitly guarded in the User model. Additionally, the method signature `update(Request $request, int $id)` is incorrect for Laravel's resource controller conventions; the ID should typically be the first parameter or the method should rely on route model binding, and more importantly, the `Controller` base class is not imported.\n\nHere is the corrected code with proper imports, explicit validation, and safe mass assignment:\n\n```php\n<?php\n\nnamespace App\\Http\\Controllers;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Models\\User;\nuse Illuminate\\Http\\Request;\n\nclass ProfileController extends Controller\n{\n    public function update(Request $request, int $id)\n    {\n        $user = User::findOrFail($id);\n\n        // Validate and only allow specific fields to be updated\n        $validated = $request->validate([\n            'name' => 'sometimes|string|max:255',\n            'email' => 'sometimes|email|unique:users,email,' . $id,\n            // Add other allowed fields here\n        ]);\n\n        $user->fill($validated);\n        $user->save();\n\n        return response()->json(['ok' => true, 'user' => $user]);\n    }\n}\n```",
+          "reasoning": "",
+          "finish": "stop"
+        },
+        {
+          "case": "laravel-balance-race",
+          "text": "The code is vulnerable to race conditions and lacks null safety. `Account::find()` can return `null`, causing a fatal error on the next line, and the check-then-update pattern is not atomic, meaning concurrent requests could both pass the balance check and overdraw the account.\n\n```php\n<?php\n\nnamespace App\\Services;\n\nuse App\\Models\\Account;\nuse Illuminate\\Support\\Facades\\DB;\n\nclass WalletService\n{\n    public function withdraw(int $accountId, int $amountYen): bool\n    {\n        return DB::transaction(function () use ($accountId, $amountYen) {\n            $account = Account::where('id', $accountId)->lockForUpdate()->first();\n\n            if (!$account || $account->balance_yen < $amountYen) {\n                return false;\n            }\n\n            $account->balance_yen -= $amountYen;\n            $account->save();\n\n            return true;\n        });\n    }\n}\n```",
+          "reasoning": "",
+          "finish": "stop"
+        }
+      ],
+      "concurrency": 2,
+      "endpoints": {
+        "http://192.168.0.100:8888/v1": 515
+      },
+      "requests": 2,
+      "failed": 0,
+      "wall_s": 8.43,
+      "output_tokens": 515,
+      "aggregate_tok_s": 61.1,
+      "per_stream_tok_s": 38.5,
+      "ttft_p50_s": 0.45,
+      "ttft_p95_s": 0.45,
+      "latency_p50_s": 7.15,
+      "prompt_tokens": 163,
+      "cached_tokens_p50": 0,
+      "reasoning_tokens_p50": 0,
+      "finish_reasons": [
+        "stop"
+      ]
+    },
+    {
+      "scenario": "review",
+      "thinking": false,
+      "reasoning_effort": null,
+      "answers": [
+        {
+          "case": "csharp-cache-race",
+          "text": "The code has a race condition because `Dictionary<TKey, TValue>` is not thread-safe, and concurrent calls to `GetRateAsync` can lead to data corruption or exceptions when multiple threads attempt to read and write to `_rates` simultaneously. This matters because it can cause unpredictable behavior, crashes, or incorrect cached values in a multi-threaded environment.\n\nTo fix this, replace `Dictionary` with `ConcurrentDictionary` and use `GetOrAdd` to ensure atomic check-and-set operations.\n\n```csharp\nusing System;\nusing System.Collections.Concurrent;\nusing System.Threading.Tasks;\n\npublic sealed class RateCache\n{\n    private readonly ConcurrentDictionary<string, decimal> _rates = new();\n    private readonly IRateApi _api;\n\n    public RateCache(IRateApi api) => _api = api;\n\n    public async Task<decimal> GetRateAsync(string pair)\n    {\n        return await _rates.GetOrAddAsync(pair, async key =>\n        {\n            return await _api.FetchAsync(key);\n        });\n    }\n}\n```",
+          "reasoning": "",
+          "finish": "stop"
+        },
+        {
+          "case": "csharp-expiry-logic",
+          "text": "There are two significant issues in this code. First, the `IsStillValid` method uses `Any` instead of `All`, which means it returns `true` if *at least one* item is valid, rather than checking if *every* item is valid as the documentation claims. Second, the method uses `DateTime.Now` (local time) to compare against `ExpiresAtUtc` (UTC time), which will cause incorrect results for users in non-UTC time zones.\n\n```csharp\nusing System;\nusing System.Collections.Generic;\nusing System.Linq;\n\npublic sealed class Basket\n{\n    public required IReadOnlyList<Reservation> Items { get; init; }\n\n    /// <summary>True when every reservation in the basket is still valid.</summary>\n    public bool IsStillValid()\n    {\n        return Items.All(item => item.ExpiresAtUtc > DateTime.UtcNow);\n    }\n}\n\npublic sealed record Reservation(string Sku, DateTime ExpiresAtUtc);\n```",
+          "reasoning": "",
+          "finish": "stop"
+        },
+        {
+          "case": "php-discount-logic",
+          "text": "The return type is declared as `float`, but since the input is an integer representing yen (which has no fractional units), returning a float can lead to precision issues or unexpected types downstream. It is better to return an `int` and ensure the calculation results in a whole number, typically by rounding or flooring the discount amount before subtraction.\n\n```php\n<?php\n\nnamespace App\\Services;\n\nclass DiscountService\n{\n    /** Order totals are in yen (integer). Returns the discounted total. */\n    public function apply(int $totalYen, bool $isMember): int\n    {\n        $rate = 0.0;\n\n        if ($totalYen > 10000) {\n            $rate = 0.10;\n        } elseif ($totalYen >= 5000) {\n            $rate = 0.05;\n        }\n\n        if ($isMember) {\n            $rate += 0.05;\n        }\n\n        $discount = (int) round($totalYen * $rate);\n        return $totalYen - $discount;\n    }\n}\n```",
+          "reasoning": "",
+          "finish": "stop"
+        },
+        {
+          "case": "laravel-missing-validation",
+          "text": "The code is vulnerable to mass assignment attacks because `$request->all()` passes all input fields to `fill()`, allowing attackers to modify sensitive attributes like `is_admin` or `password` if they are not explicitly excluded. Additionally, the controller extends `Controller` without importing it, which will cause a fatal error.\n\n```php\n<?php\n\nnamespace App\\Http\\Controllers;\n\nuse App\\Models\\User;\nuse Illuminate\\Http\\Request;\nuse App\\Http\\Controllers\\Controller; // Add this import\n\nclass ProfileController extends Controller\n{\n    public function update(Request $request, int $id)\n    {\n        $user = User::findOrFail($id);\n        \n        // Validate and only fill allowed fields\n        $validated = $request->validate([\n            'name' => 'sometimes|string|max:255',\n            'email' => 'sometimes|email|unique:users,email,' . $id,\n            // Add other allowed fields here\n        ]);\n\n        $user->fill($validated);\n        $user->save();\n\n        return response()->json(['ok' => true, 'user' => $user]);\n    }\n}\n```",
+          "reasoning": "",
+          "finish": "stop"
+        }
+      ],
+      "concurrency": 4,
+      "endpoints": {
+        "http://192.168.0.100:8888/v1": 921
+      },
+      "requests": 4,
+      "failed": 0,
+      "wall_s": 9.26,
+      "output_tokens": 921,
+      "aggregate_tok_s": 99.4,
+      "per_stream_tok_s": 29.2,
+      "ttft_p50_s": 0.66,
+      "ttft_p95_s": 0.66,
+      "latency_p50_s": 8.81,
+      "prompt_tokens": 199,
+      "cached_tokens_p50": 0,
+      "reasoning_tokens_p50": 0,
+      "finish_reasons": [
+        "stop"
+      ]
+    },
+    {
+      "scenario": "review",
+      "thinking": false,
+      "reasoning_effort": null,
+      "answers": [
+        {
+          "case": "laravel-balance-race",
+          "text": "There are two critical issues with this code. First, the `find` method can return `null` if the account does not exist, which will cause a fatal error when accessing `$account->balance_yen`. Second, the balance check and update are not atomic, creating a race condition where concurrent requests could allow overdrafts.\n\nHere is the corrected code using a transaction and a lock to ensure data integrity:\n\n```php\n<?php\n\nnamespace App\\Services;\n\nuse App\\Models\\Account;\nuse Illuminate\\Support\\Facades\\DB;\n\nclass WalletService\n{\n    public function withdraw(int $accountId, int $amountYen): bool\n    {\n        return DB::transaction(function () use ($accountId, $amountYen) {\n            // Lock the row to prevent race conditions\n            $account = Account::where('id', $accountId)->lockForUpdate()->first();\n\n            if (!$account || $account->balance_yen < $amountYen) {\n                return false;\n            }\n\n            $account->balance_yen -= $amountYen;\n            $account->save();\n\n            return true;\n        });\n    }\n}\n```",
+          "reasoning": "",
+          "finish": "stop"
+        },
+        {
+          "case": "csharp-cache-race",
+          "text": "The code has a critical thread-safety issue: `Dictionary<TKey, TValue>` is not thread-safe, so concurrent calls to `GetRateAsync` can cause data corruption or exceptions when multiple threads read/write simultaneously. Additionally, there is a \"thundering herd\" problem where multiple concurrent requests for the same uncached pair will all hit the API instead of waiting for the first one to complete.\n\nTo fix this, use `ConcurrentDictionary` (via `System.Collections.Concurrent`) or a `ConcurrentDictionary`-like pattern with `Lazy<Task<decimal>>` to ensure only one fetch happens per key and that access is thread-safe.\n\n```csharp\nusing System;\nusing System.Collections.Concurrent;\nusing System.Threading.Tasks;\n\npublic sealed class RateCache\n{\n    private readonly ConcurrentDictionary<string, Task<decimal>> _rates = new();\n    private readonly IRateApi _api;\n\n    public RateCache(IRateApi api) => _api = api;\n\n    public async Task<decimal> GetRateAsync(string pair)\n    {\n        var task = _rates.GetOrAdd(pair, key => _api.FetchAsync(key));\n        return await task;\n    }\n}\n```\n\n*Note: `ConcurrentDictionary` is not in the standard .NET BCL. If you are using .NET 6+, you can use `System.Collections.Concurrent.ConcurrentDictionary` from the `System.Collections.Concurrent` NuGet package, or implement a thread-safe cache using `ConcurrentDictionary<string, Lazy<Task<decimal>>>` with `LazyThreadSafe` mode, or use `MemoryCache` with `GetOrCreate`.*\n\nA more standard-library-friendly approach using `ConcurrentDictionary` from `System.Collections.Concurrent` (if available) or a manual lock-free pattern with `ConcurrentDictionary<string, Task<decimal>>` requires care. Here is a robust version using `ConcurrentDictionary` from the `System.Collections.Concurrent` NuGet package (which is commonly used):\n\n```csharp\nusing System;\nusing System.Collections.Concurrent;\nusing System.Threading.Tasks;\n\npublic sealed class RateCache\n{\n    private readonly ConcurrentDictionary<string, Task<decimal>> _rates = new();\n    private readonly IRateApi _api;\n\n    public RateCache(IRateApi api) => _api = api;\n\n    public async Task<decimal> GetRateAsync(string pair)\n    {\n        // GetOrAdd is not available in ConcurrentDictionary by default.\n        // We need to use a different approach.\n        // Let's use a lock-free pattern with ConcurrentDictionary and TryGetValue/AddOrUpdate.\n        \n        if (_rates.TryGetValue(pair, out var existingTask))\n        {\n            return await existingTask;\n        }\n\n        var newTask = _api.FetchAsync(pair);\n        // AddOrUpdate ensures only one task is stored per key\n        var storedTask = _rates.AddOrUpdate(pair, newTask, (k, old) => old);\n        \n        // If another thread added a task first, we might have created an extra task.\n        // To avoid this, we should use a Lazy<Task<decimal>> pattern.\n        \n        return await storedTask;\n    }\n}\n```\n\nActually, the cleanest standard approach without external packages is to use `ConcurrentDictionary<string, Lazy<Task<decimal>>>`:\n\n```csharp\nusing System;\nusing System.Collections.Concurrent;\nusing System.Threading.Tasks;\n\npublic sealed class RateCache\n{\n    private readonly ConcurrentDictionary<string, Lazy<Task<decimal>>> _rates = new();\n    private readonly IRateApi _api;\n\n    public RateCache(IRateApi api) => _api = api;\n\n    public async Task<decimal> GetRateAsync(string pair)\n    {\n        var lazyTask = _rates.GetOrAdd(pair, key => new Lazy<Task<decimal>>(() => _api.FetchAsync(key), LazyThreadSafeMode.ExecutionAndPublication));\n        return await lazyTask.Value;\n    }\n}\n```\n\n*Correction: `GetOrAdd` is not a method on `ConcurrentDictionary`. The correct method is `GetOrAdd` in some extensions or we must use `TryGetValue` and `TryAdd`.*\n\nHere is the correct, standard-library-only implementation:\n\n```csharp\nusing System;\nusing System.Collections.Concurrent;\nusing System.Threading.Tasks;\n\npublic sealed class RateCache\n{\n    private readonly ConcurrentDictionary<string, Lazy<Task<decimal>>> _rates = new();\n    private readonly IRateApi _api;\n\n    public RateCache(IRateApi api) => _api = api;\n\n    public async Task<decimal> GetRateAsync(string pair)\n    {\n        if (!_rates.TryGetValue(pair, out var lazyTask))\n        {\n            var newLazy = new Lazy<Task<decimal>>(() => _api.FetchAsync(pair), LazyThreadSafeMode.ExecutionAndPublication);\n            lazyTask = _rates.GetOrAdd(pair, newLazy);\n        }\n        return await lazyTask.Value;\n    }\n}\n```\n\n*Wait, `GetOrAdd` is still not standard. Let's use the correct pattern:*\n\n```csharp\nusing System;\nusing System.Collections.Concurrent;\nusing System.Threading.Tasks;\n\npublic sealed class RateCache\n{\n    private readonly ConcurrentDictionary<string, Lazy<Task<decimal>>> _rates = new();\n    private readonly IRateApi _api;\n\n    public RateCache(IRateApi api) => _api = api;\n\n    public async Task<decimal> GetRateAsync(string pair)\n    {\n        if (!_rates.TryGetValue(pair, out var lazyTask))\n        {\n            var newLazy = new Lazy<Task<decimal>>(() => _api.FetchAsync(pair), LazyThreadSafeMode.ExecutionAndPublication);\n            if (!_rates.TryAdd(pair, newLazy))\n            {\n                // Another thread added it first, get the existing one\n                _rates.TryGetValue(pair, out lazyTask);\n            }\n            else\n            {\n                lazyTask = newLazy;\n            }\n        }\n        return await lazyTask.Value;\n    }\n}\n```",
+          "reasoning": "",
+          "finish": "stop"
+        },
+        {
+          "case": "csharp-expiry-logic",
+          "text": "This code contains a critical logic error and a namespace typo. The `IsStillValid` method uses `Any`, which returns `true` if *at least one* item is valid, whereas the documentation and method name imply that *all* items must be valid (which requires `All`). Additionally, the namespace `System.Collections.Generic` is incorrect; it should be `System.Collections.Generic` is actually correct, but wait, let me double check. `System.Collections.Generic` is correct. Let me re-read. Ah, `System.Collections.Generic` is correct. Is there another issue? `DateTime.Now` is local time, but the property is `ExpiresAtUtc`. Comparing UTC time to local time is a bug. It should be `DateTime.UtcNow`.\n\nHere are the issues:\n1. **Logic Error**: `Any` checks if *any* item is valid, but the summary says \"every reservation... is still valid\". This should be `All`.\n2. **Time Zone Bug**: Comparing `ExpiresAtUtc` (UTC) with `DateTime.Now` (Local) is incorrect. It should be `DateTime.UtcNow`.\n\n```csharp\nusing System;\nusing System.Collections.Generic;\nusing System.Linq;\n\npublic sealed class Basket\n{\n    public required IReadOnlyList<Reservation> Items { get; init; }\n\n    /// <summary>True when every reservation in the basket is still valid.</summary>\n    public bool IsStillValid()\n    {\n        return Items.All(item => item.ExpiresAtUtc > DateTime.UtcNow);\n    }\n}\n\npublic sealed record Reservation(string Sku, DateTime ExpiresAtUtc);\n```",
+          "reasoning": "",
+          "finish": "stop"
+        },
+        {
+          "case": "php-discount-logic",
+          "text": "The primary issue is the return type declaration. The method is annotated to return a `float`, but since `$totalYen` is an integer and the calculation involves integer arithmetic (unless `$rate` forces float conversion, which it does, but the intent of \"yen\" usually implies integer precision or specific rounding), returning a raw float can lead to floating-point precision errors in financial calculations. More importantly, if the intention is to return a clean integer value (as is common with currency in minor units like yen), the return type should be `int` and the result should be rounded or cast appropriately to avoid floating-point artifacts.\n\nAdditionally, while not strictly a bug, using floats for currency calculations is generally discouraged due to precision issues; however, given the constraints of the existing code structure, the most immediate fix is aligning the return type with the expected output format for currency (integer) or ensuring proper rounding if float is truly intended. Given the comment \"Order totals are in yen (integer)\", returning a float is inconsistent with the domain model.\n\nHere is the corrected code, changing the return type to `int` and ensuring the result is rounded to the nearest integer to maintain precision integrity for currency values:\n\n```php\n<?php\n\nnamespace App\\Services;\n\nclass DiscountService\n{\n    /** Order totals are in yen (integer). Returns the discounted total. */\n    public function apply(int $totalYen, bool $isMember): int\n    {\n        $rate = 0.0;\n\n        if ($totalYen > 10000) {\n            $rate = 0.10;\n        } elseif ($totalYen >= 5000) {\n            $rate = 0.05;\n        }\n\n        if ($isMember) {\n            $rate += 0.05;\n        }\n\n        return (int) round($totalYen - ($totalYen * $rate));\n    }\n}\n```",
+          "reasoning": "",
+          "finish": "stop"
+        },
+        {
+          "case": "laravel-missing-validation",
+          "text": "This code has a critical security vulnerability known as Mass Assignment. By using `$request->all()` with `fill()`, you allow attackers to modify any database column, including sensitive fields like `is_admin` or `password`, which can lead to privilege escalation or account takeover.\n\nYou should always validate and whitelist the specific fields you intend to update.\n\n```php\n<?php\n\nnamespace App\\Http\\Controllers;\n\nuse App\\Models\\User;\nuse Illuminate\\Http\\Request;\n\nclass ProfileController extends Controller\n{\n    public function update(Request $request, int $id)\n    {\n        $user = User::findOrFail($id);\n        \n        // Validate and whitelist only the fields you want to update\n        $validated = $request->validate([\n            'name' => 'sometimes|string|max:255',\n            'email' => 'sometimes|email|unique:users,email,' . $id,\n        ]);\n\n        $user->fill($validated);\n        $user->save();\n\n        return response()->json(['ok' => true, 'user' => $user]);\n    }\n}\n```",
+          "reasoning": "",
+          "finish": "stop"
+        },
+        {
+          "case": "laravel-balance-race",
+          "text": "This code has two critical issues: it lacks a null check for the account, which will cause a fatal error if the ID doesn't exist, and it is not atomic, creating a race condition where concurrent withdrawals could result in a negative balance. To fix this, you should use `findOrFail` to handle missing accounts and wrap the logic in a database transaction with a row lock (`lockForUpdate`) to ensure the balance check and update happen atomically.\n\n```php\n<?php\n\nnamespace App\\Services;\n\nuse App\\Models\\Account;\nuse Illuminate\\Support\\Facades\\DB;\n\nclass WalletService\n{\n    public function withdraw(int $accountId, int $amountYen): bool\n    {\n        return DB::transaction(function () use ($accountId, $amountYen) {\n            $account = Account::where('id', $accountId)->lockForUpdate()->first();\n\n            if (!$account) {\n                return false;\n            }\n\n            if ($account->balance_yen < $amountYen) {\n                return false;\n            }\n\n            $account->balance_yen = $account->balance_yen - $amountYen;\n            $account->save();\n\n            return true;\n        });\n    }\n}\n```",
+          "reasoning": "",
+          "finish": "stop"
+        },
+        {
+          "case": "csharp-cache-race",
+          "text": "The `Dictionary<TKey, TValue>` is not thread-safe, so concurrent calls to `GetRateAsync` can cause race conditions, data corruption, or exceptions when multiple threads attempt to read and write to `_rates` simultaneously. This is critical for a cache intended for async/concurrent use.\n\nReplace `Dictionary` with `ConcurrentDictionary` and use `GetOrAdd` to ensure atomic check-and-set operations:\n\n```csharp\nusing System;\nusing System.Collections.Concurrent;\nusing System.Threading.Tasks;\n\npublic sealed class RateCache\n{\n    private readonly ConcurrentDictionary<string, decimal> _rates = new();\n    private readonly IRateApi _api;\n\n    public RateCache(IRateApi api) => _api = api;\n\n    public async Task<decimal> GetRateAsync(string pair)\n    {\n        return await _rates.GetOrAdd(pair, async key => await _api.FetchAsync(key));\n    }\n}\n```",
+          "reasoning": "",
+          "finish": "stop"
+        },
+        {
+          "case": "csharp-expiry-logic",
+          "text": "There are two issues in this code. First, the `IsStillValid` method uses `Any`, which returns `true` if *at least one* item is valid, but the documentation and method name imply that *all* items must be valid; this should use `All` instead. Second, `DateTime.Now` is local time and can cause bugs across time zones or daylight saving changes; since the property is named `ExpiresAtUtc`, it should be compared against `DateTime.UtcNow`.\n\n```csharp\nusing System;\nusing System.Collections.Generic;\nusing System.Linq;\n\npublic sealed class Basket\n{\n    public required IReadOnlyList<Reservation> Items { get; init; }\n\n    /// <summary>True when every reservation in the basket is still valid.</summary>\n    public bool IsStillValid()\n    {\n        return Items.All(item => item.ExpiresAtUtc > DateTime.UtcNow);\n    }\n}\n\npublic sealed record Reservation(string Sku, DateTime ExpiresAtUtc);\n```",
+          "reasoning": "",
+          "finish": "stop"
+        }
+      ],
+      "concurrency": 8,
+      "endpoints": {
+        "http://192.168.0.100:8888/v1": 3182
+      },
+      "requests": 8,
+      "failed": 0,
+      "wall_s": 38.85,
+      "output_tokens": 3182,
+      "aggregate_tok_s": 81.9,
+      "per_stream_tok_s": 26.4,
+      "ttft_p50_s": 10.07,
+      "ttft_p95_s": 20.01,
+      "latency_p50_s": 21.97,
+      "prompt_tokens": 178,
+      "cached_tokens_p50": 0,
+      "reasoning_tokens_p50": 0,
+      "finish_reasons": [
+        "stop"
+      ]
+    },
+    {
+      "scenario": "structured",
+      "thinking": false,
+      "reasoning_effort": null,
+      "answers": [],
+      "concurrency": 1,
+      "endpoints": {
+        "http://192.168.0.100:8888/v1": 48
+      },
+      "requests": 1,
+      "failed": 0,
+      "wall_s": 1.98,
+      "output_tokens": 48,
+      "aggregate_tok_s": 24.2,
+      "per_stream_tok_s": 56.8,
+      "ttft_p50_s": 1.13,
+      "ttft_p95_s": 1.13,
+      "latency_p50_s": 1.98,
+      "prompt_tokens": 846,
+      "cached_tokens_p50": 0,
+      "reasoning_tokens_p50": 0,
+      "finish_reasons": [
+        "stop"
+      ]
+    },
+    {
+      "scenario": "structured",
+      "thinking": false,
+      "reasoning_effort": null,
+      "answers": [],
+      "concurrency": 2,
+      "endpoints": {
+        "http://192.168.0.100:8888/v1": 96
+      },
+      "requests": 2,
+      "failed": 0,
+      "wall_s": 1.98,
+      "output_tokens": 96,
+      "aggregate_tok_s": 48.5,
+      "per_stream_tok_s": 51.3,
+      "ttft_p50_s": 1.01,
+      "ttft_p95_s": 1.01,
+      "latency_p50_s": 1.94,
+      "prompt_tokens": 846,
+      "cached_tokens_p50": 0,
+      "reasoning_tokens_p50": 0,
+      "finish_reasons": [
+        "stop"
+      ]
+    },
+    {
+      "scenario": "structured",
+      "thinking": false,
+      "reasoning_effort": null,
+      "answers": [],
+      "concurrency": 4,
+      "endpoints": {
+        "http://192.168.0.100:8888/v1": 192
+      },
+      "requests": 4,
+      "failed": 0,
+      "wall_s": 2.89,
+      "output_tokens": 192,
+      "aggregate_tok_s": 66.3,
+      "per_stream_tok_s": 45.2,
+      "ttft_p50_s": 1.8,
+      "ttft_p95_s": 1.8,
+      "latency_p50_s": 2.85,
+      "prompt_tokens": 846,
+      "cached_tokens_p50": 0,
+      "reasoning_tokens_p50": 0,
+      "finish_reasons": [
+        "stop"
+      ]
+    },
+    {
+      "scenario": "structured",
+      "thinking": false,
+      "reasoning_effort": null,
+      "answers": [],
+      "concurrency": 8,
+      "endpoints": {
+        "http://192.168.0.100:8888/v1": 384
+      },
+      "requests": 8,
+      "failed": 0,
+      "wall_s": 6.03,
+      "output_tokens": 384,
+      "aggregate_tok_s": 63.7,
+      "per_stream_tok_s": 39.9,
+      "ttft_p50_s": 4.62,
+      "ttft_p95_s": 4.87,
+      "latency_p50_s": 4.57,
+      "prompt_tokens": 846,
+      "cached_tokens_p50": 0,
+      "reasoning_tokens_p50": 0,
+      "finish_reasons": [
+        "stop"
+      ]
+    }
+  ]
+}

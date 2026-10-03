@@ -1,0 +1,53 @@
+{
+  "api": "http://192.168.0.100:8888/v1",
+  "endpoints": [
+    "http://192.168.0.100:8888/v1"
+  ],
+  "model": "qwen3.8-flash-next-single",
+  "note": "Single dgx01 only; worker idle. Same boot after 75 no-thinking scenario requests plus 15 thinking review requests. Unique prompts across single/concurrent legs (fixed probe); both thinking-off keys. No cache flush or restart between benchmark stages.",
+  "max_model_len": 262144,
+  "requested_tokens": 115000,
+  "params": {
+    "thinking": false,
+    "chat_template_kwargs": {
+      "thinking": false,
+      "enable_thinking": false
+    },
+    "unique_prompts_across_legs": true
+  },
+  "rows": [
+    {
+      "label": "single",
+      "streams": 1,
+      "prompt_tokens": 162659,
+      "wall_s": 86.5,
+      "prefill_aggregate_tok_s": 1880.2,
+      "per_request_s": [
+        86.5
+      ],
+      "mem_floor_gib": {
+        "dgx01": 15.41,
+        "dgx02": 117.77
+      },
+      "errors": []
+    },
+    {
+      "label": "concurrent",
+      "streams": 4,
+      "prompt_tokens": 162659,
+      "wall_s": 343.8,
+      "prefill_aggregate_tok_s": 1892.5,
+      "per_request_s": [
+        97.2,
+        343.8,
+        184.5,
+        269.9
+      ],
+      "mem_floor_gib": {
+        "dgx01": 15.36,
+        "dgx02": 117.73
+      },
+      "errors": []
+    }
+  ]
+}

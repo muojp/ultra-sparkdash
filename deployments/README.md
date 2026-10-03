@@ -2,6 +2,9 @@
 
 The 2× DGX Spark pair holds **one** 300B-class checkpoint at a time, so every candidate is a
 *deployment*: one `<name>.toml` here, one recipe submodule, one entry in `bin/dgx-model`.
+The proposed topology and single/replicated selection design is in
+[`docs/dgx-model-topology-design.md`](../docs/dgx-model-topology-design.md) (not implemented).
+
 This file is the procedure. Nothing about it lives in anyone's head or in an assistant's memory —
 if a step is missing here, it is missing.
 

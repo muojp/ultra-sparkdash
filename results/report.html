@@ -28,9 +28,9 @@
         padding: 1px 5px; border-radius: 4px; }
 </style></head><body>
 <h1>dgx pair — measured deployments</h1>
-<p class="sub">Generated 2026-09-19 10:16 UTC from 23 decode run(s) and 10 long-context run(s). Regenerate with <code>bin/llm-bench-report</code>; runs accumulate, the layout does not change.</p>
+<p class="sub">Generated 2026-09-22 12:42 UTC from 25 decode run(s) and 11 long-context run(s). Regenerate with <code>bin/llm-bench-report</code>; runs accumulate, the layout does not change.</p>
 <h2>Decode throughput — latest run per cell</h2>
-<p class="sub">Aggregate tok/s across all streams. Each cell is the most recent run for that deployment, scenario and concurrency; the history below keeps the rest.</p>
+<p class="sub">Aggregate OUTPUT tokens / total batch wall time (including TTFT), across all streams. Per-stream rates exclude TTFT. Each cell is the most recent run for that deployment, scenario and concurrency; the history below keeps the rest.</p>
 <h3 class="scen">chat</h3>
 <table><thead><tr><th>deployment</th>
 <th>×1</th>
@@ -110,6 +110,14 @@
 <td>49.5 → 27.0</td>
 <td>0.92 s</td>
 <td class='when'>2026-09-19 05:21</td></tr>
+<tr><td class='dep'>qwen3.8-flash-next-single</td>
+<td class='' title='2026-09-20 08:57 — Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.'>37.0 *</td>
+<td class='' title='2026-09-20 08:57 — Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.'>50.6 *</td>
+<td class='' title='2026-09-20 08:57 — Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.'>55.5 *</td>
+<td class='best' title='2026-09-20 08:57 — Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.'>66.3 *</td>
+<td>43.3 → 22.4</td>
+<td>0.59 s</td>
+<td class='when'>2026-09-20 08:57</td></tr>
 </tbody></table>
 <h3 class="scen">code</h3>
 <table><thead><tr><th>deployment</th>
@@ -190,6 +198,14 @@
 <td>48.3 → 28.2</td>
 <td>1.2 s</td>
 <td class='when'>2026-09-19 05:21</td></tr>
+<tr><td class='dep'>qwen3.8-flash-next-single</td>
+<td class='' title='2026-09-20 08:57 — Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.'>46.3 *</td>
+<td class='' title='2026-09-20 08:57 — Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.'>84.6 *</td>
+<td class='' title='2026-09-20 08:57 — Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.'>122.6 *</td>
+<td class='best' title='2026-09-20 08:57 — Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.'>124.6 *</td>
+<td>57.4 → 36.3</td>
+<td>1.33 s</td>
+<td class='when'>2026-09-20 08:57</td></tr>
 </tbody></table>
 <h3 class="scen">essay</h3>
 <table><thead><tr><th>deployment</th>
@@ -270,6 +286,14 @@
 <td>55.5 → 24.4</td>
 <td>0.52 s</td>
 <td class='when'>2026-09-19 05:21</td></tr>
+<tr><td class='dep'>qwen3.8-flash-next-single</td>
+<td class='' title='2026-09-20 08:57 — Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.'>36.4 *</td>
+<td class='' title='2026-09-20 08:57 — Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.'>60.0 *</td>
+<td class='best' title='2026-09-20 08:57 — Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.'>95.2 *</td>
+<td class='' title='2026-09-20 08:57 — Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.'>91.1 *</td>
+<td>37.4 → 24.3</td>
+<td>0.67 s</td>
+<td class='when'>2026-09-20 08:57</td></tr>
 </tbody></table>
 <h3 class="scen">review</h3>
 <table><thead><tr><th>deployment</th>
@@ -358,6 +382,14 @@
 <td>57.6 → 25.4</td>
 <td>0.26 s</td>
 <td class='when'>2026-09-19 05:21 … 2026-09-19 09:28</td></tr>
+<tr><td class='dep'>qwen3.8-flash-next-single</td>
+<td class='' title='2026-09-20 08:57 — Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.'>43.7 *</td>
+<td class='' title='2026-09-20 08:57 — Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.'>61.1 *</td>
+<td class='best' title='2026-09-20 08:57 — Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.'>99.4 *</td>
+<td class='' title='2026-09-20 08:57 — Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.'>81.9 *</td>
+<td>47.2 → 26.4</td>
+<td>0.41 s</td>
+<td class='when'>2026-09-20 08:57</td></tr>
 </tbody></table>
 <h3 class="scen">review/think</h3>
 <table><thead><tr><th>deployment</th>
@@ -398,6 +430,14 @@
 <td>49.8 → 31.0</td>
 <td>0.33 s</td>
 <td class='when'>2026-09-19 09:28</td></tr>
+<tr><td class='dep'>qwen3.8-flash-next-single</td>
+<td class='' title='2026-09-20 09:03 — Single dgx01 only; worker idle. Same boot after all-scenario thinking-off sweep. Default thinking ON; max_num_seqs=4 so c8 queues. Review budget 1600 tokens, retain content/reasoning for scoring.'>41.4 *</td>
+<td class='' title='2026-09-20 09:03 — Single dgx01 only; worker idle. Same boot after all-scenario thinking-off sweep. Default thinking ON; max_num_seqs=4 so c8 queues. Review budget 1600 tokens, retain content/reasoning for scoring.'>68.6 *</td>
+<td class='' title='2026-09-20 09:03 — Single dgx01 only; worker idle. Same boot after all-scenario thinking-off sweep. Default thinking ON; max_num_seqs=4 so c8 queues. Review budget 1600 tokens, retain content/reasoning for scoring.'>93.6 *</td>
+<td class='best' title='2026-09-20 09:03 — Single dgx01 only; worker idle. Same boot after all-scenario thinking-off sweep. Default thinking ON; max_num_seqs=4 so c8 queues. Review budget 1600 tokens, retain content/reasoning for scoring.'>94.7 *</td>
+<td>41.8 → 25.9</td>
+<td>0.36 s</td>
+<td class='when'>2026-09-20 09:03</td></tr>
 </tbody></table>
 <h3 class="scen">structured</h3>
 <table><thead><tr><th>deployment</th>
@@ -478,20 +518,29 @@
 <td>49.1 → 27.7</td>
 <td>1.03 s</td>
 <td class='when'>2026-09-19 05:21</td></tr>
+<tr><td class='dep'>qwen3.8-flash-next-single</td>
+<td class='' title='2026-09-20 08:57 — Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.'>24.2 *</td>
+<td class='' title='2026-09-20 08:57 — Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.'>48.5 *</td>
+<td class='best' title='2026-09-20 08:57 — Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.'>66.3 *</td>
+<td class='' title='2026-09-20 08:57 — Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.'>63.7 *</td>
+<td>56.8 → 39.9</td>
+<td>1.13 s</td>
+<td class='when'>2026-09-20 08:57</td></tr>
 </tbody></table>
-<h2>Long context — prefill and the memory floor</h2>
-<p class="sub">The floor is what decides whether a setting is safe, and it is reached during a long prefill — never at boot, never under steady decode. Lower is closer to the edge.</p>
+<h2>Long context — input throughput and the memory floor</h2>
+<p class="sub">INPUT tok/s = sum of response usage.prompt_tokens / total batch wall time, including queueing and short output generation. This is not output generation speed or isolated prefill timing. The memory floor is reached during a long prefill — never at boot, never under steady decode. Lower is closer to the edge.</p>
 <table><thead><tr><th>deployment</th><th>prompt tokens</th><th>single</th><th>concurrent</th><th>streams</th><th>floor (head / worker)</th><th>taken</th></tr></thead><tbody>
-<tr><td class='dep'>deepseek-v4-flash</td><td>324625</td><td>1114.3 tok/s</td><td>1646.6 tok/s</td><td>4</td><td>dgx01 6.33, dgx02 7.85 GiB</td><td class='when'>2026-09-18 21:57</td></tr>
-<tr><td class='dep'>deepseek-v4-flash</td><td>131002</td><td>1346.9 tok/s</td><td>2013.9 tok/s</td><td>4</td><td>dgx01 6.94, dgx02 8.09 GiB</td><td class='when'>2026-09-19 02:37</td></tr>
-<tr><td class='dep'>deepseek-v4.1-flash</td><td>135397</td><td>797.1 tok/s</td><td>1090.8 tok/s</td><td>4</td><td>dgx01 5.20, dgx02 6.41 GiB</td><td class='when'>2026-09-19 03:04</td></tr>
-<tr><td class='dep'>glm-5.3-flash-bizuayeu</td><td>162553</td><td>523.3 tok/s</td><td>551.8 tok/s</td><td>4</td><td>dgx01 4.01, dgx02 7.18 GiB</td><td class='when'>2026-09-19 07:29</td></tr>
-<tr><td class='dep'>glm-5.3-flash-himorishige</td><td>134506</td><td>1201.1 tok/s</td><td>1276.1 tok/s</td><td>4</td><td>dgx01 3.72, dgx02 8.50 GiB</td><td class='when'>2026-09-18 22:50</td></tr>
-<tr><td class='dep'>glm-5.3-flash-miaai</td><td>153198</td><td>949.3 tok/s</td><td>1316.9 tok/s</td><td>4</td><td>dgx01 5.49, dgx02 7.10 GiB</td><td class='when'>2026-09-19 04:55</td></tr>
-<tr><td class='dep'>qwen3.8-27b-sglang (pool of 2)</td><td>140520</td><td>901.1 tok/s</td><td>1821.0 tok/s</td><td>4</td><td>&mdash; GiB</td><td class='when'>2026-09-19 02:10</td></tr>
-<tr><td class='dep'>qwen3.8-27b-sglang (pool of 2)</td><td>140520</td><td>43933.0 tok/s</td><td>116693.6 tok/s</td><td>4</td><td>&mdash; GiB</td><td class='when'>2026-09-19 02:22</td></tr>
-<tr><td class='dep'>qwen3.8-27b-sglang (pool of 2)</td><td>162699</td><td>838.3 tok/s</td><td>1653.4 tok/s</td><td>4</td><td>dgx01 4.93, dgx02 4.80 GiB</td><td class='when'>2026-09-19 08:25</td></tr>
-<tr><td class='dep'>qwen3.8-flash-next</td><td>162699</td><td>2535.3 tok/s</td><td>3349.6 tok/s</td><td>4</td><td>dgx01 3.32, dgx02 6.83 GiB</td><td class='when'>2026-09-19 05:32</td></tr>
+<tr><td class='dep'>deepseek-v4-flash</td><td>324625</td><td>1114.3 input tok/s</td><td>1646.6 input tok/s</td><td>4</td><td>dgx01 6.33, dgx02 7.85 GiB</td><td class='when'>2026-09-18 21:57</td></tr>
+<tr><td class='dep'>deepseek-v4-flash</td><td>131002</td><td>1346.9 input tok/s</td><td>2013.9 input tok/s</td><td>4</td><td>dgx01 6.94, dgx02 8.09 GiB</td><td class='when'>2026-09-19 02:37</td></tr>
+<tr><td class='dep'>deepseek-v4.1-flash</td><td>135397</td><td>797.1 input tok/s</td><td>1090.8 input tok/s</td><td>4</td><td>dgx01 5.20, dgx02 6.41 GiB</td><td class='when'>2026-09-19 03:04</td></tr>
+<tr><td class='dep'>glm-5.3-flash-bizuayeu</td><td>162553</td><td>523.3 input tok/s</td><td>551.8 input tok/s</td><td>4</td><td>dgx01 4.01, dgx02 7.18 GiB</td><td class='when'>2026-09-19 07:29</td></tr>
+<tr><td class='dep'>glm-5.3-flash-himorishige</td><td>134506</td><td>1201.1 input tok/s</td><td>1276.1 input tok/s</td><td>4</td><td>dgx01 3.72, dgx02 8.50 GiB</td><td class='when'>2026-09-18 22:50</td></tr>
+<tr><td class='dep'>glm-5.3-flash-miaai</td><td>153198</td><td>949.3 input tok/s</td><td>1316.9 input tok/s</td><td>4</td><td>dgx01 5.49, dgx02 7.10 GiB</td><td class='when'>2026-09-19 04:55</td></tr>
+<tr><td class='dep'>qwen3.8-27b-sglang (pool of 2)</td><td>140520</td><td>901.1 input tok/s</td><td>1821.0 input tok/s</td><td>4</td><td>&mdash; GiB</td><td class='when'>2026-09-19 02:10</td></tr>
+<tr><td class='dep'>qwen3.8-27b-sglang (pool of 2)</td><td>140520</td><td>43933.0 input tok/s</td><td>116693.6 input tok/s</td><td>4</td><td>&mdash; GiB</td><td class='when'>2026-09-19 02:22</td></tr>
+<tr><td class='dep'>qwen3.8-27b-sglang (pool of 2)</td><td>162699</td><td>838.3 input tok/s</td><td>1653.4 input tok/s</td><td>4</td><td>dgx01 4.93, dgx02 4.80 GiB</td><td class='when'>2026-09-19 08:25</td></tr>
+<tr><td class='dep'>qwen3.8-flash-next</td><td>162699</td><td>2535.3 input tok/s</td><td>3349.6 input tok/s</td><td>4</td><td>dgx01 3.32, dgx02 6.83 GiB</td><td class='when'>2026-09-19 05:32</td></tr>
+<tr><td class='dep'>qwen3.8-flash-next-single</td><td>162659</td><td>1880.2 input tok/s</td><td>1892.5 input tok/s</td><td>4</td><td>dgx01 15.36, dgx02 117.73 GiB</td><td class='when'>2026-09-20 09:08</td></tr>
 </tbody></table>
 <h2>Review cases — what each deployment actually found</h2>
 <p class="sub">Five files, one planted defect each. Scored by whether the answer names the defect, not by prose: each case carries loose signals, and a partial hit means the symptom was spotted and the cause was not. Deployments read down and cases across, so the table grows with the fleet instead of sideways; a row is one deployment in one reasoning mode. <b>in reasoning</b> means the message body was empty and the finding was in the trace — a lane reading message content would have received nothing. Throughput tables cannot show any of this, and it is the difference that decides what the review lane runs.</p>
@@ -600,6 +649,20 @@
 <td class='best'>found<br><span class='mode'>in reasoning</span></td>
 <td class='best'>found</td>
 <td class='dep'>4/5</td></tr>
+<tr><td class='dep'>qwen3.8-flash-next-single · nothink</td>
+<td class='na'>missed</td>
+<td class='best'>found</td>
+<td class='best'>found</td>
+<td class='best'>found</td>
+<td class='best'>found</td>
+<td class='dep'>4/5</td></tr>
+<tr><td class='dep'>qwen3.8-flash-next-single · think</td>
+<td class=''>partial 1/2<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='best'>found<br><span class='mode'>in reasoning</span></td>
+<td class='dep'>4/5<br><span class='mode'>+1 partial</span></td></tr>
 </tbody></table>
 <h3 class="scen">what each case plants</h3><table><thead><tr><th>case</th><th>expected finding</th></tr></thead><tbody>
 <tr><td class='dep'>php-discount-logic</td><td class='note'>The tiered discount uses &gt;= on the lower bound of the next tier, so an order of exactly 10000 gets the 5% tier instead of 10%; the boundary case is off by one tier. Also returns a float where money should stay integer minor units.</td></tr>
@@ -611,6 +674,30 @@
 <h2>Every run, in order</h2>
 <p class="sub">Nothing is averaged or dropped. A run taken under load keeps its note, so it can be read as what it is rather than compared as if conditions matched.</p>
 <table><thead><tr><th>taken</th><th>deployment</th><th>model</th><th>scenario</th><th>conc</th><th>aggregate</th><th>per-stream</th><th>ttft p50</th><th>note</th></tr></thead><tbody>
+<tr><td class='when'>2026-09-20 09:03</td><td class='dep'>qwen3.8-flash-next-single</td><td class='model'>qwen3.8-flash-next-single</td><td>review</td><td>×1</td><td>41.4</td><td>41.8</td><td>0.36 s</td><td class='note'>Single dgx01 only; worker idle. Same boot after all-scenario thinking-off sweep. Default thinking ON; max_num_seqs=4 so c8 queues. Review budget 1600 tokens, retain content/reasoning for scoring.</td></tr>
+<tr><td class='when'>2026-09-20 09:03</td><td class='dep'>qwen3.8-flash-next-single</td><td class='model'>qwen3.8-flash-next-single</td><td>review</td><td>×2</td><td>68.6</td><td>34.9</td><td>0.53 s</td><td class='note'>Single dgx01 only; worker idle. Same boot after all-scenario thinking-off sweep. Default thinking ON; max_num_seqs=4 so c8 queues. Review budget 1600 tokens, retain content/reasoning for scoring.</td></tr>
+<tr><td class='when'>2026-09-20 09:03</td><td class='dep'>qwen3.8-flash-next-single</td><td class='model'>qwen3.8-flash-next-single</td><td>review</td><td>×4</td><td>93.6</td><td>25.4</td><td>0.92 s</td><td class='note'>Single dgx01 only; worker idle. Same boot after all-scenario thinking-off sweep. Default thinking ON; max_num_seqs=4 so c8 queues. Review budget 1600 tokens, retain content/reasoning for scoring.</td></tr>
+<tr><td class='when'>2026-09-20 09:03</td><td class='dep'>qwen3.8-flash-next-single</td><td class='model'>qwen3.8-flash-next-single</td><td>review</td><td>×8</td><td>94.7</td><td>25.9</td><td>52.12 s</td><td class='note'>Single dgx01 only; worker idle. Same boot after all-scenario thinking-off sweep. Default thinking ON; max_num_seqs=4 so c8 queues. Review budget 1600 tokens, retain content/reasoning for scoring.</td></tr>
+<tr><td class='when'>2026-09-20 08:57</td><td class='dep'>qwen3.8-flash-next-single</td><td class='model'>qwen3.8-flash-next-single</td><td>chat</td><td>×1</td><td>37.0</td><td>43.3</td><td>0.59 s</td><td class='note'>Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.</td></tr>
+<tr><td class='when'>2026-09-20 08:57</td><td class='dep'>qwen3.8-flash-next-single</td><td class='model'>qwen3.8-flash-next-single</td><td>chat</td><td>×2</td><td>50.6</td><td>32.1</td><td>0.98 s</td><td class='note'>Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.</td></tr>
+<tr><td class='when'>2026-09-20 08:57</td><td class='dep'>qwen3.8-flash-next-single</td><td class='model'>qwen3.8-flash-next-single</td><td>chat</td><td>×4</td><td>55.5</td><td>26.5</td><td>2.66 s</td><td class='note'>Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.</td></tr>
+<tr><td class='when'>2026-09-20 08:57</td><td class='dep'>qwen3.8-flash-next-single</td><td class='model'>qwen3.8-flash-next-single</td><td>chat</td><td>×8</td><td>66.3</td><td>22.4</td><td>5.5 s</td><td class='note'>Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.</td></tr>
+<tr><td class='when'>2026-09-20 08:57</td><td class='dep'>qwen3.8-flash-next-single</td><td class='model'>qwen3.8-flash-next-single</td><td>code</td><td>×1</td><td>46.3</td><td>57.4</td><td>1.33 s</td><td class='note'>Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.</td></tr>
+<tr><td class='when'>2026-09-20 08:57</td><td class='dep'>qwen3.8-flash-next-single</td><td class='model'>qwen3.8-flash-next-single</td><td>code</td><td>×2</td><td>84.6</td><td>48.6</td><td>0.98 s</td><td class='note'>Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.</td></tr>
+<tr><td class='when'>2026-09-20 08:57</td><td class='dep'>qwen3.8-flash-next-single</td><td class='model'>qwen3.8-flash-next-single</td><td>code</td><td>×4</td><td>122.6</td><td>39.6</td><td>1.84 s</td><td class='note'>Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.</td></tr>
+<tr><td class='when'>2026-09-20 08:57</td><td class='dep'>qwen3.8-flash-next-single</td><td class='model'>qwen3.8-flash-next-single</td><td>code</td><td>×8</td><td>124.6</td><td>36.3</td><td>11.33 s</td><td class='note'>Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.</td></tr>
+<tr><td class='when'>2026-09-20 08:57</td><td class='dep'>qwen3.8-flash-next-single</td><td class='model'>qwen3.8-flash-next-single</td><td>essay</td><td>×1</td><td>36.4</td><td>37.4</td><td>0.67 s</td><td class='note'>Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.</td></tr>
+<tr><td class='when'>2026-09-20 08:57</td><td class='dep'>qwen3.8-flash-next-single</td><td class='model'>qwen3.8-flash-next-single</td><td>essay</td><td>×2</td><td>60.0</td><td>31.6</td><td>0.95 s</td><td class='note'>Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.</td></tr>
+<tr><td class='when'>2026-09-20 08:57</td><td class='dep'>qwen3.8-flash-next-single</td><td class='model'>qwen3.8-flash-next-single</td><td>essay</td><td>×4</td><td>95.2</td><td>25.2</td><td>1.82 s</td><td class='note'>Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.</td></tr>
+<tr><td class='when'>2026-09-20 08:57</td><td class='dep'>qwen3.8-flash-next-single</td><td class='model'>qwen3.8-flash-next-single</td><td>essay</td><td>×8</td><td>91.1</td><td>24.3</td><td>34.99 s</td><td class='note'>Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.</td></tr>
+<tr><td class='when'>2026-09-20 08:57</td><td class='dep'>qwen3.8-flash-next-single</td><td class='model'>qwen3.8-flash-next-single</td><td>review</td><td>×1</td><td>43.7</td><td>47.2</td><td>0.41 s</td><td class='note'>Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.</td></tr>
+<tr><td class='when'>2026-09-20 08:57</td><td class='dep'>qwen3.8-flash-next-single</td><td class='model'>qwen3.8-flash-next-single</td><td>review</td><td>×2</td><td>61.1</td><td>38.5</td><td>0.45 s</td><td class='note'>Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.</td></tr>
+<tr><td class='when'>2026-09-20 08:57</td><td class='dep'>qwen3.8-flash-next-single</td><td class='model'>qwen3.8-flash-next-single</td><td>review</td><td>×4</td><td>99.4</td><td>29.2</td><td>0.66 s</td><td class='note'>Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.</td></tr>
+<tr><td class='when'>2026-09-20 08:57</td><td class='dep'>qwen3.8-flash-next-single</td><td class='model'>qwen3.8-flash-next-single</td><td>review</td><td>×8</td><td>81.9</td><td>26.4</td><td>10.07 s</td><td class='note'>Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.</td></tr>
+<tr><td class='when'>2026-09-20 08:57</td><td class='dep'>qwen3.8-flash-next-single</td><td class='model'>qwen3.8-flash-next-single</td><td>structured</td><td>×1</td><td>24.2</td><td>56.8</td><td>1.13 s</td><td class='note'>Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.</td></tr>
+<tr><td class='when'>2026-09-20 08:57</td><td class='dep'>qwen3.8-flash-next-single</td><td class='model'>qwen3.8-flash-next-single</td><td>structured</td><td>×2</td><td>48.5</td><td>51.3</td><td>1.01 s</td><td class='note'>Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.</td></tr>
+<tr><td class='when'>2026-09-20 08:57</td><td class='dep'>qwen3.8-flash-next-single</td><td class='model'>qwen3.8-flash-next-single</td><td>structured</td><td>×4</td><td>66.3</td><td>45.2</td><td>1.8 s</td><td class='note'>Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.</td></tr>
+<tr><td class='when'>2026-09-20 08:57</td><td class='dep'>qwen3.8-flash-next-single</td><td class='model'>qwen3.8-flash-next-single</td><td>structured</td><td>×8</td><td>63.7</td><td>39.9</td><td>4.62 s</td><td class='note'>Single dgx01 only; worker idle. Mia checkpoint 925d7be; recipe ad8dec9; native 262k, MTP3, FP8 KV, max_num_seqs=4 (c8 queues). No supervisor/restart/telemetry. After first boot and thinking probe; no downloads running.</td></tr>
 <tr><td class='when'>2026-09-19 09:28</td><td class='dep'>qwen3.8-flash-next</td><td class='model'>qwen3.8-flash-next</td><td>review</td><td>×1</td><td>49.3</td><td>49.8</td><td>0.33 s</td><td class='note'>verified off: run records the kwargs it sent</td></tr>
 <tr><td class='when'>2026-09-19 09:28</td><td class='dep'>qwen3.8-flash-next</td><td class='model'>qwen3.8-flash-next</td><td>review</td><td>×4</td><td>120.9</td><td>31.0</td><td>0.79 s</td><td class='note'>verified off: run records the kwargs it sent</td></tr>
 <tr><td class='when'>2026-09-19 09:28</td><td class='dep'>qwen3.8-flash-next</td><td class='model'>qwen3.8-flash-next</td><td>review</td><td>×1</td><td>54.1</td><td>57.6</td><td>0.26 s</td><td class='note'>verified off: run records the kwargs it sent</td></tr>

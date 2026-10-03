@@ -1,0 +1,9 @@
+# qwen3.8-flash-next-single via http://192.168.0.100:8888/v1  ->  /Users/muo/.local/state/dgx-model/thinking/20260920T085440+0000-qwen3.8-flash-next-single.json
+no kwarg (server default)    -> {"body_chars": 0, "reasoning_chars": 5236, "reasoning_tokens": 1600, "finish": "length", "sample": ""}
+thinking                     -> ignored: {"body_chars": 708, "reasoning_chars": 5207, "reasoning_tokens": 1398, "finish": "length", "sample": "The method returns a `float` and uses floating-point arithmetic for money, which can introduce rounding errors and contradicts the docblock\u2019s \u201cyen (integer)\u201d to"}
+enable_thinking              -> honoured: {"body_chars": 1393, "reasoning_chars": 0, "reasoning_tokens": 0, "finish": "stop", "sample": "The return type `float` is incorrect and potentially dangerous because the input `$totalYen` is an integer representing yen, and currency calculations should ge"}
+both                         -> honoured: {"body_chars": 841, "reasoning_chars": 0, "reasoning_tokens": 0, "finish": "stop", "sample": "The method returns a `float` despite the docblock stating that order totals are integers in yen, which can lead to floating-point precision errors and type mism"}
+reasoning_effort             -> honoured: {"body_chars": 749, "reasoning_chars": 0, "reasoning_tokens": 0, "finish": "stop", "sample": "The return type `float` is inappropriate for a currency calculation in Japanese Yen, which is a zero-decimal currency and should always be an integer. Returning"}
+
+honoured: enable_thinking, both, reasoning_effort  ->  extra = { chat_template_kwargs = { enable_thinking = false } }
+wrote /Users/muo/.local/state/dgx-model/thinking/20260920T085440+0000-qwen3.8-flash-next-single.json

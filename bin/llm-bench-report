@@ -234,7 +234,7 @@ def render(bench_runs, longctx_runs, out_path):
              f'Regenerate with <code>bin/llm-bench-report</code>; runs accumulate, the layout does not change.</p>')
 
     p.append('<h2>Decode throughput — latest run per cell</h2>')
-    p.append('<p class="sub">Aggregate tok/s across all streams. Each cell is the most recent run for that '
+    p.append('<p class="sub">Aggregate OUTPUT tokens / total batch wall time (including TTFT), across all streams. Per-stream rates exclude TTFT. Each cell is the most recent run for that '
              'deployment, scenario and concurrency; the history below keeps the rest.</p>')
     for scen in scenarios:
         p.append(f'<h3 class="scen">{esc(scen)}</h3>')
@@ -267,8 +267,8 @@ def render(bench_runs, longctx_runs, out_path):
             p.append(f"<td class='when'>{when}</td></tr>")
         p.append("</tbody></table>")
 
-    p.append('<h2>Long context — prefill and the memory floor</h2>')
-    p.append('<p class="sub">The floor is what decides whether a setting is safe, and it is reached during a '
+    p.append('<h2>Long context — input throughput and the memory floor</h2>')
+    p.append('<p class="sub">INPUT tok/s = sum of response usage.prompt_tokens / total batch wall time, including queueing and short output generation. This is not output generation speed or isolated prefill timing. The memory floor is reached during a '
              'long prefill — never at boot, never under steady decode. Lower is closer to the edge.</p>')
     p.append('<table><thead><tr><th>deployment</th><th>prompt tokens</th><th>single</th>'
              '<th>concurrent</th><th>streams</th><th>floor (head / worker)</th><th>taken</th></tr></thead><tbody>')
@@ -279,8 +279,8 @@ def render(bench_runs, longctx_runs, out_path):
         floor_s = ", ".join(f"{k} {v:.2f}" for k, v in sorted(floor.items()) if isinstance(v, float)) or "&mdash;"
         p.append(f"<tr><td class='dep'>{esc(run['_deployment'])}</td>"
                  f"<td>{cell(single.get('prompt_tokens'))}</td>"
-                 f"<td>{cell(single.get('prefill_aggregate_tok_s'), ' tok/s')}</td>"
-                 f"<td>{cell(conc.get('prefill_aggregate_tok_s'), ' tok/s')}</td>"
+                 f"<td>{cell(single.get('prefill_aggregate_tok_s'), ' input tok/s')}</td>"
+                 f"<td>{cell(conc.get('prefill_aggregate_tok_s'), ' input tok/s')}</td>"
                  f"<td>{cell(conc.get('streams'))}</td>"
                  f"<td>{floor_s} GiB</td>"
                  f"<td class='when'>{parse_stamp(run['_stamp'])}</td></tr>")

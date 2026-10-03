@@ -1,0 +1,12 @@
+# qwen3.8-flash-next-single via http://192.168.0.100:8888/v1  ->  /Users/muo/.local/state/dgx-model/longctx/20260920T090849+0000-qwen3.8-flash-next-single.json
+api:   http://192.168.0.100:8888/v1
+model: qwen3.8-flash-next-single (max_model_len=262144)
+
+# calibration: 7865 chars -> 2399 tokens (3.28 chars/token)
+
+single: streams=1 prompt_tokens=162659 wall=86.5s prefill_aggregate=1880 tok/s
+   memory floor: dgx01 15.41 GiB, dgx02 117.77 GiB
+concurrent: streams=4 prompt_tokens=162659 wall=343.8s prefill_aggregate=1892 tok/s
+   per-request s: 97, 185, 270, 344 (last answer at 343.8s)
+   memory floor: dgx01 15.36 GiB, dgx02 117.73 GiB
+wrote /Users/muo/.local/state/dgx-model/longctx/20260920T090849+0000-qwen3.8-flash-next-single.json

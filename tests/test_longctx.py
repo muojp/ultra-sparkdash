@@ -89,3 +89,19 @@ def test_direct_floor_survives_an_unreachable_host(longctx):
     f = longctx.DirectFloor(["nonexistent-host-xyz"])
     assert f._mem_available_gib("nonexistent-host-xyz") is None
     assert f.result() == {}
+
+
+def test_single_and_concurrent_legs_do_not_replay_prefix_cache(longctx, stub):
+    class Args:
+        thinking = False
+        timeout = 30
+        prometheus = "http://127.0.0.1:1"
+        mem_hosts = ""
+
+    longctx.leg("single", [url(stub)], "stub-model", 200, 1, Args(), 4.0)
+    longctx.leg("concurrent", [url(stub)], "stub-model", 200, 4, Args(), 4.0)
+    prompts = [r["messages"][0]["content"] for r in stub.requests]
+    assert len(prompts) == 5
+    assert len(set(prompts)) == 5, "concurrent prefill must not reuse the single-leg prompt"
+    for request in stub.requests:
+        assert request["chat_template_kwargs"] == {"thinking": False, "enable_thinking": False}

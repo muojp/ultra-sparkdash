@@ -1,0 +1,74 @@
+{
+  "api": "http://192.168.0.100:8888/v1",
+  "model": "qwen3.8-flash-next-single",
+  "prompt": "Review this PHP / Laravel file as you would in a pull request.\n\nIf something is wrong, say what it is and why it matters, in two or three sentences, then give the corrected code. If nothing is wrong, say so.\n\n```\n<?php\n\nnamespace App\\Services;\n\nclass DiscountService\n{\n    /** Order totals are in yen (integer). Returns the discounted total. */\n    public function apply(int $totalYen, bool $isMember): float\n    {\n        $rate = 0.0;\n\n        if ($totalYen > 10000) {\n            $rate = 0.10;\n        } elseif ($totalYen >= 5000) {\n            $rate = 0.05;\n        }\n\n        if ($isMember) {\n            $rate += 0.05;\n        }\n\n        return $totalYen - ($totalYen * $rate);\n    }\n}\n```\n",
+  "prompt_case": "php-discount-logic",
+  "baseline": {
+    "body_chars": 0,
+    "reasoning_chars": 5236,
+    "reasoning_tokens": 1600,
+    "finish": "length",
+    "sample": ""
+  },
+  "candidates": {
+    "thinking": {
+      "body_chars": 708,
+      "reasoning_chars": 5207,
+      "reasoning_tokens": 1398,
+      "finish": "length",
+      "sample": "The method returns a `float` and uses floating-point arithmetic for money, which can introduce rounding errors and contradicts the docblock\u2019s \u201cyen (integer)\u201d to",
+      "verdict": "ignored",
+      "sent": {
+        "chat_template_kwargs": {
+          "thinking": false
+        }
+      }
+    },
+    "enable_thinking": {
+      "body_chars": 1393,
+      "reasoning_chars": 0,
+      "reasoning_tokens": 0,
+      "finish": "stop",
+      "sample": "The return type `float` is incorrect and potentially dangerous because the input `$totalYen` is an integer representing yen, and currency calculations should ge",
+      "verdict": "honoured",
+      "sent": {
+        "chat_template_kwargs": {
+          "enable_thinking": false
+        }
+      }
+    },
+    "both": {
+      "body_chars": 841,
+      "reasoning_chars": 0,
+      "reasoning_tokens": 0,
+      "finish": "stop",
+      "sample": "The method returns a `float` despite the docblock stating that order totals are integers in yen, which can lead to floating-point precision errors and type mism",
+      "verdict": "honoured",
+      "sent": {
+        "chat_template_kwargs": {
+          "thinking": false,
+          "enable_thinking": false
+        }
+      }
+    },
+    "reasoning_effort": {
+      "body_chars": 749,
+      "reasoning_chars": 0,
+      "reasoning_tokens": 0,
+      "finish": "stop",
+      "sample": "The return type `float` is inappropriate for a currency calculation in Japanese Yen, which is a zero-decimal currency and should always be an integer. Returning",
+      "verdict": "honoured",
+      "sent": {
+        "reasoning_effort": "none"
+      }
+    }
+  },
+  "honoured": [
+    "enable_thinking",
+    "both",
+    "reasoning_effort"
+  ],
+  "recommended": "enable_thinking",
+  "lane_extra_toml": "extra = { chat_template_kwargs = { enable_thinking = false } }",
+  "note": ""
+}

@@ -21,6 +21,13 @@
 
 ### Deployments: which model the pair serves, and switching it
 
+Single-head deployment added: `bin/dgx-model switch qwen3.8-flash-next-single` serves the
+MiaAI-Lab single-Spark checkpoint on dgx01 only (dgx02 unused). It uses the
+[mirrored recipe](./Qwen3.8-Flash-Next-Single-DGX-Spark/docs/fleet-plain-vllm.md),
+with Docker restart, the background watchdog, supervisor/timers and external alerts disabled.
+See [deployment settings](./deployments/qwen3.8-flash-next-single.toml) for the measured profile.
+
+
 The pair holds one checkpoint at a time, so DeepSeek-V4-Flash and GLM-5.3-Flash are two
 *deployments* of the same two nodes. Each is pinned in [`deployments/<name>.toml`](./deployments):
 the recipe directory on the head node, the recipe's own start / stop / status commands, the served
@@ -30,18 +37,13 @@ the review lane should run with against it (model id, dispatch timeout, pool siz
 
 ```bash
 bin/dgx-model status            # active deployment, compose projects on head + worker, served model, uptime
-bin/dgx-model switch glm-5.3-flash --dry-run   # the exact commands a switch would run
+bin/dgx-model switch glm-5.3-flash-himorishige --dry-run   # the exact commands a switch would run
 bin/dgx-model switch deepseek-v4-flash         # stop the other, drop the page cache, start, wait for /v1/models
 bin/dgx-model history
 ```
 
-Three deployments are defined: `deepseek-v4-flash`, `glm-5.3-flash` and `deepseek-v4.1-flash`.
-The third is **defined but not provisioned** — its recipe is not checked out on the head and its
-weights (~197 GiB EXL3 + ~190 GiB Engram) are not downloaded, so `switch` refuses it with the reason
-rather than stopping the model that is serving. Its `[prerequisites]` list what a human does once; [`deployments/README.md`](./deployments/README.md) is the procedure for adding, mirroring and provisioning one.
-It is also the first recipe here that does not use Compose: it runs two named containers
-(`dsv41-exl3-head`, `dsv41-exl3-worker`), which is why a deployment may name its containers instead
-of a Compose project.
+Use `bin/dgx-model list` for the deployment registry and `status` for live provisioning state.
+See [`deployments/README.md`](./deployments/README.md) for adding, mirroring and provisioning recipes.
 
 It runs on the head node (`~/dgx-model/`, synced from this repository) and re-executes itself over
 ssh when invoked elsewhere (`DGX_MODEL_HOST=muo@192.168.0.100` to pick the host). A switch takes
@@ -410,16 +412,17 @@ dispatch timeout、pool、単価) を pin しています。[`bin/dgx-model`](./
 
 ```bash
 bin/dgx-model status            # active な deployment、head/worker の compose project、served model、稼働開始
-bin/dgx-model switch glm-5.3-flash --dry-run   # 切替で実行されるコマンドそのもの
+bin/dgx-model switch glm-5.3-flash-himorishige --dry-run   # 切替で実行されるコマンドそのもの
 bin/dgx-model switch deepseek-v4-flash         # 他方を stop → page cache を drop → start → /v1/models を待つ
 bin/dgx-model history
 ```
 
-定義済みの deployment は `deepseek-v4-flash` / `glm-5.3-flash` / `deepseek-v4.1-flash` の 3 本です。
-3 本目は **定義だけで未 provision** — head に recipe が無く、重み（EXL3 約 197 GiB + Engram 約 190 GiB）も
-未取得なので、`switch` は稼働中のモデルを止める前に理由付きで拒否します。人手で一度やることは `[prerequisites]` に、追加・mirror・provisioning の手順は [`deployments/README.md`](./deployments/README.md) にあります。
-この recipe だけ Compose を使わず、名前付きコンテナ 2 本（`dsv41-exl3-head` / `dsv41-exl3-worker`）で動くため、
-deployment は Compose project の代わりにコンテナ名を書けるようにしてあります。
+登録一覧は `bin/dgx-model list`、稼働状態は `status` で確認できます。
+追加・mirror・provisioning の手順は [`deployments/README.md`](./deployments/README.md) にあります。
+
+`bin/dgx-model switch qwen3.8-flash-next-single` で新しい単体レシピへ切り替えます。
+dgx01 のみで動作し、自動再起動・watchdog・supervisor・外部通知は無効です。
+[単体測定結果](./results/qwen3.8-flash-next-single/README.md)に構成監査とベンチ結果を記録しています。
 
 head ノードで動き (`~/dgx-model/` にこの repo から同期)、他所から呼ぶと ssh 越しに自分を再実行します
 (`DGX_MODEL_HOST=muo@192.168.0.100` でホスト指定)。切替はモデル読み込みに 10〜17 分かかるので 8 時間〜daily の

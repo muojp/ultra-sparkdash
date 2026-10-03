@@ -2,7 +2,7 @@
 # GLM-5.3-Flash-EXL3-2x-DGX-Sparks-TensorFold (mirror muojp, branch feat/dgx-spark-pair-ops, at
 # upstream cf28cc4f = v1.4, 2026-10-03). Not vLLM: TensorFold's own server in NVIDIA's PyTorch
 # container, one container per rank (`glm53-flash-tf` on both nodes), started by ./start.sh on the head.
-# Added 2026-10-03 on the operator's instruction; GLM-5.3-Flash is now this + glm-5.3-flash-miaai,
+# Added and provisioned 2026-10-03 (prepare.sh done, not yet booted) on the operator's instruction; GLM-5.3-Flash is now this + glm-5.3-flash-miaai,
 # the other two are [deprecated].
 #
 # Checkpoint Mia-AiLab/GLM-5.3-Flash-EXL3-4bpw-TensorFold @078455ff (~176 GB, a different
@@ -57,3 +57,9 @@ worker_cache_default = """WORKER_HF_CACHE defaults to the worker's own HF_HOME, 
 pkill_self_match = """Stopping a background prepare.sh with `ssh head 'pkill -f scripts/prepare.sh; ...'` kills the
 ssh session's own bash (its command line contains the pattern) and leaves the docker pull orphaned.
 Use pgrep -fa and kill by pid."""
+shared_blob_store = """The downloader (huggingface_hub inside the image) puts finished files in the SHARED
+~/hf-home/hub/blobs/<xx>/ store, next to miaai's TR3-4bpw and the Qwen NVFP4 blobs; the repo folder holds
+only .incomplete files while downloading and symlinks after. Measure progress with df or blobs/, not
+du of the repo folder (it shrinks as files finish), and deleting the repo folder frees nothing —
+remove a deployment's blobs by resolving its snapshot links. Provisioned 2026-10-03: 95 files /
+175,716,135,696 bytes identical on both nodes, download ~70 min at ~45 MiB/s."""

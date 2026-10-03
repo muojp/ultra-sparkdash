@@ -28,3 +28,7 @@
 	path = Qwen3.8-Flash-Next-Single-DGX-Spark
 	url = https://github.com/muojp/Qwen3.8-Flash-Next-Single-DGX-Spark.git
 	branch = feat/dgx-spark-pair-ops
+[submodule "GLM-5.3-Flash-EXL3-2x-DGX-Sparks-TensorFold"]
+	path = GLM-5.3-Flash-EXL3-2x-DGX-Sparks-TensorFold
+	url = https://github.com/muojp/GLM-5.3-Flash-EXL3-2x-DGX-Sparks-TensorFold.git
+	branch = feat/dgx-spark-pair-ops

@@ -252,3 +252,23 @@ def test_an_all_remote_recipe_only_checks_the_directory(dgx_model, monkeypatch):
                                "start": [["ssh", "host", "do something"]]}}
     ok, _ = dgx_model.recipe_present(d)
     assert ok
+
+
+def test_a_deprecated_deployment_is_refused_before_anything_stops(dgx_model, monkeypatch, capsys):
+    """Its checkout may survive the weights, so recipe_present() alone would let the switch stop the serving model."""
+    called = []
+    monkeypatch.setattr(dgx_model, "recipe_present", lambda d: called.append("recipe") or (True, ""))
+    monkeypatch.setattr(dgx_model, "status", lambda deps: called.append("status") or {})
+    d = {"name": "x", "deprecated": {"since": "2026-10-03", "reason": "weights deleted", "restore": "re-download"},
+         "host": {"recipe_dir": "/nonexistent", "start": [["./start.sh"]], "stop": [["./stop.sh"]]}}
+    assert dgx_model.switch({"x": d}, "x", dry=False) == 2
+    assert called == []
+    assert "deprecated" in capsys.readouterr().err
+
+
+def test_deprecated_deployments_say_what_was_deleted_and_how_to_restore(dgx_model):
+    for name, d in dgx_model.load_deployments().items():
+        dep = d.get("deprecated")
+        if dep:
+            for key in ("since", "reason", "deleted", "restore"):
+                assert dep.get(key), f"{name}: [deprecated] has no {key}"

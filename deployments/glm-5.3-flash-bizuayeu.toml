@@ -76,3 +76,15 @@ loopback_api = """The kit binds 127.0.0.1 by design. Measuring from the Mac thro
 dotfiles_missed_by_the_blob_copy = """A snapshot's dangling symlink surfaces far from its cause. Copying blobs resolved from `snapshots/*/*` misses `.gitattributes` and `.quant_summary.txt`, and the first thing to notice was prepare_mtp_view refusing with "Unexpected non-file in the snapshot" — after which the view it had already half-built still looked plausible. Resolve `.*` as well, and check for dangling links before trusting a copy."""
 worker_has_no_ipv6_egress = """`hf cache verify` on dgx02 hangs with no CPU use: the node has a global IPv6 address, the CDN resolves to IPv6 first, and the connection sits in SYN-SENT rather than failing over. The offline equivalent is enough here — in the HF cache a blob's filename is the sha256 of its bytes — and the non-LFS files are compared against the head's copies."""
 max_num_seqs_is_one = """`context.max_num_seqs = 1` is the kit's validated value and stays. Every concurrency column for this deployment is therefore a queue in front of one sequence, not parallel decoding; compare it with the other six only at c=1, and read the rest as this profile's behaviour under load."""
+
+[deprecated]
+# Operator 2026-10-03: GLM-5.3-Flash keeps two deployments (glm-5.3-flash-tensorfold and Mia's
+# older glm-5.3-flash-miaai); this one stays defined so it can come back, but its files are gone.
+since = "2026-10-03"
+reason = "GLM-5.3-Flash narrowed to tensorfold + miaai; files deleted for disk"
+deleted = """dgx01+dgx02: ~/hf-home/hub/models--nvidia--GLM-5.3-Flash-NVFP4 (190 GiB each), the MTP view
+~/hf-home/local-views/glm53-mtp-compatible, image glm53-enterprise:reference (fcca92d1 head /
+3fa1b3b5 worker), exited glm53-startup-r* containers. Kept: the checkouts + .venv + settings.toml (~130 MB/node)."""
+restore = """Rebuild glm53-enterprise:reference on the head and docker save|load it to dgx02 (update
+[[nodes]].reference_image in settings.toml with the new IDs), re-run the kit's download + checksum
+steps and tools/prepare_mtp_view.py on both hosts, then delete this table."""

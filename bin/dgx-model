@@ -280,6 +280,13 @@ def switch(deps: dict[str, dict], name: str, dry: bool) -> int:
         print(f"unknown deployment {name!r}; known: {', '.join(deps)}", file=sys.stderr)
         return 2
     target = deps[name]
+    # A deprecated deployment keeps its file (the mapping, the pins, how to restore it) but its
+    # weights are gone from the pair. Its checkout may still be there, so recipe_present() would
+    # pass and the switch would stop the serving model before failing at boot.
+    if target.get("deprecated"):
+        print(f"refusing to switch to {name}: deprecated — {target['deprecated'].get('reason', '')}\n"
+              f"restore first: {target['deprecated'].get('restore', '(see the deployment file)')}", file=sys.stderr)
+        return 2
     ok, why = recipe_present(target)
     if not ok:
         print(f"refusing to switch to {name}: {why}", file=sys.stderr)
@@ -464,7 +471,8 @@ def main() -> int:
     if args.cmd == "list":
         for n, d in deps.items():
             where = d.get("compose_project") or ",".join((d.get("containers") or {}).get("head") or ["-"])
-            print(f"{n:22} serves {d['served_model']:26} {where:20} {d['host']['recipe_dir']}")
+            note = "  (deprecated)" if d.get("deprecated") else ""
+            print(f"{n:22} serves {d['served_model']:26} {where:20} {d['host']['recipe_dir']}{note}")
         return 0
     if args.cmd == "status":
         rep = status(deps)

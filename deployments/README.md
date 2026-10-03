@@ -16,11 +16,17 @@ two, `sglang:*` metrics instead of `vllm:*` — is written in its own file rathe
 | deployment | recipe submodule | shape |
 |---|---|---|
 | `deepseek-v4-flash` | `DeepSeek-v4-Flash-DSpark-2x-DGX-Spark` | Compose project `deepseek-v4-flash` |
-| `glm-5.3-flash-himorishige` | `glm53-flash-2x-dgx-spark-recipe` | Compose project `glm53` |
+| `glm-5.3-flash-himorishige` | `glm53-flash-2x-dgx-spark-recipe` | Compose project `glm53` — **deprecated 2026-10-03** (files deleted) |
 | `deepseek-v4.1-flash` | `DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks` | no Compose: `docker run` + named containers |
 | `qwen3.8-27b-sglang` | `Qwen3.8-27B-SGLang-DGX-Spark` | single node ×2, SGLang, `docker run` (not provisioned) |
 | `glm-5.3-flash-miaai` | `GLM-5.3-Flash-EXL3-2x-DGX-Sparks` | EXL3, MTP only — DFlash2 is licence-blocked (not provisioned) |
-| `glm-5.3-flash-bizuayeu` | `GLM-5.3-Flash-NVFP4-2x-DGX-Sparks-BIZ` | Python kit, foreground supervisor (not provisioned) |
+| `glm-5.3-flash-bizuayeu` | `GLM-5.3-Flash-NVFP4-2x-DGX-Sparks-BIZ` | Python kit, foreground supervisor — **deprecated 2026-10-03** (files deleted) |
+| `glm-5.3-flash-tensorfold` | `GLM-5.3-Flash-EXL3-2x-DGX-Sparks-TensorFold` | TensorFold, `docker run` + named containers, MTP only (1 request at a time) |
+
+A **deprecated** deployment keeps its file, its submodule pin and usually its checkout, but its
+weights and images are deleted from the pair. Its `[deprecated]` table says what was deleted and how
+to restore it, and `dgx-model switch` refuses it before stopping anything. Restore = do what
+`restore` says, then delete the table.
 
 Deployments are named after **whose recipe** they are, not after the model, because three of them
 serve GLM-5.3-Flash and two serve a DeepSeek V4 family member. `glm-5.3-flash` on its own is

@@ -48,3 +48,14 @@ by this template, so the model cannot be told to skip the trace, and a caller th
 Either budget generously and read reasoning_content, or treat this deployment as unsuitable for a
 lane that expects an answer in the message body."""
 
+
+[deprecated]
+# Operator 2026-10-03: GLM-5.3-Flash keeps two deployments (glm-5.3-flash-tensorfold and Mia's
+# older glm-5.3-flash-miaai); this one stays defined so it can come back, but its files are gone.
+since = "2026-10-03"
+reason = "GLM-5.3-Flash narrowed to tensorfold + miaai; files deleted for disk"
+deleted = """dgx01+dgx02: ~/models/GLM-5.3-Flash-NVFP4 (RedHatAI/GLM-5.3-Flash-NVFP4 @36c184c6, 185 GiB each);
+image ghcr.io/tonyd2wild/vllm-glm53-flash:sm121-v11-dflash2 (Id 35c6f70f head / 1ea294cd worker).
+Kept: ~/glm53-cluster on both nodes (its cache-flusher.sh is used by every switch), this file, the submodule pin."""
+restore = """Pull the image by digest (cluster.env IMAGE_DIGEST_EXPECTED) on both nodes, run the recipe's
+scripts/download-nvfp4.sh into ~/models on the head and copy to dgx02, then delete this table."""

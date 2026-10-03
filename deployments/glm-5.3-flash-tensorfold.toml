@@ -1,0 +1,59 @@
+# GLM-5.3-Flash EXL3 on TensorFold v0.6.0, MiaAI-Lab's second GLM recipe — recipe submodule
+# GLM-5.3-Flash-EXL3-2x-DGX-Sparks-TensorFold (mirror muojp, branch feat/dgx-spark-pair-ops, at
+# upstream cf28cc4f = v1.4, 2026-10-03). Not vLLM: TensorFold's own server in NVIDIA's PyTorch
+# container, one container per rank (`glm53-flash-tf` on both nodes), started by ./start.sh on the head.
+# Added 2026-10-03 on the operator's instruction; GLM-5.3-Flash is now this + glm-5.3-flash-miaai,
+# the other two are [deprecated].
+#
+# Checkpoint Mia-AiLab/GLM-5.3-Flash-EXL3-4bpw-TensorFold @078455ff (~176 GB, a different
+# quantization from miaai's TR3-4bpw), in ~/hf-home on both nodes (WORKER_WEIGHTS=copy).
+#
+# LICENCE: the recipe's default drafter is incoai/GLM-5.3-Flash-DFlash2 (CC BY-NC-ND 4.0), which we
+# cannot use — same block as glm-5.3-flash-miaai. DRAFTER=mtp, and with it the recipe serves ONE
+# request at a time (PARALLEL>1 needs DFlash2). Its published 4-stream numbers do not apply here.
+name = "glm-5.3-flash-tensorfold"
+served_model = "GLM-5.3-Flash-EXL3-TensorFold"  # SERVED_NAME in scripts/local.sh; the recipe default
+                                                # GLM-5.3-Flash-EXL3 collides with miaai's in sparkDash
+served_aliases = []
+api_url = "http://192.168.0.100:8888"
+boot_timeout_s = 2400                           # first start compiles CUDA kernels once per image
+
+[containers]
+head = ["glm53-flash-tf"]
+worker = ["glm53-flash-tf"]
+
+[host]
+recipe_dir = "/home/muo/GLM-5.3-Flash-EXL3-2x-DGX-Sparks-TensorFold"
+worker = "dgx02"
+# start.sh runs prepare.sh when needed, launches rank 1 over ssh then rank 0, waits and smoke-tests.
+# "restart" for the same reason as miaai: a left-over stopped container is removed (log saved) first.
+start = [["./start.sh", "restart"]]
+stop = [["./stop.sh"]]
+
+[lane]
+# Unmeasured. One sequence at a time (DRAFTER=mtp), so sessions = 1 until measured otherwise.
+model = "dgx-spark/glm-5.3-flash-tensorfold"
+timeout_s = 3600
+sessions = 1
+price_input = 0.0
+price_output = 0.0
+price_cache_read = 0.0
+# Provisional, not probed: patch 0057 reads chat_template_kwargs.thinking as enable_thinking and
+# the recipe thinks by default (THINKING=1). Confirm with `dgx-model thinking` after the first boot.
+extra = { chat_template_kwargs = { thinking = false } }
+
+[prerequisites]
+notes = [
+  "head checkout at host.recipe_dir on feat/dgx-spark-pair-ops; the worker needs no checkout",
+  "scripts/local.sh (untracked) on the head: WORKER=muo@dgx02, FABRIC_PEER=192.168.100.40, HF_HOME=/home/muo/hf-home, WORKER_HF_CACHE=/home/muo/hf-home, DRAFTER=mtp, WORKER_WEIGHTS=copy, SERVED_NAME=GLM-5.3-Flash-EXL3-TensorFold",
+  "scripts/prepare.sh provisions both nodes (image by pinned digest, checkpoint download on the head, rsync to dgx02) and is safe to re-run; it does not touch the GPU",
+  "DRAFTER=mtp must be set before the first prepare/start, or DFlash2 is downloaded",
+]
+
+[prerequisites.traps]
+worker_cache_default = """WORKER_HF_CACHE defaults to the worker's own HF_HOME, which over a non-login ssh is
+~/.cache/huggingface on dgx02 — not the ~/hf-home the head uses. prepare.sh's preflight line
+"Disk: ... under <path> on the worker" shows which one it picked; set WORKER_HF_CACHE explicitly."""
+pkill_self_match = """Stopping a background prepare.sh with `ssh head 'pkill -f scripts/prepare.sh; ...'` kills the
+ssh session's own bash (its command line contains the pattern) and leaves the docker pull orphaned.
+Use pgrep -fa and kill by pid."""

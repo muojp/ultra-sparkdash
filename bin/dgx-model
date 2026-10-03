@@ -243,6 +243,51 @@ def wait_served(d: dict, log, dry: bool) -> bool:
     return False
 
 
+def licence_pins_hold(d: dict) -> tuple[bool, str]:
+    """Does the recipe's own config still pin what our licences require?
+
+    Two GLM recipes default to the DFlash2 drafter (incoai/GLM-5.3-Flash-DFlash2, CC BY-NC-ND 4.0),
+    which we may not use. The setting that avoids it lives in an untracked file on the head
+    (.env, scripts/local.sh), where an edit would leave no trace here, so read it before every
+    switch: every active assignment of a pinned key must hold the pinned value, and at least one
+    must exist. Anything mentioning dflash in the start steps or their environment is refused too.
+    """
+    lic = d.get("licence") or {}
+    banned = [b.lower() for b in lic.get("banned", [])]
+    steps = [a for argv in d["host"]["start"] for a in argv] + [f"{k}={v}" for k, v in d["host"].get("env", {}).items()]
+    for word in banned:
+        hit = next((a for a in steps if word in str(a).lower()), None)
+        if hit:
+            return False, f"start step or env mentions {word!r}: {hit}"
+    pin = lic.get("pin") or {}
+    if not pin:
+        return True, ""
+    root = Path(d["host"]["recipe_dir"])
+    seen: dict[str, list[str]] = {k: [] for k in pin}
+    read = 0
+    for name in lic.get("config_files", []):
+        f = root / name
+        if not f.is_file():
+            continue
+        read += 1
+        for line in f.read_text().splitlines():
+            line = line.split("#", 1)[0].strip()
+            if line.startswith("export "):
+                line = line[len("export "):].strip()
+            key, eq, value = line.partition("=")
+            if eq and key.strip() in seen:
+                seen[key.strip()].append(f"{name}: {value.strip().strip(chr(34)).strip(chr(39))}")
+    if not read:
+        return False, f"none of {lic.get('config_files')} found under {root}, so the licence pin cannot be checked"
+    for key, want in pin.items():
+        if not seen[key]:
+            return False, f"{key}={want} is not set in {lic.get('config_files')} (the recipe default may be a drafter we cannot use)"
+        bad = [v for v in seen[key] if v.split(": ", 1)[1] != want]
+        if bad:
+            return False, f"{key} must be {want}: found {', '.join(bad)}"
+    return True, ""
+
+
 def recipe_present(d: dict) -> tuple[bool, str]:
     """Is the target's recipe actually on the head?
 
@@ -286,6 +331,10 @@ def switch(deps: dict[str, dict], name: str, dry: bool) -> int:
     if target.get("deprecated"):
         print(f"refusing to switch to {name}: deprecated — {target['deprecated'].get('reason', '')}\n"
               f"restore first: {target['deprecated'].get('restore', '(see the deployment file)')}", file=sys.stderr)
+        return 2
+    ok, why = licence_pins_hold(target)
+    if not ok:
+        print(f"refusing to switch to {name}: licence — {why}", file=sys.stderr)
         return 2
     ok, why = recipe_present(target)
     if not ok:

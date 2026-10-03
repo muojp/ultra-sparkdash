@@ -272,3 +272,61 @@ def test_deprecated_deployments_say_what_was_deleted_and_how_to_restore(dgx_mode
         if dep:
             for key in ("since", "reason", "deleted", "restore"):
                 assert dep.get(key), f"{name}: [deprecated] has no {key}"
+
+
+def _licensed(tmp_path, files, **extra):
+    for name, text in files.items():
+        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / name).write_text(text)
+    d = {"name": "x", "host": {"recipe_dir": str(tmp_path), "start": [["./start.sh", "restart"]], "stop": [["./stop.sh"]]},
+         "licence": {"banned": ["dflash"], "config_files": ["scripts/local.sh", ".env"], "pin": {"DRAFTER": "mtp"}}}
+    d["host"].update(extra)
+    return d
+
+
+def test_licence_pin_holds_with_a_trailing_comment_naming_the_banned_drafter(dgx_model, tmp_path):
+    d = _licensed(tmp_path, {"scripts/local.sh": "DRAFTER=mtp   # DFlash2 is CC BY-NC-ND\n"})
+    assert dgx_model.licence_pins_hold(d) == (True, "")
+
+
+def test_licence_pin_refuses_the_banned_drafter_in_any_file(dgx_model, tmp_path):
+    d = _licensed(tmp_path, {"scripts/local.sh": "DRAFTER=mtp\n", ".env": "DRAFTER=dflash2\n"})
+    ok, why = dgx_model.licence_pins_hold(d)
+    assert not ok and "dflash2" in why
+
+
+def test_licence_pin_refuses_when_the_key_is_unset(dgx_model, tmp_path):
+    """Unset means the recipe default, and the default is the drafter we cannot use."""
+    d = _licensed(tmp_path, {"scripts/local.sh": "# DRAFTER=mtp\nWORKER=muo@dgx02\n"})
+    ok, why = dgx_model.licence_pins_hold(d)
+    assert not ok and "not set" in why
+
+
+def test_licence_pin_refuses_when_no_config_file_is_readable(dgx_model, tmp_path):
+    ok, why = dgx_model.licence_pins_hold(_licensed(tmp_path, {}))
+    assert not ok and "cannot be checked" in why
+
+
+def test_licence_refuses_a_banned_word_in_the_start_steps(dgx_model, tmp_path):
+    d = _licensed(tmp_path, {"scripts/local.sh": "DRAFTER=mtp\n"}, env={"DRAFTER": "dflash2"})
+    ok, why = dgx_model.licence_pins_hold(d)
+    assert not ok and "dflash" in why
+
+
+def test_switch_checks_the_licence_before_anything_stops(dgx_model, monkeypatch, tmp_path, capsys):
+    called = []
+    monkeypatch.setattr(dgx_model, "recipe_present", lambda d: called.append("recipe") or (True, ""))
+    monkeypatch.setattr(dgx_model, "status", lambda deps: called.append("status") or {})
+    d = _licensed(tmp_path, {".env": "DRAFTER=dflash2\n"})
+    assert dgx_model.switch({"x": d}, "x", dry=False) == 2
+    assert called == []
+    assert "licence" in capsys.readouterr().err
+
+
+def test_every_glm_deployment_that_is_not_deprecated_pins_away_from_dflash2(dgx_model):
+    """DFlash2 (CC BY-NC-ND) is not licensed for us; operator 2026-10-03."""
+    for name, d in dgx_model.load_deployments().items():
+        if name.startswith("glm-5.3-flash") and not d.get("deprecated"):
+            lic = d.get("licence") or {}
+            assert "dflash" in lic.get("banned", []), name
+            assert lic.get("pin"), name

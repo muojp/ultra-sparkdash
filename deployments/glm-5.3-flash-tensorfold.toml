@@ -30,6 +30,16 @@ worker = "dgx02"
 start = [["./start.sh", "restart"]]
 stop = [["./stop.sh"]]
 
+[licence]
+# DFlash2 is CC BY-NC-ND 4.0: never enable. Operator 2026-10-03 ("drafterにDFlash2を使うのはライセンスNG").
+# The mirror (886b748) defaults DRAFTER to mtp and refuses anything else when config.sh is sourced, and
+# no longer exports TF_GLM_DFLASH_POLICY (inert, but it read like DFlash2 was on; gone at the next restart).
+# dgx-model switch also reads the head's untracked config before acting: DRAFTER must be mtp in every
+# active assignment, which makes start.sh pass `--drafter none` (the checkpoint's own MTP head).
+banned = ["dflash"]
+config_files = ["scripts/local.sh", ".env"]
+pin = { DRAFTER = "mtp" }
+
 [lane]
 # Unmeasured. One sequence at a time (DRAFTER=mtp), so sessions = 1 until measured otherwise.
 model = "dgx-spark/glm-5.3-flash-tensorfold"

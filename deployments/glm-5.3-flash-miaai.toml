@@ -34,6 +34,13 @@ worker = "dgx02"
 start = [["env", "SKIP_BUILD=1", "./start.sh", "restart"]]  # start-tp3/tp4.sh are for 3- and 4-node kits
 stop = [["./stop.sh"]]
 
+[licence]
+# DFlash2 is CC BY-NC-ND 4.0: never enable (see the header; operator re-confirmed 2026-10-03). The kit's .env
+# still carries the inert DFLASH_* settings, so the switch reads SPEC_METHOD on the head before acting.
+banned = ["dflash"]
+config_files = [".env"]
+pin = { SPEC_METHOD = "mtp" }
+
 [lane]
 # Unmeasured here, and the recipe's numbers are for an engine we cannot run. Do not seed a budget
 # from its README.

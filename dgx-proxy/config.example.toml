@@ -1,0 +1,97 @@
+# dgx-proxy config. Installed on dgx01 as ~/dgx-proxy/config.toml.
+# Check it without starting: dgx-proxy --config ~/dgx-proxy/config.toml --check
+
+listen = "0.0.0.0:8880"          # the new entry point; 8888 is the inference server's own port.
+                                 # Same interfaces as vLLM's 8888: VPN/LAN only, no auth (see README).
+ledger_dir = "~/dgx-proxy/ledger"
+
+[timeouts]                       # seconds; startup refuses total < 600 or first_byte < 60 (BP-60)
+connect = 5
+first_byte = 900                 # queueing + connect + response headers
+idle = 300                       # longest gap between two response frames
+total = 3900                     # = the lanes' hard stop, budget 3600 + 300
+
+[health]
+interval = 5                     # GET /v1/models on every backend; its model ids decide what it serves
+probe_timeout = 3
+eject_after = 2                  # consecutive failures (probe or passive) before a backend is ejected
+readmit_after = 2                # consecutive good probes before it is readmitted
+
+[queue]
+max_depth = 64                   # requests waiting here when every backend is at its cap (all deployments)
+
+[retry]
+max_attempts = 3                 # only before the first byte reaches the client: connect error, 502/503/504
+backoff = [0.5, 1.0, 2.0]
+
+# Physical server ports. Which deployment each one serves is not configured: the health probe sees it.
+[[backend]]
+name = "dgx01"
+url = "http://127.0.0.1:8888"
+
+[[backend]]
+name = "dgx02"
+url = "http://192.168.100.40:8888"   # CX7
+
+# Deployments: the same names as dgx-model's deployments/*.toml. A request's `model` (a served name
+# or an alias) picks the deployment; an unknown model goes to the only deployment that is up, and
+# is a 404 listing the models when more than one is.
+[[deployment]]
+name = "glm-5.3-flash-tensorfold"
+served_models = ["GLM-5.3-Flash-EXL3-TensorFold"]
+aliases = ["glm-5.3-flash"]      # clients may use this name; the proxy rewrites it to the served name
+cap = 1                          # per backend (PARALLEL=1, DRAFTER=mtp). TP=2: only dgx01 answers.
+rewrites = ["drop-include", "function-tools-only"]
+
+[[deployment]]
+name = "qwen3.8-flash-next-single-x2"
+served_models = ["qwen3.8-flash-next-single"]
+cap = 8                          # per backend (the measured knee, 2026-09-24)
+
+# Rewrite rules are data; the code knows only the operations:
+#   remove (pointer) | filter_array (pointer, keep_where = { subpointer = value }) |
+#   merge (value, optional pointer; other keys are kept) | set_default (pointer, value; only if absent) |
+#   rename_model (to, optional from = [...])
+# Order: the profile's rules, then the deployment's. The ledger names the rules that changed the body.
+[[rule]]
+name = "drop-include"            # TensorFold: 400 "include is not supported" (codex always sends it)
+paths = ["/v1/responses"]
+op = "remove"
+pointer = "/include"
+
+[[rule]]
+name = "function-tools-only"     # TensorFold runs function tools only (codex adds namespace / web_search)
+paths = ["/v1/responses", "/v1/chat/completions"]
+op = "filter_array"
+pointer = "/tools"
+keep_where = { "/type" = "function" }
+
+[[rule]]
+name = "think"
+paths = ["/v1/chat/completions", "/v1/responses", "/v1/completions"]
+op = "merge"
+value = { chat_template_kwargs = { enable_thinking = true, thinking = true } }
+
+[[rule]]
+name = "nothink"
+paths = ["/v1/chat/completions", "/v1/responses", "/v1/completions"]
+op = "merge"
+value = { chat_template_kwargs = { enable_thinking = false, thinking = false } }
+
+# Profiles: selected by path prefix /p/<name>/v1/... on any port, or by their own port. The ports
+# below are dgx-lb's; they stay commented out until dgx-proxy takes them over from dgx-lb.service
+# (until then binding them would fail). 8880 alone serves everything, profile "default" = no rules.
+[[profile]]
+name = "plain"
+# port = 8890
+rewrites = []
+
+[[profile]]
+name = "think"
+# port = 8891
+rewrites = ["think"]
+
+[[profile]]
+name = "nothink"
+# port = 8892
+rewrites = ["nothink"]

@@ -1,0 +1,21 @@
+# systemd --user unit for dgx-proxy on dgx01 (linger is on for muo).
+#   build:   cargo build --release   (on dgx01, user-level rustup; see README)
+#   install: mkdir -p ~/.config/systemd/user ~/dgx-proxy && cp target/release/dgx-proxy ~/dgx-proxy/ \
+#            && cp config.example.toml ~/dgx-proxy/config.toml
+#            cp dgx-proxy.service ~/.config/systemd/user/ && systemctl --user daemon-reload && systemctl --user enable --now dgx-proxy
+[Unit]
+Description=dgx-proxy: inference proxy for the dgx pair (8880; model-routed LB + per-deployment rewrites)
+After=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+ExecStartPre=%h/dgx-proxy/dgx-proxy --config %h/dgx-proxy/config.toml --check
+ExecStart=%h/dgx-proxy/dgx-proxy --config %h/dgx-proxy/config.toml
+Restart=on-failure
+RestartSec=2
+KillSignal=SIGTERM
+TimeoutStopSec=10
+
+[Install]
+WantedBy=default.target

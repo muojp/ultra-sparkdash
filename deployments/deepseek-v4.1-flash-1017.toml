@@ -3,10 +3,10 @@
 # family), TP=2, one rank per Spark. Added 2026-10-19 for OPERATOR-INSTRUCTION-20261019-2155/2158
 # ("追加取り込みして" / "DL完了したらqwenから置き換えていい").
 #
-# NOT PROVISIONED YET (2026-10-19): the head checkout is at 1afc891 with an untracked scripts/local.sh
-# (WORKER=muo@dgx02, FABRIC_PEER=192.168.100.40, HF_CACHE=/home/muo/hf-home, ABLIT=0). The checkpoint
-# download runs on the head; Engram's tables, the image and both rank weight files are not done. Do not
-# switch to it before [prerequisites] says done.
+# PROVISIONED and serving (first boot 2026-10-19 23:38Z, ~1 min after the switch). The head checkout is at
+# 1afc891 with an untracked scripts/local.sh: WORKER=muo@dgx02, FABRIC_PEER=192.168.100.40,
+# HF_CACHE=/home/muo/hf-home, ABLIT=0, and the no-NFS layout: NFS_VOLUME=/home/muo/dsv41-1017-hf (a host path
+# on dgx02, bind-mounted at /hf), HEAD_NFS_SERVER empty, PREPARE=0 (prepare.sh steps 6-7 assume NFS; done by hand).
 #
 # Drafts are the checkpoint's own DSpark blocks (DRAFTS=1): no DFlash2 and no other licence-restricted
 # drafter, so no [licence] pin. ABLIT=1 (a gated abliterated overlay) is not used.
@@ -28,7 +28,9 @@ stop = [["./stop.sh"]]
 status = [["docker", "ps", "--filter", "name=dsv41-1017-exl3-tf", "--format", "{{.Names}} {{.Status}}"]]
 
 [lane]
-# Unmeasured on this pair. The kit's own numbers (README, two Sparks): decode 55-61 tok/s at one stream,
+# First numbers on this pair (2026-10-19 23:4xZ): text 17*19 -> 323 in 0.17 s, image (64 px red|blue PNG) 'Red then
+# blue' in 1.19 s, single-stream decode 68.8 tok/s (386 tokens, thinking off, TTFT 0.12 s). Thinking is on by default:
+# send chat_template_kwargs.enable_thinking=false or give max_tokens room. The kit's own numbers (README, two Sparks): decode 55-61 tok/s at one stream,
 # 113-117 tok/s for four together, prefill ~1,950-2,000 tok/s from 8K to 100K prompts (TTFT 49 s at 100K).
 model = "dgx-spark/deepseek-v4.1-flash-1017"
 timeout_s = 3600
@@ -41,10 +43,11 @@ extra = {}
 [prerequisites]
 notes = [
   "checkout ~/DeepSeek-v4.1-Flash-1017-2x-DGX-Sparks on the head (origin=muojp, upstream=MiaAI-Lab) + scripts/local.sh — DONE 2026-10-19",
-  "checkpoint Mia-AiLab/DeepSeek-V4.1-Flash-1017-EXL3-EAQ-v1-2.9-bpw @6d54be4f (196 GiB) into ~/hf-home/hub — IN PROGRESS (plain HTTP, see traps)",
-  "Engram tables: deepseek-ai/DeepSeek-V4.1-Flash-1017 shards 47+48 (~203 GB, Xet) — TODO",
-  "image tensorfold-dsv41:exl3-tp2-<hash> (zig/Dockerfile, ~25 GB, ~6 min Zig build per Spark) — TODO, needs the RAM qwen holds",
-  "rank 0 weight file (~106 GB, head) and rank 1 weight file + Engram copy on dgx02 (~310 GB) — TODO",
+  "checkpoint Mia-AiLab/DeepSeek-V4.1-Flash-1017-EXL3-EAQ-v1-2.9-bpw @6d54be4f, 39 shards / 197 GiB in ~/hf-home/hub — DONE 15:14Z (plain HTTP, 2 h 12 min)",
+  "Engram tables deepseek-ai/DeepSeek-V4.1-Flash-1017 @1bae0e10 shards 47+48 — DONE 18:03Z (Xet, guarded, 42 min; sha256 = the card's)",
+  "image tensorfold-dsv41:exl3-tp2-1cbf54e3684f (no published image for these pins: built locally, 24.9 GB) on both Spark — DONE",
+  "kit abe07c7d, token map, served folder, rank 0 weight file (99 GiB) on the head — DONE (prepare.sh 1-5)",
+  "dgx02: ~/dsv41-1017-hf (checkpoint tree 197 GiB + tensorfold-dsv41/ minus rank-cache, rsync over CX7), Engram in ~/.cache/dsv41-tensorfold/engram-1bae0e10, rank 1 file rank1of2-f4b9c7e9bd4f6316d1b4.bin (106 GB) — DONE by hand",
   "start.sh refuses unless MIN_AVAIL_GIB (112 in config.sh) is free on each Spark: it cannot run beside another deployment",
 ]
 

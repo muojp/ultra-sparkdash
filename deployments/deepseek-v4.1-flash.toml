@@ -100,3 +100,19 @@ hub_cache_owned_by_root = """~/.cache/huggingface/hub on this head is root-owned
 engram_needs_xet = """The two Engram shards are ~95 GiB each and the hub refuses a file that large over the regular (non-Xet) path, so a kit that sets HF_HUB_DISABLE_XET=1 — which this one did, carried over from an older hf-xet hang on the GLM download — fails the Engram stage instantly, and only after the 197 GiB EXL3 fetch has already succeeded. The mirror's download.sh (00621d5) forces Xet for that one call. Xet did not hang here (hf-xet 1.6.0 / huggingface_hub 1.32.0) and its chunk cache stayed at 5 MiB, so it costs no extra disk."""
 nfs_export_on_overlay2 = """The exporter left /export as the container's own root while bind-mounting the weight trees below it, and the kernel nfsd refuses to export an overlay2 upper dir ("does not support NFS export"); the entrypoint dies under set -e and the container restart-loops, so the boot reports "NFS server did not become ready". Mirror 07f307b binds a host directory at /export and adds crossmnt — without crossmnt the worker mounts the export and reads an EMPTY directory rather than erroring."""
 engram_config_json_missing = """ENGRAM_FILES did not list config.json and prepare_engram_src.py copied it only if present, but engram_file_backend requires it to derive each table's layer id. The download reports success and every rank dies later at the first decoder layer with FileNotFoundError: /engram-src/config.json. Mirror b56cddc fetches it and fails in the staging step instead."""
+
+[deprecated]
+# Operator 2026-10-19 22:00 JST ("DSV4.1 EXL3とMiMoは消して。必要になったら後から再DLすればいい"): weights
+# deleted for disk; the file stays so the deployment can come back. Superseded on the pair by
+# deepseek-v4.1-flash-1017 (a different checkpoint AND different Engram tables: same byte sizes, other
+# sha256, so nothing here was reusable for it).
+since = "2026-10-19"
+reason = "weights removed (re-download to use)"
+deleted = """dgx01: ~/models/DeepSeek-V4.1-Flash-EXL3-2.9bpw (201 GiB), ~/models/DeepSeek-V4.1-Flash-engram-src
+(190 GiB, deepseek-ai/DeepSeek-V4.1-Flash shards 47+48: sha256 824db488... / 976330f4...), the image
+ghcr.io/miaai-lab/deepseek-v4.1-flash-exl3-2x-dgx-sparks:2.9bpw, dsv41-exl3-nfs:local and its exited
+container. dgx02: the same ghcr image (it read the weights over NFS, so no weight copy). Kept: the
+checkout ~/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks with its .env (2.5 MB)."""
+restore = """mkdir -p ~/models/DeepSeek-V4.1-Flash-EXL3-2.9bpw ~/models/DeepSeek-V4.1-Flash-engram-src, run the
+kit's download.sh on the head (EXL3 ~49 min + Engram over Xet ~46 min at the 2026-09-18 rate; mind
+the traps below), let start.sh pull the image, then delete this table."""

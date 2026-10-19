@@ -89,3 +89,14 @@ boots = [
 pin_rule = """The DFlash drafter keeps a second KV pool sized to the pin, so the pin costs ~11.3 GB per 1M tokens per node (7.1 main + 5.0 draft at 1,048,576). 2,299,968 does not fit next to FlashInfer autotune at MEM_FRACTION_STATIC 0.93 / guard 4 GiB. If a boot dies at the same step again: lower the pin (262144, then 131072) BEFORE switching the drafter to EAGLE (host 2026-09-22)."""
 smoke_20260922 = """enable_thinking true: TTFT 0.36 s, 23.9 tok/s decode (short prose); false: 0.27 s, 24.4 tok/s. llm-quickbench code c=1 (3211-token prompt, template default = thinking ON; its reason_p50 0 is the usage trap above): TTFT 1.5-1.6 s, 48.6-50.2 tok/s per stream. streamed usage has prompt_tokens_details = null (cached_tokens not reported there) despite ENABLE_CACHE_REPORT=1 — check non-streamed. Evidence: /Users/muo/bench/bb2-scratch/mimo-boot/."""
 env_diff = """Head .env vs .env.example (uncommitted, kit not mirrored): cluster/fabric/NFS values of the pair, MODEL_DIR ~/models/MiMo-V2.6-Flash-RL, HF_HUB_CACHE user-owned, NCCL_IB_GID_INDEX 3, SPEC_ALGO DFLASH, SPEC_DRAFT_TOKENS 8, CUDA_GRAPH_MAX_BS_DECODE 8, MAX_TOTAL_TOKENS 1048576."""
+
+[deprecated]
+# Operator 2026-10-19 22:00 JST: weights deleted for disk (re-download if needed); the file stays.
+since = "2026-10-19"
+reason = "weights removed (re-download to use)"
+deleted = """dgx01: ~/models/MiMo-V2.6-Flash-RL (187 GiB), the image mimo26-spark:local, mimo26-nfs:local and
+its exited container. dgx02: mimo26-spark:local (the worker read the weights over NFS). Kept: the
+checkout ~/MiMo-V2.6-Flash-2x-DGX-Sparks with its local .env (8.9 MB)."""
+restore = """Re-download the checkpoint into ~/models/MiMo-V2.6-Flash-RL with the kit's download step (~2.5 h at
+15-25 MiB/s), rebuild mimo26-spark:local with its image step on the head and docker save|load it to
+dgx02, then delete this table."""

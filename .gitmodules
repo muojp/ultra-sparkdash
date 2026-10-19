@@ -32,3 +32,6 @@
 	path = GLM-5.3-Flash-EXL3-2x-DGX-Sparks-TensorFold
 	url = https://github.com/muojp/GLM-5.3-Flash-EXL3-2x-DGX-Sparks-TensorFold.git
 	branch = feat/dgx-spark-pair-ops
+[submodule "DeepSeek-v4.1-Flash-1017-2x-DGX-Sparks"]
+	path = DeepSeek-v4.1-Flash-1017-2x-DGX-Sparks
+	url = https://github.com/muojp/DeepSeek-v4.1-Flash-1017-2x-DGX-Sparks.git

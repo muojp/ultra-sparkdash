@@ -1,0 +1,63 @@
+# DeepSeek-V4.1-Flash-1017 on the pair — MiaAI-Lab/DeepSeek-v4.1-Flash-1017-2x-DGX-Sparks (mirror
+# muojp/DeepSeek-v4.1-Flash-1017-2x-DGX-Sparks), TensorFold native Zig engine (BertholomusAI's dsv41
+# family), TP=2, one rank per Spark. Added 2026-10-19 for OPERATOR-INSTRUCTION-20261019-2155/2158
+# ("追加取り込みして" / "DL完了したらqwenから置き換えていい").
+#
+# NOT PROVISIONED YET (2026-10-19): the head checkout is at 1afc891 with an untracked scripts/local.sh
+# (WORKER=muo@dgx02, FABRIC_PEER=192.168.100.40, HF_CACHE=/home/muo/hf-home, ABLIT=0). The checkpoint
+# download runs on the head; Engram's tables, the image and both rank weight files are not done. Do not
+# switch to it before [prerequisites] says done.
+#
+# Drafts are the checkpoint's own DSpark blocks (DRAFTS=1): no DFlash2 and no other licence-restricted
+# drafter, so no [licence] pin. ABLIT=1 (a gated abliterated overlay) is not used.
+name = "deepseek-v4.1-flash-1017"
+served_model = "DeepSeek-V4.1-Flash-1017"     # scripts/config.sh SERVED_NAME
+served_aliases = []
+api_url = "http://192.168.0.100:8888"
+boot_timeout_s = 3600                          # unmeasured here; README: later starts load ~98 GiB of weights per Spark
+
+[containers]
+head = ["dsv41-1017-exl3-tf"]                  # CONTAINER_NAME, the same name on both Sparks
+worker = ["dsv41-1017-exl3-tf"]
+
+[host]
+recipe_dir = "/home/muo/DeepSeek-v4.1-Flash-1017-2x-DGX-Sparks"
+worker = "dgx02"
+start = [["./start.sh"]]
+stop = [["./stop.sh"]]
+status = [["docker", "ps", "--filter", "name=dsv41-1017-exl3-tf", "--format", "{{.Names}} {{.Status}}"]]
+
+[lane]
+# Unmeasured on this pair. The kit's own numbers (README, two Sparks): decode 55-61 tok/s at one stream,
+# 113-117 tok/s for four together, prefill ~1,950-2,000 tok/s from 8K to 100K prompts (TTFT 49 s at 100K).
+model = "dgx-spark/deepseek-v4.1-flash-1017"
+timeout_s = 3600
+sessions = 4                                   # PARALLEL=4, the family's measured streams; knee not measured here
+price_input = 0.0
+price_output = 0.0
+price_cache_read = 0.0
+extra = {}
+
+[prerequisites]
+notes = [
+  "checkout ~/DeepSeek-v4.1-Flash-1017-2x-DGX-Sparks on the head (origin=muojp, upstream=MiaAI-Lab) + scripts/local.sh — DONE 2026-10-19",
+  "checkpoint Mia-AiLab/DeepSeek-V4.1-Flash-1017-EXL3-EAQ-v1-2.9-bpw @6d54be4f (196 GiB) into ~/hf-home/hub — IN PROGRESS (plain HTTP, see traps)",
+  "Engram tables: deepseek-ai/DeepSeek-V4.1-Flash-1017 shards 47+48 (~203 GB, Xet) — TODO",
+  "image tensorfold-dsv41:exl3-tp2-<hash> (zig/Dockerfile, ~25 GB, ~6 min Zig build per Spark) — TODO, needs the RAM qwen holds",
+  "rank 0 weight file (~106 GB, head) and rank 1 weight file + Engram copy on dgx02 (~310 GB) — TODO",
+  "start.sh refuses unless MIN_AVAIL_GIB (112 in config.sh) is free on each Spark: it cannot run beside another deployment",
+]
+
+[prerequisites.traps]
+xet_buffers_in_ram = """`hf download` (huggingface_hub 1.32.0) over Xet held the checkpoint in memory: RSS 3.2 GB within 90 s and
+MemAvailable 10 -> 6 GiB on a head that serves qwen3.8 x2, with nothing written to disk yet. Stopped by pid before it
+could OOM the box (the head freezes rather than killing). The checkpoint's ~5 GiB shards go over plain HTTP instead
+(HF_HUB_DISABLE_XET=1, --max-workers 2: 18 MiB/s, RSS ~100 MB). The ~95 GiB Engram shards need Xet (the hub refuses
+them on the plain path, see deepseek-v4.1-flash.toml engram_needs_xet), so fetch them while nothing else needs the RAM."""
+old_engram_is_not_1017 = """deepseek-ai/DeepSeek-V4.1-Flash's shards 47+48 (the deleted ~/models/DeepSeek-V4.1-Flash-engram-src) have the
+same byte sizes as the 1017 release's but different sha256 (824db488... / 976330f4... vs the card's 76a05106... /
+9dc51433...); prepare.sh refuses the old ones, so they cannot be reused."""
+worker_nfs_needs_sudo = """The kit's default has the worker read the checkpoint from the head over the kernel NFS server
+(apt nfs-kernel-server + /etc/exports on the head: root). There is no passwordless sudo on dgx01. The README's no-NFS
+layout (a local tree on the worker holding the small files, the vision shard and the served folder, NFS_VOLUME as a host
+path, PREPARE=0) avoids it, and with it the :2049 exporter trap of the older kits."""

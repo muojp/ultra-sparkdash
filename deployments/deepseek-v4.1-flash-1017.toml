@@ -3,8 +3,10 @@
 # family), TP=2, one rank per Spark. Added 2026-10-19 for OPERATOR-INSTRUCTION-20261019-2155/2158
 # ("追加取り込みして" / "DL完了したらqwenから置き換えていい").
 #
-# PROVISIONED and serving (first boot 2026-10-19 23:38Z, ~1 min after the switch). The head checkout is at
-# 1afc891 with an untracked scripts/local.sh: WORKER=muo@dgx02, FABRIC_PEER=192.168.100.40,
+# PROVISIONED and serving (first boot 2026-10-19 23:38Z). 2026-10-20 00:5xZ: upstream hotfix e65785c (engine pin
+# 629c524a, patches 0005 prefill interleave + 0006 image prompt cache, looser memguard), image exl3-tp2-8eb5919ff0a4
+# built locally; rank files unchanged (index hash f4b9c7e9); previous image exl3-tp2-1cbf54e3684f kept. The head checkout
+# is on branch fondi/dgx-pair at e65785c (was 1afc891) with an untracked scripts/local.sh: WORKER=muo@dgx02, FABRIC_PEER=192.168.100.40,
 # HF_CACHE=/home/muo/hf-home, ABLIT=0, and the no-NFS layout: NFS_VOLUME=/home/muo/dsv41-1017-hf (a host path
 # on dgx02, bind-mounted at /hf), HEAD_NFS_SERVER empty, PREPARE=0 (prepare.sh steps 6-7 assume NFS; done by hand).
 #
